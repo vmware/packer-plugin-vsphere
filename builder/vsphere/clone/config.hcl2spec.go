@@ -35,6 +35,7 @@ type FlatConfig struct {
 	InsecureConnection              *bool                                       `mapstructure:"insecure_connection" cty:"insecure_connection" hcl:"insecure_connection"`
 	Datacenter                      *string                                     `mapstructure:"datacenter" cty:"datacenter" hcl:"datacenter"`
 	Template                        *string                                     `mapstructure:"template" cty:"template" hcl:"template"`
+	RemoteSource                    *FlatRemoteSourceConfig                     `mapstructure:"remote_source" cty:"remote_source" hcl:"remote_source"`
 	DiskSize                        *int64                                      `mapstructure:"disk_size" cty:"disk_size" hcl:"disk_size"`
 	LinkedClone                     *bool                                       `mapstructure:"linked_clone" cty:"linked_clone" hcl:"linked_clone"`
 	Network                         *string                                     `mapstructure:"network" cty:"network" hcl:"network"`
@@ -192,6 +193,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"insecure_connection":            &hcldec.AttrSpec{Name: "insecure_connection", Type: cty.Bool, Required: false},
 		"datacenter":                     &hcldec.AttrSpec{Name: "datacenter", Type: cty.String, Required: false},
 		"template":                       &hcldec.AttrSpec{Name: "template", Type: cty.String, Required: false},
+		"remote_source":                  &hcldec.BlockSpec{TypeName: "remote_source", Nested: hcldec.ObjectSpec((*FlatRemoteSourceConfig)(nil).HCL2Spec())},
 		"disk_size":                      &hcldec.AttrSpec{Name: "disk_size", Type: cty.Number, Required: false},
 		"linked_clone":                   &hcldec.AttrSpec{Name: "linked_clone", Type: cty.Bool, Required: false},
 		"network":                        &hcldec.AttrSpec{Name: "network", Type: cty.String, Required: false},
@@ -311,6 +313,35 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"export":                         &hcldec.BlockSpec{TypeName: "export", Nested: hcldec.ObjectSpec((*common.FlatExportConfig)(nil).HCL2Spec())},
 		"content_library_destination":    &hcldec.BlockSpec{TypeName: "content_library_destination", Nested: hcldec.ObjectSpec((*common.FlatContentLibraryDestinationConfig)(nil).HCL2Spec())},
 		"customize":                      &hcldec.BlockSpec{TypeName: "customize", Nested: hcldec.ObjectSpec((*FlatCustomizeConfig)(nil).HCL2Spec())},
+	}
+	return s
+}
+
+// FlatRemoteSourceConfig is an auto-generated flat version of RemoteSourceConfig.
+// Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
+type FlatRemoteSourceConfig struct {
+	URL           *string `mapstructure:"url" cty:"url" hcl:"url"`
+	Username      *string `mapstructure:"username" cty:"username" hcl:"username"`
+	Password      *string `mapstructure:"password" cty:"password" hcl:"password"`
+	SkipTlsVerify *bool   `mapstructure:"skip_tls_verify" cty:"skip_tls_verify" hcl:"skip_tls_verify"`
+}
+
+// FlatMapstructure returns a new FlatRemoteSourceConfig.
+// FlatRemoteSourceConfig is an auto-generated flat version of RemoteSourceConfig.
+// Where the contents a fields with a `mapstructure:,squash` tag are bubbled up.
+func (*RemoteSourceConfig) FlatMapstructure() interface{ HCL2Spec() map[string]hcldec.Spec } {
+	return new(FlatRemoteSourceConfig)
+}
+
+// HCL2Spec returns the hcl spec of a RemoteSourceConfig.
+// This spec is used by HCL to read the fields of RemoteSourceConfig.
+// The decoded values from this spec will then be applied to a FlatRemoteSourceConfig.
+func (*FlatRemoteSourceConfig) HCL2Spec() map[string]hcldec.Spec {
+	s := map[string]hcldec.Spec{
+		"url":             &hcldec.AttrSpec{Name: "url", Type: cty.String, Required: false},
+		"username":        &hcldec.AttrSpec{Name: "username", Type: cty.String, Required: false},
+		"password":        &hcldec.AttrSpec{Name: "password", Type: cty.String, Required: false},
+		"skip_tls_verify": &hcldec.AttrSpec{Name: "skip_tls_verify", Type: cty.Bool, Required: false},
 	}
 	return s
 }

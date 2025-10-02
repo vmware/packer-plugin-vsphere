@@ -16,6 +16,7 @@
       hostname  = var.hostname
       user-data = base64encode(var.user_data)
     }
+    deployment_option = "small"
   }
   ```
 
@@ -26,7 +27,8 @@
     "properties": {
       "hostname": "{{ user `hostname`}}",
       "user-data": "{{ env `USERDATA`}}"
-    }
+    },
+    "deployment_option": "small"
   }
   ```
 
@@ -36,3 +38,7 @@
   ```console
   export USERDATA=$(gzip -c9 <userdata.yaml | { base64 -w0 2>/dev/null || base64; })
   ```
+
+- `deployment_option` (string) - The deployment configuration to use when deploying from an OVF/OVA file.
+  This corresponds to deployment configurations defined in an OVF descriptor.
+  -> **Note:** Only applicable when using remote OVF/OVA sources.

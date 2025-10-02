@@ -12,6 +12,7 @@ import (
 // Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
 type FlatCloneConfig struct {
 	Template           *string                 `mapstructure:"template" cty:"template" hcl:"template"`
+	RemoteSource       *FlatRemoteSourceConfig `mapstructure:"remote_source" cty:"remote_source" hcl:"remote_source"`
 	DiskSize           *int64                  `mapstructure:"disk_size" cty:"disk_size" hcl:"disk_size"`
 	LinkedClone        *bool                   `mapstructure:"linked_clone" cty:"linked_clone" hcl:"linked_clone"`
 	Network            *string                 `mapstructure:"network" cty:"network" hcl:"network"`
@@ -36,6 +37,7 @@ func (*CloneConfig) FlatMapstructure() interface{ HCL2Spec() map[string]hcldec.S
 func (*FlatCloneConfig) HCL2Spec() map[string]hcldec.Spec {
 	s := map[string]hcldec.Spec{
 		"template":             &hcldec.AttrSpec{Name: "template", Type: cty.String, Required: false},
+		"remote_source":        &hcldec.BlockSpec{TypeName: "remote_source", Nested: hcldec.ObjectSpec((*FlatRemoteSourceConfig)(nil).HCL2Spec())},
 		"disk_size":            &hcldec.AttrSpec{Name: "disk_size", Type: cty.Number, Required: false},
 		"linked_clone":         &hcldec.AttrSpec{Name: "linked_clone", Type: cty.Bool, Required: false},
 		"network":              &hcldec.AttrSpec{Name: "network", Type: cty.String, Required: false},

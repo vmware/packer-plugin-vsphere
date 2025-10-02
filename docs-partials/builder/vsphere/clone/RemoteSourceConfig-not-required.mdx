@@ -1,0 +1,37 @@
+<!-- Code generated from the comments of the RemoteSourceConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
+
+- `url` (string) - The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
+
+- `username` (string) - The username for basic authentication when accessing the remote OVF/OVA file.
+  Must be used together with `password`.
+
+- `password` (string) - The password for basic authentication when accessing the remote OVF/OVA file.
+  Must be used together with `username`.
+
+- `skip_tls_verify` (bool) - Do not validate the certificate when accessing HTTPS URLs.
+  Defaults to `false`.
+  
+  -> **Note:** This option is beneficial in scenarios where the certificate
+  is self-signed or does not meet standard validation criteria.
+  
+  HCL Example:
+  
+  ```hcl
+    remote_source = {
+      url              = "https://packages.example.com/artifacts/example.ovf"
+      username         = "remote_source_username"
+      password         = "remote_source_password"
+      skip_tls_verify  = false
+    }
+  ```
+  
+  JSON Example:
+  ```json
+    "remote_source": {
+      "url": "https://packages.example.com/artifacts/example.ovf",
+      "username": "remote_source_username",
+      "password": "remote_source_password",
+      "skip_tls_verify": false
+    }
+
+<!-- End of code generated from the comments of the RemoteSourceConfig struct in builder/vsphere/clone/step_clone.go; -->

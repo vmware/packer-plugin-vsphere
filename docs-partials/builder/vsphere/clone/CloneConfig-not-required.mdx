@@ -2,6 +2,12 @@
 
 - `template` (string) - The name of the source virtual machine to clone.
 
+- `remote_source` (\*RemoteSourceConfig) - Configuration for cloning from a remote OVF/OVA source.
+  Cannot be used together with `template`.
+  
+  For more information, refer to the [Remote Source Configuration](/packer/integrations/hashicorp/vmware/latest/components/builder/vsphere-clone#remote-source-configuration)
+  section.
+
 - `disk_size` (int64) - The size of the primary disk in MiB. Cannot be used with `linked_clone`.
   -> **Note:** Only the primary disk size can be specified. Additional
   disks are not supported.

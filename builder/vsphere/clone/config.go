@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 //go:generate packer-sdc struct-markdown
-//go:generate packer-sdc mapstructure-to-hcl2 -type Config
+//go:generate packer-sdc mapstructure-to-hcl2 -type Config,RemoteSourceConfig
 
 package clone
 
@@ -68,7 +68,7 @@ type Config struct {
 	ctx interpolate.Context
 }
 
-func (c *Config) Prepare(raws ...interface{}) ([]string, error) {
+func (c *Config) Prepare(raws ...any) ([]string, error) {
 	err := config.Decode(c, &config.DecodeOpts{
 		PluginType:         common.BuilderId,
 		Interpolate:        true,

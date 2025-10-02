@@ -61,6 +61,12 @@ references, which are necessary for a build to succeed and can be found further 
 
 - `template` (string) - The name of the source virtual machine to clone.
 
+- `remote_source` (\*RemoteSourceConfig) - Configuration for cloning from a remote OVF/OVA source.
+  Cannot be used together with `template`.
+  
+  For more information, refer to the [Remote Source Configuration](/packer/integrations/hashicorp/vmware/latest/components/builder/vsphere-clone#remote-source-configuration)
+  section.
+
 - `disk_size` (int64) - The size of the primary disk in MiB. Cannot be used with `linked_clone`.
   -> **Note:** Only the primary disk size can be specified. Additional
   disks are not supported.
@@ -112,6 +118,49 @@ references, which are necessary for a build to succeed and can be found further 
   Refer to the [Storage Configuration](#storage-configuration) section for additional information.
 
 <!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->
+
+
+### Remote Source Configuration
+
+**Optional:**
+
+<!-- Code generated from the comments of the RemoteSourceConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
+
+- `url` (string) - The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
+
+- `username` (string) - The username for basic authentication when accessing the remote OVF/OVA file.
+  Must be used together with `password`.
+
+- `password` (string) - The password for basic authentication when accessing the remote OVF/OVA file.
+  Must be used together with `username`.
+
+- `skip_tls_verify` (bool) - Do not validate the certificate when accessing HTTPS URLs.
+  Defaults to `false`.
+  
+  -> **Note:** This option is beneficial in scenarios where the certificate
+  is self-signed or does not meet standard validation criteria.
+  
+  HCL Example:
+  
+  ```hcl
+    remote_source = {
+      url              = "https://packages.example.com/artifacts/example.ovf"
+      username         = "remote_source_username"
+      password         = "remote_source_password"
+      skip_tls_verify  = false
+    }
+  ```
+  
+  JSON Example:
+  ```json
+    "remote_source": {
+      "url": "https://packages.example.com/artifacts/example.ovf",
+      "username": "remote_source_username",
+      "password": "remote_source_password",
+      "skip_tls_verify": false
+    }
+
+<!-- End of code generated from the comments of the RemoteSourceConfig struct in builder/vsphere/clone/step_clone.go; -->
 
 
 ### Storage Configuration
@@ -258,6 +307,7 @@ JSON Example:
       hostname  = var.hostname
       user-data = base64encode(var.user_data)
     }
+    deployment_option = "small"
   }
   ```
 
@@ -268,7 +318,8 @@ JSON Example:
     "properties": {
       "hostname": "{{ user `hostname`}}",
       "user-data": "{{ env `USERDATA`}}"
-    }
+    },
+    "deployment_option": "small"
   }
   ```
 
@@ -278,6 +329,10 @@ JSON Example:
   ```console
   export USERDATA=$(gzip -c9 <userdata.yaml | { base64 -w0 2>/dev/null || base64; })
   ```
+
+- `deployment_option` (string) - The deployment configuration to use when deploying from an OVF/OVA file.
+  This corresponds to deployment configurations defined in an OVF descriptor.
+  -> **Note:** Only applicable when using remote OVF/OVA sources.
 
 
 ### Extra Configuration Parameters
