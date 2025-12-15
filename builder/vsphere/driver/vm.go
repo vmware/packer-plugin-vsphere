@@ -74,6 +74,7 @@ type VirtualMachine interface {
 	FindSATAController() (*types.VirtualAHCIController, error)
 
 	RemoveNetworkAdapters() error
+	Reference() types.ManagedObjectReference
 }
 
 type VirtualMachineDriver struct {
@@ -1557,6 +1558,11 @@ func (vm *VirtualMachineDriver) logout() {
 	if err := vm.driver.RestClient.Logout(vm.driver.Ctx); err != nil {
 		log.Printf("cannot logout: %s ", err)
 	}
+}
+
+// Reference returns the managed object reference for the virtual machine.
+func (vm *VirtualMachineDriver) Reference() types.ManagedObjectReference {
+	return vm.vm.Reference()
 }
 
 // findNetworkAdapter finds a network adapter in the virtual machine.

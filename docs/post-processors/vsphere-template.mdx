@@ -23,8 +23,8 @@ their respective End of General Support dates. For detailed information, refer t
 
 ## Examples
 
-Examples are available in the [examples](https://github.com/vmware/packer-plugin-vsphere/tree/main/examples/)
-directory of the GitHub repository.
+- Examples are available in the [examples](https://github.com/vmware/packer-plugin-vsphere/tree/main/builder/vsphere/examples/)
+  directory of the GitHub repository.
 
 ## Configuration Reference
 
@@ -45,6 +45,26 @@ The following configuration options are available for the post-processor.
   ~> **Note**: If you are getting permission denied errors when trying to mark as a template, but it
   works in the vSphere UI, set this to `false`. Default is `true`.
 
+**Optional:**
+
+Tags provide a flexible metadata system that allows you to attach key-value information to virtual machines
+and templates.
+
+This plugin supports the following configuration formats:
+
+@include 'builder/vsphere/common/TagsConfig-not-required.mdx'
+
+Tags consist of the following parts::
+
+@include 'builder/vsphere/common/TagConfig-not-required.mdx'
+
+Both formats can be used together, and all tags will be merged and applied to the virtual machine.
+
+~> **Important:** When using `tag` blocks with `category` and `name`, the tag `category` must already exist
+in vSphere and be associable with virtual machines. The plugin will create tags within existing
+categories if they do not exist and the account context used to run the build has the appropriate
+privileges.
+
 ## Example Usage
 
 An example is shown below, showing only the post-processor configuration:
@@ -63,12 +83,27 @@ build {
 
     post-processors {
       post-processor "vsphere-template"{
-          host                = "vc01.example.com"
-          insecure            = false
-          username            = "administrator@vsphere.local"
-          password            = "VMw@re1!"
-          datacenter          = "dc-01"
-          folder              = "/templates/os/distro"
+        host                = "vc01.example.com"
+        insecure            = false
+        username            = "administrator@vsphere.local"
+        password            = "VMw@re1!"
+        datacenter          = "dc-01"
+        folder              = "/templates/os/distro"
+        tags                = [
+          "urn:vmomi:InventoryServiceTag:abcdefgh-1234-5678-90ab-cdef12345678:GLOBAL",
+          "urn:vmomi:InventoryServiceTag:bcdefghj-2345-6789-01bc-def123456789:GLOBAL"
+        ]
+        tag {
+          id = "urn:vmomi:InventoryServiceTag:cdef1234-5678-90ab-cdef-1234567890ab:GLOBAL"
+        }
+        tag {
+          category = "build-date"
+          name     = "{{ timestamp }}"
+        }
+        tag {
+          category = "packer-version"
+          name     = "{{ packer_version }}"
+        }
       }
     }
 }
@@ -93,7 +128,24 @@ JSON Example:
         "username": "administrator@vsphere.local",
         "password": "VMw@re1!",
         "datacenter": "dc-01",
-        "folder": "/templates/os/distro"
+        "folder": "/templates/os/distro",
+        "tags": [
+            "urn:vmomi:InventoryServiceTag:abcdefgh-1234-5678-90ab-cdef12345678:GLOBAL",
+            "urn:vmomi:InventoryServiceTag:bcdefghj-2345-6789-01bc-def123456789:GLOBAL"
+        ],
+        "tag": [
+          {
+            "id": "urn:vmomi:InventoryServiceTag:cdef1234-5678-90ab-cdef-1234567890ab:GLOBAL"
+          },
+          {
+            "category": "build-date",
+            "name": "{{ timestamp }}"
+          },
+          {
+            "category": "packer-version",
+            "name": "{{ packer_version }}"
+          }
+        ]
       }
     ]
   ]
@@ -203,6 +255,21 @@ The role must be authorized on the:
 - The destination folder.
 - The destination datastore.
 - The network to be assigned.
+
+### Additional Privileges for Tags
+
+If using the tags configuration, the following additional privileges are required:
+
+| Category        | Privilege                                           | Reference                                          |
+| --------------- | --------------------------------------------------- | -------------------------------------------------- |
+| Tagging         | Assign or unassign tag                              | `com.vmware.cis.tagging.TagAssociation.Attach`.    |
+| ...             | Create tag                                          | `com.vmware.cis.tagging.Tag.Create`                |
+| ...             | Read tag                                            | `com.vmware.cis.tagging.Tag.Read`                  |
+| ...             | Read tag category                                   | `com.vmware.cis.tagging.Category.Read`             |
+
+~> **Note:** Tag privileges are part of the vSphere REST API and are managed separately from
+traditional vSphere privileges. These privileges must be assigned at the **Global** level to work
+correctly with the tagging service.
 
 # Troubleshooting
 

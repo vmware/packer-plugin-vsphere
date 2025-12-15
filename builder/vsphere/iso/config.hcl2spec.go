@@ -149,6 +149,8 @@ type FlatConfig struct {
 	Command                         *string                                     `mapstructure:"shutdown_command" cty:"shutdown_command" hcl:"shutdown_command"`
 	Timeout                         *string                                     `mapstructure:"shutdown_timeout" cty:"shutdown_timeout" hcl:"shutdown_timeout"`
 	DisableShutdown                 *bool                                       `mapstructure:"disable_shutdown" cty:"disable_shutdown" hcl:"disable_shutdown"`
+	Tags                            []string                                    `mapstructure:"tags" cty:"tags" hcl:"tags"`
+	Tag                             []common.FlatTagConfig                      `mapstructure:"tag" cty:"tag" hcl:"tag"`
 	CreateSnapshot                  *bool                                       `mapstructure:"create_snapshot" cty:"create_snapshot" hcl:"create_snapshot"`
 	SnapshotName                    *string                                     `mapstructure:"snapshot_name" cty:"snapshot_name" hcl:"snapshot_name"`
 	ConvertToTemplate               *bool                                       `mapstructure:"convert_to_template" cty:"convert_to_template" hcl:"convert_to_template"`
@@ -311,6 +313,8 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"shutdown_command":               &hcldec.AttrSpec{Name: "shutdown_command", Type: cty.String, Required: false},
 		"shutdown_timeout":               &hcldec.AttrSpec{Name: "shutdown_timeout", Type: cty.String, Required: false},
 		"disable_shutdown":               &hcldec.AttrSpec{Name: "disable_shutdown", Type: cty.Bool, Required: false},
+		"tags":                           &hcldec.AttrSpec{Name: "tags", Type: cty.List(cty.String), Required: false},
+		"tag":                            &hcldec.BlockListSpec{TypeName: "tag", Nested: hcldec.ObjectSpec((*common.FlatTagConfig)(nil).HCL2Spec())},
 		"create_snapshot":                &hcldec.AttrSpec{Name: "create_snapshot", Type: cty.Bool, Required: false},
 		"snapshot_name":                  &hcldec.AttrSpec{Name: "snapshot_name", Type: cty.String, Required: false},
 		"convert_to_template":            &hcldec.AttrSpec{Name: "convert_to_template", Type: cty.Bool, Required: false},

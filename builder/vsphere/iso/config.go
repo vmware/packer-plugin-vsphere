@@ -40,6 +40,7 @@ type Config struct {
 	Comm                              communicator.Config `mapstructure:",squash"`
 
 	common.ShutdownConfig `mapstructure:",squash"`
+	common.TagsConfig     `mapstructure:",squash"`
 
 	// Create a snapshot of the virtual machine to use as a base for linked clones.
 	// Defaults to `false`.

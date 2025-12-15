@@ -4,32 +4,35 @@ package vsphere_template
 
 import (
 	"github.com/hashicorp/hcl/v2/hcldec"
+	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // FlatConfig is an auto-generated flat version of Config.
 // Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
 type FlatConfig struct {
-	PackerBuildName     *string           `mapstructure:"packer_build_name" cty:"packer_build_name" hcl:"packer_build_name"`
-	PackerBuilderType   *string           `mapstructure:"packer_builder_type" cty:"packer_builder_type" hcl:"packer_builder_type"`
-	PackerCoreVersion   *string           `mapstructure:"packer_core_version" cty:"packer_core_version" hcl:"packer_core_version"`
-	PackerDebug         *bool             `mapstructure:"packer_debug" cty:"packer_debug" hcl:"packer_debug"`
-	PackerForce         *bool             `mapstructure:"packer_force" cty:"packer_force" hcl:"packer_force"`
-	PackerOnError       *string           `mapstructure:"packer_on_error" cty:"packer_on_error" hcl:"packer_on_error"`
-	PackerUserVars      map[string]string `mapstructure:"packer_user_variables" cty:"packer_user_variables" hcl:"packer_user_variables"`
-	PackerSensitiveVars []string          `mapstructure:"packer_sensitive_variables" cty:"packer_sensitive_variables" hcl:"packer_sensitive_variables"`
-	Host                *string           `mapstructure:"host" required:"true" cty:"host" hcl:"host"`
-	Username            *string           `mapstructure:"username" required:"true" cty:"username" hcl:"username"`
-	Password            *string           `mapstructure:"password" required:"true" cty:"password" hcl:"password"`
-	Insecure            *bool             `mapstructure:"insecure" cty:"insecure" hcl:"insecure"`
-	Datacenter          *string           `mapstructure:"datacenter" cty:"datacenter" hcl:"datacenter"`
-	TemplateName        *string           `mapstructure:"template_name" cty:"template_name" hcl:"template_name"`
-	Folder              *string           `mapstructure:"folder" cty:"folder" hcl:"folder"`
-	SnapshotEnable      *bool             `mapstructure:"snapshot_enable" cty:"snapshot_enable" hcl:"snapshot_enable"`
-	SnapshotName        *string           `mapstructure:"snapshot_name" cty:"snapshot_name" hcl:"snapshot_name"`
-	SnapshotDescription *string           `mapstructure:"snapshot_description" cty:"snapshot_description" hcl:"snapshot_description"`
-	ReregisterVM        *bool             `mapstructure:"reregister_vm" cty:"reregister_vm" hcl:"reregister_vm"`
-	Override            *bool             `mapstructure:"override" cty:"override" hcl:"override"`
+	PackerBuildName     *string                `mapstructure:"packer_build_name" cty:"packer_build_name" hcl:"packer_build_name"`
+	PackerBuilderType   *string                `mapstructure:"packer_builder_type" cty:"packer_builder_type" hcl:"packer_builder_type"`
+	PackerCoreVersion   *string                `mapstructure:"packer_core_version" cty:"packer_core_version" hcl:"packer_core_version"`
+	PackerDebug         *bool                  `mapstructure:"packer_debug" cty:"packer_debug" hcl:"packer_debug"`
+	PackerForce         *bool                  `mapstructure:"packer_force" cty:"packer_force" hcl:"packer_force"`
+	PackerOnError       *string                `mapstructure:"packer_on_error" cty:"packer_on_error" hcl:"packer_on_error"`
+	PackerUserVars      map[string]string      `mapstructure:"packer_user_variables" cty:"packer_user_variables" hcl:"packer_user_variables"`
+	PackerSensitiveVars []string               `mapstructure:"packer_sensitive_variables" cty:"packer_sensitive_variables" hcl:"packer_sensitive_variables"`
+	Host                *string                `mapstructure:"host" required:"true" cty:"host" hcl:"host"`
+	Username            *string                `mapstructure:"username" required:"true" cty:"username" hcl:"username"`
+	Password            *string                `mapstructure:"password" required:"true" cty:"password" hcl:"password"`
+	Insecure            *bool                  `mapstructure:"insecure" cty:"insecure" hcl:"insecure"`
+	Datacenter          *string                `mapstructure:"datacenter" cty:"datacenter" hcl:"datacenter"`
+	TemplateName        *string                `mapstructure:"template_name" cty:"template_name" hcl:"template_name"`
+	Folder              *string                `mapstructure:"folder" cty:"folder" hcl:"folder"`
+	SnapshotEnable      *bool                  `mapstructure:"snapshot_enable" cty:"snapshot_enable" hcl:"snapshot_enable"`
+	SnapshotName        *string                `mapstructure:"snapshot_name" cty:"snapshot_name" hcl:"snapshot_name"`
+	SnapshotDescription *string                `mapstructure:"snapshot_description" cty:"snapshot_description" hcl:"snapshot_description"`
+	ReregisterVM        *bool                  `mapstructure:"reregister_vm" cty:"reregister_vm" hcl:"reregister_vm"`
+	Override            *bool                  `mapstructure:"override" cty:"override" hcl:"override"`
+	Tags                []string               `mapstructure:"tags" cty:"tags" hcl:"tags"`
+	Tag                 []common.FlatTagConfig `mapstructure:"tag" cty:"tag" hcl:"tag"`
 }
 
 // FlatMapstructure returns a new FlatConfig.
@@ -64,6 +67,8 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"snapshot_description":       &hcldec.AttrSpec{Name: "snapshot_description", Type: cty.String, Required: false},
 		"reregister_vm":              &hcldec.AttrSpec{Name: "reregister_vm", Type: cty.Bool, Required: false},
 		"override":                   &hcldec.AttrSpec{Name: "override", Type: cty.Bool, Required: false},
+		"tags":                       &hcldec.AttrSpec{Name: "tags", Type: cty.List(cty.String), Required: false},
+		"tag":                        &hcldec.BlockListSpec{TypeName: "tag", Nested: hcldec.ObjectSpec((*common.FlatTagConfig)(nil).HCL2Spec())},
 	}
 	return s
 }

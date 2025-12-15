@@ -48,6 +48,7 @@ type Driver interface {
 	FindContentLibraryItem(libraryId string, name string) (*library.Item, error)
 	FindContentLibraryFileDatastorePath(isoPath string) (string, error)
 	UpdateContentLibraryItem(item *library.Item, name string, description string) error
+	GetRestClient() *rest.Client
 	Cleanup() (error, error)
 }
 
@@ -110,6 +111,15 @@ func NewDriver(config *ConnectConfig) (Driver, error) {
 		return nil, err
 	}
 
+	restClient := &RestClient{
+		client:      rest.NewClient(vimClient),
+		credentials: credentials,
+	}
+
+	if err := restClient.Login(ctx); err != nil {
+		return nil, fmt.Errorf("failed to login to REST API: %w", err)
+	}
+
 	finder := find.NewFinder(client.Client, false)
 	datacenter, err := finder.DatacenterOrDefault(ctx, config.Datacenter)
 	if err != nil {
@@ -118,17 +128,18 @@ func NewDriver(config *ConnectConfig) (Driver, error) {
 	finder.SetDatacenter(datacenter)
 
 	d := &VCenterDriver{
-		Ctx:       ctx,
-		Client:    client,
-		VimClient: vimClient,
-		RestClient: &RestClient{
-			client:      rest.NewClient(vimClient),
-			credentials: credentials,
-		},
+		Ctx:        ctx,
+		Client:     client,
+		VimClient:  vimClient,
+		RestClient: restClient,
 		Datacenter: datacenter,
 		Finder:     finder,
 	}
 	return d, nil
+}
+
+func (d *VCenterDriver) GetRestClient() *rest.Client {
+	return d.RestClient.client
 }
 
 func (d *VCenterDriver) Cleanup() (error, error) {

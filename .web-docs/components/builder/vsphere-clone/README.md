@@ -11,8 +11,8 @@ their respective End of General Support dates. For detailed information, refer t
 
 ## Examples
 
-Examples are available in the [examples](https://github.com/vmware/packer-plugin-vsphere/tree/main/builder/vsphere/examples/)
-directory of the GitHub repository.
+- Examples are available in the [examples](https://github.com/vmware/packer-plugin-vsphere/tree/main/builder/vsphere/examples/)
+  directory of the GitHub repository.
 
 ## Configuration Reference
 
@@ -534,37 +534,39 @@ additional details.
 HCL Example:
 
 ```hcl
-    customize {
-      linux_options {
-        host_name = "foo"
-        domain = "example.com"
-      }
-
-      network_interface {
-        ipv4_address = "10.0.0.10"
-        ipv4_netmask = "24"
-      }
-
-      ipv4_gateway = 10.0.0.1
-      dns_server_list = ["10.0.0.18"]
+source "vsphere-clone" "example" {
+  # ... other configuration ...
+  customize {
+    linux_options {
+      host_name = "foo"
+      domain = "example.com"
     }
+    network_interface {
+      ipv4_address = "10.0.0.10"
+      ipv4_netmask = "24"
+    }
+    ipv4_gateway = 10.0.0.1
+    dns_server_list = ["10.0.0.18"]
+  }
+  # ... other configuration ...
+}
 ```
 
 JSON Example:
 
 ```json
-    "customize": {
-      "linux_options": {
-        "host_name": "foo",
-        "domain": "example.com"
-      },
-      "network_interface": {
-        "ipv4_address": "10.0.0.10",
-        "ipv4_netmask": "24"
-      },
-      "ipv4_gateway": "10.0.0.1",
-      "dns_server_list": ["10.0.0.18"]
-    }
+  "customize": {
+    "linux_options": {
+      "host_name": "foo",
+      "domain": "example.com"
+    },
+    "network_interface": {
+      "ipv4_address": "10.0.0.10",
+      "ipv4_netmask": "24"
+    },
+    "ipv4_gateway": "10.0.0.1",
+    "dns_server_list": ["10.0.0.18"]
+  }
 ```
 
 #### Windows Customization Settings
@@ -609,39 +611,42 @@ JSON Example:
 HCL Example:
 
 ```hcl
-    customize {
-      windows_options {
-        computer_name = "foo"
-        workgroup = "example"
-        product_key = "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
-        admin_password = "password"
-      }
-      network_interface {
-        ipv4_address = "10.0.0.10"
-        ipv4_netmask = "24"
-      }
-      ipv4_gateway = 10.0.0.1
-      dns_server_list = ["10.0.0.18"]
+source "vsphere-clone" "example" {
+  # ... other configuration ...
+  customize {
+    windows_options {
+      computer_name = "foo"
+      workgroup = "example"
+      product_key = "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
+      admin_password = "password"
     }
+    network_interface {
+      ipv4_address = "10.0.0.10"
+      ipv4_netmask = "24"
+    }
+    ipv4_gateway = 10.0.0.1
+    dns_server_list = ["10.0.0.18"]
+  }
+  # ... other configuration ...
 ```
 
 JSON Example:
 
 ```json
-    "customize": {
-      "windows_options": {
-        "host_name": "foo",
-        "workgroup": "example",
-        "product_key": "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX",
-        "admin_password": "password"
-      },
-      "network_interface": {
-        "ipv4_address": "10.0.0.10",
-        "ipv4_netmask": "24"
-      },
-      "ipv4_gateway": "10.0.0.1",
-      "dns_server_list": ["10.0.0.18"]
-    }
+  "customize": {
+    "windows_options": {
+      "host_name": "foo",
+      "workgroup": "example",
+      "product_key": "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX",
+      "admin_password": "password"
+    },
+    "network_interface": {
+      "ipv4_address": "10.0.0.10",
+      "ipv4_netmask": "24"
+    },
+    "ipv4_gateway": "10.0.0.1",
+    "dns_server_list": ["10.0.0.18"]
+  }
 ```
 
 ### Boot Configuration
@@ -1731,17 +1736,105 @@ The template is stored in an existing or newly created library item.
 HCL Example:
 
 ```hcl
-	content_library_destination {
-		library = "Example Content Library"
-	}
+source "vsphere-clone" "example" {
+  # ... other configuration ...
+  content_library_destination {
+    library = "Example Content Library"
+  }
+  # ... other configuration ...
+}
 ```
 
 JSON Example:
 
 ```json
-	"content_library_destination" : {
-	    "library": "Example Content Library"
-	}
+  "content_library_destination" : {
+    "library": "Example Content Library"
+    }
+```
+
+### Tags Configuration
+
+**Optional**:
+
+Tags provide a flexible metadata system that allows you to attach key-value information to virtual machines
+and templates.
+
+This plugin supports the following configuration formats:
+
+<!-- Code generated from the comments of the TagsConfig struct in builder/vsphere/common/tags_config.go; DO NOT EDIT MANUALLY -->
+
+- `tags` ([]string) - List of tag IDs to attach.
+
+- `tag` ([]TagConfig) - List of tag configuration blocks.
+
+<!-- End of code generated from the comments of the TagsConfig struct in builder/vsphere/common/tags_config.go; -->
+
+
+Tags consist of the following parts::
+
+<!-- Code generated from the comments of the TagConfig struct in builder/vsphere/common/tags_config.go; DO NOT EDIT MANUALLY -->
+
+- `category` (string) - The tag category name. Mutually exclusive with `id`.
+
+- `name` (string) - The tag name within the category. Mutually exclusive with `id`.
+
+- `id` (string) - The tag ID (URN). Mutually exclusive with `category` and `name`.
+
+<!-- End of code generated from the comments of the TagConfig struct in builder/vsphere/common/tags_config.go; -->
+
+
+Both formats can be used together, and all tags will be merged and applied to the virtual machine.
+
+~> **Important:** When using `tag` blocks with `category` and `name`, the tag `category` must already exist
+in vSphere and be associable with virtual machines. The plugin will create tags within existing
+categories if they do not exist and the account context used to run the build has the appropriate
+privileges.
+
+HCL Example:
+
+```hcl
+source "vsphere-clone" "example" {
+  # ... other configuration ...
+  tags = [
+    "urn:vmomi:InventoryServiceTag:abcdefgh-1234-5678-90ab-cdef12345678:GLOBAL",
+    "urn:vmomi:InventoryServiceTag:bcdefghj-2345-6789-01bc-def123456789:GLOBAL"
+  ]
+  tag {
+    id = "urn:vmomi:InventoryServiceTag:cdef1234-5678-90ab-cdef-1234567890ab:GLOBAL"
+  }
+  tag {
+    category = "os-distribution"
+    name     = "ubuntu"
+  }
+  tag {
+    category = "os-version"
+    name     = "26.04"
+  }
+  # ... other configuration ...
+}
+```
+
+JSON Example:
+
+```json
+  "tags": [
+    "urn:vmomi:InventoryServiceTag:abcdefgh-1234-5678-90ab-cdef12345678:GLOBAL",
+    "urn:vmomi:InventoryServiceTag:bcdefghj-2345-6789-01bc-def123456789:GLOBAL"
+  ],
+  "tag": [
+    {
+      "id": "urn:vmomi:InventoryServiceTag:cdef1234-5678-90ab-cdef-1234567890ab:GLOBAL"
+    },
+    {
+      "category": "build-date",
+      "name": "{{ timestamp }}"
+    },
+    {
+      "category": "packer-version",
+      "name": "{{ packer_version }}"
+    }
+  ]
 ```
 
 ## Working with Clusters and Hosts
@@ -1753,8 +1846,12 @@ Only use the `host` option. Optionally, specify a `resource_pool`:
 HCL Example:
 
 ```hcl
+source "vsphere-clone" "example" {
+  # ... other configuration ...
   host = "esx01.example.com"
   resource_pool = "example_resource_pool"
+  # ... other configuration ...
+}
 ```
 
 JSON Example:
@@ -1771,8 +1868,12 @@ Only use the `cluster` option. Optionally, specify a `resource_pool`:
 HCL Example:
 
 ```hcl
+source "vsphere-clone" "example" {
+  # ... other configuration ...
   cluster = "cluster-01"
   resource_pool = "example_resource_pool"
+  # ... other configuration ...
+}
 ```
 
 JSON Example:
@@ -1789,8 +1890,12 @@ Use the `cluster` and `host` parameters:
 HCL Example:
 
 ```hcl
+source "vsphere-clone" "example" {
+  # ... other configuration ...
   cluster = "cluster-01"
   host = "esx01.example.com"
+  # ... other configuration ...
+}
 ```
 
 JSON Example:

@@ -30,6 +30,7 @@ type Config struct {
 	CreateSourceConfig        `mapstructure:",squash"`
 	WatchSourceConfig         `mapstructure:",squash"`
 	PublishSourceConfig       `mapstructure:",squash"`
+	common.TagsConfig         `mapstructure:",squash"`
 
 	ctx interpolate.Context
 }

@@ -23,11 +23,11 @@ their respective End of General Support dates. For detailed information, refer t
 
 ## Examples
 
-- Basic examples are available in the [examples](https://github.com/vmware/packer-plugin-vsphere/tree/main/examples/)
+- Examples are available in the [examples](https://github.com/vmware/packer-plugin-vsphere/tree/main/builder/vsphere/examples/)
   directory of the GitHub repository.
 
-- Additional examples are available in the [`vmware/packer-examples-for-vsphere`](https://github.com/vmware/packer-examples-for-vsphere)
-  GitHub repository maintained by VMware by Broadcom.
+- Advanced examples are available in the [`vmware/packer-examples-for-vsphere`](https://github.com/vmware/packer-examples-for-vsphere)
+  GitHub repository.
 
 ## Configuration Reference
 
@@ -104,6 +104,8 @@ be defined by the `iso_url` and the VMware Tools ISO added from ESX host.
 HCL Example:
 
 ```hcl
+source "vsphere-iso" "example" {
+  # ... other configuration ...
   iso_urls = [
     "windows-server.iso",
     "https://example.com/isos/windows-server.iso"
@@ -112,6 +114,8 @@ HCL Example:
   iso_paths = [
     "[] /usr/lib/vmware/isoimages/windows.iso"
   ]
+  # ... other configuration ...
+}
 ```
 
 JSON Example:
@@ -190,8 +194,9 @@ HCL Example:
 
 ```hcl
 source "vsphere-iso" "example" {
-    boot_keygroup_interval = "500ms"
-    # ...
+  # ... other configuration ...
+  boot_keygroup_interval = "500ms"
+  # ... other configuration ...
 }
 ```
 
@@ -271,17 +276,21 @@ JSON Example:
 HCL Example:
 
 ```hcl
-	content_library_destination {
-			library = "Example Content Library"
-	}
+source "vsphere-iso" "example" {
+  # ... other configuration ...
+  content_library_destination {
+    library = "Example Content Library"
+  }
+  # ... other configuration ...
+}
 ```
 
 JSON Example:
 
 ```json
-	"content_library_destination" : {
-	    "library": "Example Content Library"
-	}
+  "content_library_destination" : {
+    "library": "Example Content Library"
+    }
 ```
 
 **OVF Template**
@@ -289,19 +298,23 @@ JSON Example:
 HCL Example:
 
 ```hcl
-	content_library_destination {
-			library = "Example Content Library"
-			ovf = true
-	}
+source "vsphere-iso" "example" {
+  # ... other configuration ...
+  content_library_destination {
+    library = "Example Content Library"
+    ovf = true
+  }
+  # ... other configuration ...
+}
 ```
 
 JSON Example:
 
 ```json
-	"content_library_destination" : {
-	    "library": "Example Content Library",
-	    "ovf": true
-	}
+  "content_library_destination" : {
+    "library": "Example Content Library",
+    "ovf": true
+  }
 ```
 
 ### Extra Configuration
@@ -309,6 +322,74 @@ JSON Example:
 **Optional**:
 
 @include 'builder/vsphere/common/ConfigParamsConfig-not-required.mdx'
+
+### Tags Configuration
+
+**Optional**:
+
+Tags provide a flexible metadata system that allows you to attach key-value information to virtual machines
+and templates.
+
+This plugin supports the following configuration formats:
+
+@include 'builder/vsphere/common/TagsConfig-not-required.mdx'
+
+Tags consist of the following parts::
+
+@include 'builder/vsphere/common/TagConfig-not-required.mdx'
+
+Both formats can be used together, and all tags will be merged and applied to the virtual machine.
+
+~> **Important:** When using `tag` blocks with `category` and `name`, the tag `category` must already exist
+in vSphere and be associable with virtual machines. The plugin will create tags within existing
+categories if they do not exist and the account context used to run the build has the appropriate
+privileges.
+
+HCL Example:
+
+```hcl
+source "vsphere-iso" "example" {
+  # ... other configuration ...
+  tags = [
+    "urn:vmomi:InventoryServiceTag:abcdefgh-1234-5678-90ab-cdef12345678:GLOBAL",
+    "urn:vmomi:InventoryServiceTag:bcdefghj-2345-6789-01bc-def123456789:GLOBAL"
+  ]
+  tag {
+    id = "urn:vmomi:InventoryServiceTag:cdef1234-5678-90ab-cdef-1234567890ab:GLOBAL"
+  }
+  tag {
+    category = "os-distribution"
+    name     = "ubuntu"
+  }
+  tag {
+    category = "os-version"
+    name     = "26.04"
+  }
+  # ... other configuration ...
+}
+```
+
+JSON Example:
+
+```json
+  "tags": [
+    "urn:vmomi:InventoryServiceTag:abcdefgh-1234-5678-90ab-cdef12345678:GLOBAL",
+    "urn:vmomi:InventoryServiceTag:bcdefghj-2345-6789-01bc-def123456789:GLOBAL"
+  ],
+  "tag": [
+    {
+      "id": "urn:vmomi:InventoryServiceTag:cdef1234-5678-90ab-cdef-1234567890ab:GLOBAL"
+    },
+    {
+      "category": "build-date",
+      "name": "{{ timestamp }}"
+    },
+    {
+      "category": "packer-version",
+      "name": "{{ packer_version }}"
+    }
+  ]
+```
 
 ## Working with Clusters and Hosts
 
@@ -319,8 +400,12 @@ Only use the `host` option. Optionally, specify a `resource_pool`:
 HCL Example:
 
 ```hcl
+source "vsphere-iso" "example" {
+  # ... other configuration ...
   host = "esx01.example.com"
   resource_pool = "example_resource_pool"
+  # ... other configuration ...
+}
 ```
 
 JSON Example:
@@ -337,8 +422,12 @@ Only use the `cluster` option. Optionally, specify a `resource_pool`:
 HCL Example:
 
 ```hcl
+source "vsphere-iso" "example" {
+  # ... other configuration ...
   cluster = "cluster-01"
   resource_pool = "example_resource_pool"
+  # ... other configuration ...
+}
 ```
 
 JSON Example:
@@ -355,8 +444,12 @@ Use the `cluster` and `host`parameters:
 HCL Example:
 
 ```hcl
+source "vsphere-iso" "example" {
+  # ... other configuration ...
   cluster = "cluster-01"
   host = "esx01.example.com"
+  # ... other configuration ...
+}
 ```
 
 JSON Example:

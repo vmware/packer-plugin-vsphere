@@ -85,6 +85,14 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		})
 	}
 
+	if b.config.Comm.Type == "none" {
+		// Apply tags when there's no communicator (no provisioning/shutdown)
+		steps = append(steps, &common.StepApplyTags{
+			TagsConfig: &b.config.TagsConfig,
+			Ctx:        b.config.ctx,
+		})
+	}
+
 	if b.config.Comm.Type != "none" {
 		steps = append(steps,
 			&commonsteps.StepCreateFloppy{
@@ -147,6 +155,10 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 				SSHConfig: b.config.Comm.SSHConfigFunc(),
 			},
 			&commonsteps.StepProvision{},
+			&common.StepApplyTags{
+				TagsConfig: &b.config.TagsConfig,
+				Ctx:        b.config.ctx,
+			},
 			&common.StepShutdown{
 				Config: &b.config.ShutdownConfig,
 			},

@@ -12,8 +12,8 @@ their respective End of General Support dates. For detailed information, refer t
 
 ## Examples
 
-Examples are available in the [examples](https://github.com/vmware/packer-plugin-vsphere/tree/main/examples/)
-directory of the GitHub repository.
+- Examples are available in the [examples](https://github.com/vmware/packer-plugin-vsphere/tree/main/builder/vsphere/examples/)
+  directory of the GitHub repository.
 
 ## Configuration Reference
 
@@ -23,9 +23,9 @@ The following configuration options are available for the post-processor.
 
 <!-- Code generated from the comments of the Config struct in post-processor/vsphere/post-processor.go; DO NOT EDIT MANUALLY -->
 
-- `cluster` (string) - The cluster or ESX host to upload the virtual machine. This can be either the
-  name of the vSphere cluster or the fully qualified domain name (FQDN) or IP
-  address of the ESX host.
+- `cluster` (string) - The cluster or ESX host to upload the virtual machine.
+  This can be either the name of the vSphere cluster or the fully qualified domain name (FQDN)
+  or IP address of the ESX host.
 
 - `datacenter` (string) - The name of the vSphere datacenter object to place the virtual machine.
   This is _not required_ if `resource_pool` is specified.
@@ -60,8 +60,7 @@ The following configuration options are available for the post-processor.
 - `options` ([]string) - Options to send to `ovftool` when uploading the virtual machine.
   Use `ovftool --help` to list all the options available.
 
-- `overwrite` (bool) - Overwrite existing files.
-  If `true`, forces overwrites of existing files. Defaults to `false`.
+- `overwrite` (bool) - Overwrite existing files. Defaults to `false`.
 
 - `resource_pool` (string) - The name of the resource pool to place the virtual machine.
 
@@ -74,15 +73,14 @@ The following configuration options are available for the post-processor.
 
 - `hardware_version` (string) - The maximum virtual hardware version for the deployed virtual machine.
   
-  It does not upgrade the virtual hardware version of the source VM. Instead, it
-  limits the virtual hardware version of the deployed virtual machine to the
-  specified version. If the source virtual machine's hardware version is higher
-  than the specified version, the deployed virtual machine's hardware version will
-  be downgraded to the specified version.
+  It does not upgrade the virtual hardware version of the source VM. Instead, it limits the
+  virtual hardware version of the deployed virtual machine  to the specified version.
+  If the source virtual machine's hardware version is higher than the specified version, the
+  deployed virtual machine's hardware version will be downgraded to the specified version.
   
-  If the source virtual machine's hardware version is lower than or equal to the
-  specified version, the deployed virtual machine's hardware version will be the
-  same as the source virtual machine's.
+  If the source virtual machine's hardware version is lower than or equal to the specified
+  version, the deployed virtual machine's hardware version will be the same as the source
+  virtual machine's.
   
   This option is useful when deploying to vCenter instance or an ESX host whose
   version is different from the one used to create the artifact.
@@ -98,6 +96,42 @@ The following configuration options are available for the post-processor.
 
 - `keep_input_artifact` (boolean) - Preserve the local virtual machines files, even after importing
   them to the vSphere endpoint. Defaults to `false`.
+
+**Optional:**
+
+Tags provide a flexible metadata system that allows you to attach key-value information to virtual machines
+and templates.
+
+This plugin supports the following configuration formats:
+
+<!-- Code generated from the comments of the TagsConfig struct in builder/vsphere/common/tags_config.go; DO NOT EDIT MANUALLY -->
+
+- `tags` ([]string) - List of tag IDs to attach.
+
+- `tag` ([]TagConfig) - List of tag configuration blocks.
+
+<!-- End of code generated from the comments of the TagsConfig struct in builder/vsphere/common/tags_config.go; -->
+
+
+Tags consist of the following parts::
+
+<!-- Code generated from the comments of the TagConfig struct in builder/vsphere/common/tags_config.go; DO NOT EDIT MANUALLY -->
+
+- `category` (string) - The tag category name. Mutually exclusive with `id`.
+
+- `name` (string) - The tag name within the category. Mutually exclusive with `id`.
+
+- `id` (string) - The tag ID (URN). Mutually exclusive with `category` and `name`.
+
+<!-- End of code generated from the comments of the TagConfig struct in builder/vsphere/common/tags_config.go; -->
+
+
+Both formats can be used together, and all tags will be merged and applied to the virtual machine.
+
+~> **Important:** When using `tag` blocks with `category` and `name`, the tag `category` must already exist
+in vSphere and be associable with virtual machines. The plugin will create tags within existing
+categories if they do not exist and the account context used to run the build has the appropriate
+privileges.
 
 ## Example Usage
 
@@ -121,15 +155,27 @@ build {
 
     post-processors {
       post-processor "vsphere"{
-          vm_name             = "foo"
-          host                = "vc01.example.com"
-          username            = "administrator@vsphere.local"
-          password            = "VMw@re1!"
-          datacenter          = "dc-01"
-          cluster             = "cluster-01"
-          datastore           = "datastore-01"
-          vm_network          = "VM Network"
-          keep_input_artifact = true
+        vm_name             = "foo"
+        host                = "vc01.example.com"
+        username            = "administrator@vsphere.local"
+        password            = "VMw@re1!"
+        datacenter          = "dc-01"
+        cluster             = "cluster-01"
+        datastore           = "datastore-01"
+        vm_network          = "VM Network"
+        keep_input_artifact = true
+        tags                = [
+          "urn:vmomi:InventoryServiceTag:abcdefgh-1234-5678-90ab-cdef12345678:GLOBAL",
+          "urn:vmomi:InventoryServiceTag:bcdefghj-2345-6789-01bc-def123456789:GLOBAL"
+        ]
+        tag {
+          category = "build-date"
+          name     = "{{ timestamp }}"
+        }
+        tag {
+          category = "packer-version"
+          name     = "{{ packer_version }}"
+        }
       }
     }
 }
@@ -157,7 +203,21 @@ JSON Example:
         "cluster": "cluster-01",
         "datastore": "datastore-01",
         "vm_network": "VM Network",
-        "keep_input_artifact": true
+        "keep_input_artifact": true,
+        "tags": [
+            "urn:vmomi:InventoryServiceTag:abcdefgh-1234-5678-90ab-cdef12345678:GLOBAL",
+            "urn:vmomi:InventoryServiceTag:bcdefghj-2345-6789-01bc-def123456789:GLOBAL"
+        ],
+        "tag": [
+          {
+            "category": "build-date",
+            "name": "{{ timestamp }}"
+          },
+          {
+            "category": "packer-version",
+            "name": "{{ packer_version }}"
+          }
+        ]
       }
     ]
   ]
@@ -195,3 +255,18 @@ The role must be authorized on the:
 - The destination folder.
 - The destination datastore.
 - The network to be assigned.
+
+### Additional Privileges for Tags
+
+If using the tags configuration, the following additional privileges are required:
+
+| Category        | Privilege                                           | Reference                                          |
+| --------------- | --------------------------------------------------- | -------------------------------------------------- |
+| Tagging         | Assign or unassign tag                              | `com.vmware.cis.tagging.TagAssociation.Attach`.    |
+| ...             | Create tag                                          | `com.vmware.cis.tagging.Tag.Create`                |
+| ...             | Read tag                                            | `com.vmware.cis.tagging.Tag.Read`                  |
+| ...             | Read tag category                                   | `com.vmware.cis.tagging.Category.Read`             |
+
+~> **Note:** Tag privileges are part of the vSphere REST API and are managed separately from
+traditional vSphere privileges. These privileges must be assigned at the **Global** level to work
+correctly with the tagging service.
