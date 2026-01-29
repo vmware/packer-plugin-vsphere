@@ -1,15 +1,7 @@
 <!-- markdownlint-disable first-line-h1 no-inline-html -->
 
-The vSphere plugin is able to create vSphere virtual machines for use with VMware products.
-
-To achieve this, the plugin comes with three builders, and two post-processors to build the virtual
-machine depending on the strategy you want to use.
-
-The Packer Plugin for VMware vSphere is a multi-component plugin can be used with HashiCorp Packer
-to create virtual machine images for VMware vSphere.
-
-The plugin includes three builders which are able to create images, depending on your desired
-strategy:
+The Packer Plugin for VMware vSphere is a plugin for creating virtual machine images for use with
+VMware vSphere®.
 
 ### Installation
 
@@ -35,10 +27,13 @@ packer plugins install github.com/vmware/vsphere
 
 ### Components
 
+The plugin includes builders and post-processors for creating virtual machine images, depending on
+your desired strategy:
+
 #### Builders
 
-- [vsphere-iso](/packer/integrations/hashicorp/vsphere/latest/components/builder/vsphere-iso) - This
-  builder starts from an ISO file and uses the vSphere API to build a virtual machine image on
+- [vsphere-iso](/packer/integrations/hashicorp/vsphere/latest/components/builder/vsphere-iso) - 
+  This builder starts from an ISO file and uses the vSphere API to build a virtual machine image on
   an ESX host.
 
 - [vsphere-clone](/packer/integrations/hashicorp/vsphere/latest/components/builder/vsphere-clone) -
@@ -49,39 +44,12 @@ packer plugins install github.com/vmware/vsphere
   This builder deploys and publishes new virtual machine to a vSphere Supervisor cluster using VM
   Service.
 
-#### Data Sources
-
-- [vsphere-virtualmachine](/packer/integrations/hashicorp/vsphere/latest/components/data-source/vsphere-virtualmachine) -
-  This data source returns the name of a virtual machine that matches all defined filters.
-
 #### Post-Processors
 
 - [vsphere](/packer/integrations/hashicorp/vsphere/latest/components/post-processor/vsphere) -
   This post-processor uploads an artifact to a vSphere endpoint. The artifact must be a VMX, OVA,
   or OVF file.
 
-- [vsphere-template](/packer/integrations/hashicorp/vsphere/latest/components/post-processor/vsphere-template) - This post-processor uses an artifact from the `vmware-iso` builder with an ESX host or an
-    artifact from the [vSphere](/packer/plugins/post-processors/vsphere/vsphere) post-processor. It
-    then marks the virtual machine as a template and moves it to your specified path.
-
-### Differences from the Packer Plugin for VMware
-
-While both this plugin and the [`packer-plugin-vmware`](packer/integrations/hashicorp/vmware) are
-designed to create virtual machine images, there are some key differences:
-
-- **Platforms**: This plugin is specifically developed to utilize the VMware vSphere API,
-  facilitating the creation of virtual machine images by integrating with VMware vCenter and
-  the VMware vSphere Hypervisor. On the other hand, `packer-plugin-vmware` supports a variety of
-  platforms including VMware vSphere Hypervisor and desktop virtualization products such as VMware
-  Fusion, VMware Workstation, and VMware Player, though it does not utilize the vSphere API for its
-  operations.
-
-- **Focus**: This plugin is purpose-built with a focus on VMware vSphere, offering capabilities such
-  as creating virtual machine images, cloning and modifying base virtual machine images, and
-  exporting artifacts in specified locations and formats. In contrast, `packer-plugin-vmware`
-  includes builders that operate on both VMware vSphere Hypervisor and the aforementioned desktop
-  virtualization products, providing a different set of functionalities, including support for
-  Vagrant.
-
-Please refer to the documentation for each plugin to understand the specific capabilities and
-configuration options.
+- [vsphere-template](/packer/integrations/hashicorp/vsphere/latest/components/post-processor/vsphere-template) - 
+  This post-processor uses an artifact from the vSphere post-processor. It then marks the virtual
+  machine as a template and moves it to your specified path.
