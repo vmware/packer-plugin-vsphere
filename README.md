@@ -1,55 +1,37 @@
+<!--
+© Broadcom. All Rights Reserved.
+The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+SPDX-License-Identifier: MPL-2.0
+-->
+
+<!-- markdownlint-disable first-line-h1 no-inline-html -->
+
 # Packer Plugin for VMware vSphere
 
-The Packer Plugin for VMware vSphere is a multi-component plugin can be used with
-[HashiCorp Packer][packer] to create virtual machine images for [VMware vSphere][docs-vsphere]®.
+The Packer Plugin for VMware vSphere is a plugin for creating virtual machine images for use with
+[VMware vSphere][docs-vsphere]®.
 
-The plugin includes three builders and two post-processors which are able to create images,
-depending on your desired strategy:
+The plugin includes builders and post-processors for creating virtual machine images, depending on
+your desired strategy:
 
 **Builders**
 
-- `vsphere-iso` - This
-  builder starts from an ISO file and uses the vSphere API to build a virtual machine image on
-  an ESXi host.
+- `vsphere-iso` - This builder starts from an ISO file and uses the vSphere API to build a virtual
+  machine image on an ESXi host.
 
-- `vsphere-clone` -
-  This builder clones a virtual machine from an existing template using the uses the vSphere API and
-  then modifies and saves it as a new template.
+- `vsphere-clone` -  This builder clones a virtual machine from an existing template using the
+  uses the vSphere API and then modifies and saves it as a new template.
 
-- `vsphere-supervisor` -
-  This builder deploys and publishes new virtual machine to a vSphere Supervisor cluster using VM
-  Service.
+- `vsphere-supervisor` - This builder deploys and publishes new virtual machine to a vSphere
+  Supervisor cluster using VM Service.
 
 **Post-Processors**
 
 - `vsphere` - This post-processor uploads an artifact to a vSphere endpoint. The artifact must be a
   VMX, OVA, or OVF file.
 
-- `vsphere-template` - This post-processor uses an artifact from the `vmware-iso` builder with an
-  ESXi host or an artifact from the [vSphere](/packer/plugins/post-processors/vsphere/vsphere)
-  post-processor. It then marks the virtual machine as a template and moves it to your specified
-  path.
-
-## Differences from the Packer Plugin for VMware
-
-While both this plugin and the `packer-plugin-vmware` are designed to create virtual machine images,
-there are some key differences:
-
-- **Platforms**: This plugin is specifically developed to utilize the VMware vSphere API,
-  facilitating the creation of virtual machine images by integrating with VMware vCenter Server and the
-  VMware vSphere Hypervisor. On the other hand, `packer-plugin-vmware` supports a variety of
-  platforms including VMware vSphere Hypervisor and desktop virtualization products such as VMware
-  Fusion, VMware Workstation, and VMware Player, though it does not utilize the vSphere API for its
-  operations.
-
-- **Focus**: This plugin is purpose-built with a focus on VMware vSphere, offering capabilities such
-  as creating virtual machine images, cloning and modifying base virtual machine images, and
-  exporting artifacts in specified locations and formats. In contrast, `packer-plugin-vmware`
-  includes builders that operate on both VMware vSphere Hypervisor and the aforementioned desktop
-  virtualization products, providing a different set of functionalities, including support for
-  Vagrant.
-
-Please refer to the documentation for each plugin to understand the specific capabilities and configuration options.
+- `vsphere-template` - This post-processor uses an artifact from the vSphere post-processor. 
+  It then marks the virtual machine as a template and moves it to your specified path.
 
 ## Requirements
 
@@ -101,32 +83,39 @@ command `go build` from the repository root directory. Upon successful compilati
 
 To install the compiled plugin, please follow the Packer documentation on [installing a plugin][docs-packer-plugin-install].
 
-### Configuration
+### Documentation
 
-For more information on how to configure the plugin, please see the [plugin documentation][docs-vsphere-plugin].
-
-- `vsphere-iso` [builder documentation][docs-vsphere-iso]
-
-- `vsphere-clone` [builder documentation][docs-vsphere-clone]
-
-- `vsphere-supervisor` [builder documentation][docs-vsphere-supervisor]
+For more information on how to use the plugin, please refer to the [documentation][docs-vsphere-plugin].
 
 ## Contributing
 
-- If you think you've found a bug in the code or you have a question regarding the usage of this
-  software, please reach out to us by opening an issue in this GitHub repository.
+The Packer Plugin for VMware vSphere is the work of many contributors and the project team appreciates your help!
 
-- Contributions to this project are welcome: if you want to add a feature or a fix a bug, please do
-  so by opening a pull request in this GitHub repository. In case of feature contribution, we kindly
-  ask you to open an issue to discuss it beforehand.
+If you discover a bug or would like to suggest an enhancement, submit [an issue][issues].
 
+If you would like to submit a pull request, please read the [contribution guidelines][contributing] to get started. In case of enhancement or feature contribution, we kindly ask you to open an issue to discuss it beforehand.
+
+## Support
+
+The Packer Plugin for VMware vSphere is supported by the maintainers and the plugin community.
+
+## License
+
+© Broadcom. All Rights Reserved.
+The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
+The Packer Plugin for VMware vSphere is available under the [Mozilla Public License, version 2.0][license] license.
+
+[license]: LICENSE
+[contributing]: .github/CONTRIBUTING.md
+[issues]: https://github.com/vmware/packer-plugin-vsphere/issues
 [docs-packer-init]: https://developer.hashicorp.com/packer/docs/commands/init
 [docs-packer-plugin-install]: https://developer.hashicorp.com/packer/docs/plugins/install-plugins
 [docs-vsphere]: https://techdocs.broadcom.com/us/en/vmware-cis/vsphere.html
-[docs-vsphere-clone]: https://developer.hashicorp.com/packer/plugins/builders/vsphere/vsphere-clone
-[docs-vsphere-iso]: https://developer.hashicorp.com/packer/plugins/builders/vsphere/vsphere-iso
-[docs-vsphere-supervisor]: https://developer.hashicorp.com/packer/plugins/builders/vsphere/vsphere-supervisor
-[docs-vsphere-plugin]: https://developer.hashicorp.com/packer/plugins/builders/vsphere
+[docs-vsphere-clone]: https://developer.hashicorp.com/packer/integrations/vmware/vsphere/latest/components/builder/vsphere-clone
+[docs-vsphere-iso]: https://developer.hashicorp.com/packer/integrations/vmware/vsphere/latest/components/builder/vsphere-iso
+[docs-vsphere-supervisor]: https://developer.hashicorp.com/packer/integrations/vmware/vsphere/latest/components/builder/vsphere-supervisor
+[docs-vsphere-plugin]: https://developer.hashicorp.com/packer/integrations/vmware/vsphere
 [golang-install]: https://golang.org/doc/install
 [packer]: https://www.packer.io
 [releases-vsphere-plugin]: https://github.com/vmware/packer-plugin-vsphere/releases
