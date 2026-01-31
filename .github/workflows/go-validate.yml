@@ -11,92 +11,97 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
-  get-go-version:
-    runs-on: ubuntu-latest
-    outputs:
-      go-version: ${{ steps.get-go-version.outputs.go-version }}
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Get Go Version
-        id: get-go-version
-        run: |
-          echo "Found Go $(cat .go-version)"
-          echo "go-version=$(cat .go-version)" >> $GITHUB_OUTPUT
   check-mod-tidy:
-    needs:
-      - get-go-version
     runs-on: ubuntu-latest
-    name: Go Mod Tidy
+    name: Go Mod Tidy Check
     steps:
       - name: Checkout Repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: ${{ needs.get-go-version.outputs.go-version }}
-      - run: go mod tidy
+          go-version-file: go.mod
+          cache: true
+      - name: Run go mod tidy
+        run: go mod tidy
+      - name: Verify go.mod/go.sum are tidy
+        shell: bash
+        run: |
+          if ! git diff --exit-code; then
+            echo "go.mod/go.sum are not tidy."
+            echo "Run: go mod tidy"
+            exit 1
+          fi
+
   check-lint:
-    needs:
-      - get-go-version
     runs-on: ubuntu-latest
-    name: Lint Check
+    name: Go Lint Check
     steps:
       - name: Checkout Repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: ${{ needs.get-go-version.outputs.go-version }}
-      - uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+          go-version-file: go.mod
+          cache: true
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
         with:
           version: latest
           only-new-issues: true
+
   check-fmt:
-    needs:
-      - get-go-version
     runs-on: ubuntu-latest
-    name: Gofmt Check
+    name: Go Format Check
     steps:
       - name: Checkout Repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: ${{ needs.get-go-version.outputs.go-version }}
-      - run: |
-          go fmt ./...
-          echo "==> Checking that code complies with go fmt requirements..."
-          git diff --exit-code; if [ $$? -eq 1 ]; then \
-          echo "Found files that are not fmt'ed."; \
-          echo "You can use the command: \`go fmt ./...\` to reformat code."; \
-          exit 1; \
+          go-version-file: go.mod
+          cache: true
+      - name: Run gofmt
+        shell: bash
+        run: |
+          files="$(gofmt -l .)"
+          if [[ -n "$files" ]]; then
+            echo "Found files that are not gofmt'ed:"
+            echo "$files"
+            echo
+            echo "Run: gofmt -w ."
+            exit 1
           fi
+
   check-generate:
-    needs:
-      - get-go-version
     runs-on: ubuntu-latest
-    name: Generate Check
+    name: Go Generate Check
     steps:
       - name: Checkout Repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: ${{ needs.get-go-version.outputs.go-version }}
-      - run: |
+          go-version-file: go.mod
+          cache: true
+      - name: Run make generate
+        run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           make generate
           uncommitted="$(git status -s)"
           if [[ -z "$uncommitted" ]]; then
             echo "OK"
           else
-            echo "Docs have been updated, but the compiled docs have not been committed."
-            echo "Run 'make generate', and commit the result to resolve this error."
+            echo "Generated files have changed but are not committed."
+            echo "Run: make generate"
             echo "Generated but uncommitted files:"
             echo "$uncommitted"
             exit 1
