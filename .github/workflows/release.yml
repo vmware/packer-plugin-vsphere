@@ -13,21 +13,7 @@ permissions:
   packages: read
 
 jobs:
-  get-go-version:
-    runs-on: ubuntu-latest
-    outputs:
-      go-version: ${{ steps.get-go-version.outputs.go-version }}
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Get Go Version
-        id: get-go-version
-        run: |
-          echo "Found Go $(cat .go-version)"
-          echo "go-version=$(cat .go-version)" >> $GITHUB_OUTPUT
   goreleaser:
-    needs:
-      - get-go-version
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -37,7 +23,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: ${{ needs.get-go-version.outputs.go-version }}
+          go-version-file: go.mod
       - name: Describe Plugin
         id: plugin_describe
         run: echo "api_version=$(go run . describe | jq -r '.api_version')" >> "$GITHUB_OUTPUT"
