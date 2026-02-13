@@ -60,7 +60,7 @@ packer {
   required_version = ">= 1.7.0"
   required_plugins {
     vsphere = {
-      version = ">= 2.0.0"
+      version = ">= 2.1.0"
       source  = "github.com/vmware/vsphere"
     }
   }
