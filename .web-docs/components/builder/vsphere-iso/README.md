@@ -1,6 +1,6 @@
 Type: `vsphere-iso`
 
-Artifact BuilderId: `jetbrains.vsphere`
+Artifact BuilderId: `vmware.vsphere`
 
 This builder starts from a guest operating system ISO file and builds a virtual machine image on a
 vSphere cluster or an ESXi host using the vSphere API.

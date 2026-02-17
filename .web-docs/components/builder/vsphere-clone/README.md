@@ -1,6 +1,6 @@
 Type: `vsphere-clone`
 
-Artifact BuilderId: `jetbrains.vsphere`
+Artifact BuilderId: `vmware.vsphere`
 
 This builder clones an existing template, modifies the virtual machine image, and saves the result
 as a new template using the vSphere API.

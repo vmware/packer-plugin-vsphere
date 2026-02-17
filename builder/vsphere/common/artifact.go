@@ -14,7 +14,7 @@ import (
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
 
-const BuilderId = "jetbrains.vsphere"
+const BuilderId = "vmware.vsphere"
 
 type Artifact struct {
 	Outconfig            *OutputConfig
