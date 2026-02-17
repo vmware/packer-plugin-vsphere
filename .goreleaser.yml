@@ -95,8 +95,8 @@ checksum:
   algorithm: sha256
 
 signs:
-   - artifacts: checksum
-     args:
+  - artifacts: checksum
+    args:
       - "--batch"
       - "--local-user"
       - "{{ .Env.GPG_FINGERPRINT }}"
