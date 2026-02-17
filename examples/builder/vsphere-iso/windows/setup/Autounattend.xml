@@ -95,9 +95,9 @@
             <UserAccounts>
                 <LocalAccounts>
                     <LocalAccount wcm:action="add">
-                        <Name>jetbrains</Name>
+                        <Name>vmware</Name>
                         <Password>
-                            <Value>jetbrains</Value>
+                            <Value>vmware</Value>
                             <PlainText>true</PlainText>
                         </Password>
                         <Group>Administrators</Group>
@@ -107,9 +107,9 @@
 
             <AutoLogon>
                 <Enabled>true</Enabled>
-                <Username>jetbrains</Username>
+                <Username>vmware</Username>
                 <Password>
-                    <Value>jetbrains</Value>
+                    <Value>vmware</Value>
                     <PlainText>true</PlainText>
                 </Password>
                 <LogonCount>1</LogonCount>
