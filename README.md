@@ -39,7 +39,7 @@ your desired strategy:
 
     The plugin supports versions in accordance with the [Broadcom Product Lifecycle][product-lifecycle].
 
-- [Go 1.24.13][golang-install]
+- [Go 1.23.12][golang-install]
 
     Required if building the plugin.
 
