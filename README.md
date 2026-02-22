@@ -8,30 +8,34 @@ SPDX-License-Identifier: MPL-2.0
 
 # Packer Plugin for VMware vSphere
 
-The Packer Plugin for VMware vSphere is a plugin for creating virtual machine images for use with
-[VMware vSphere][docs-vsphere]®.
+The Packer Plugin for VMware vSphere is a plugin for creating virtual machine images for
+use with [VMware vSphere][docs-vsphere]®.
 
-The plugin includes builders and post-processors for creating virtual machine images, depending on
-your desired strategy:
+The plugin includes builders and post-processors for creating virtual machine images,
+depending on your desired strategy:
 
 **Builders**
 
-- `vsphere-iso` - This builder starts from an ISO file and uses the vSphere API to build a virtual
-  machine image on an ESXi host.
+- `vsphere-iso` - This builder creates a virtual machine, installs a guest operating
+  system from an ISO, provisions software within the guest operating system, and then
+  saves or exports the virtual machine as an image. Use this builder to start by
+  creating a new image.
 
-- `vsphere-clone` -  This builder clones a virtual machine from an existing template using the
-  uses the vSphere API and then modifies and saves it as a new template.
+- `vsphere-clone` - This builder imports an existing virtual machine, runs provisioners
+  on the virtual machine, and then saves exports the virtual machine as an image. Use 
+  this builder to start from an existing image as the source.
 
-- `vsphere-supervisor` - This builder deploys and publishes new virtual machine to a vSphere
-  Supervisor cluster using VM Service.
+- `vsphere-supervisor` - This builder deploys and publishes a virtual machine to a
+  vSphere Supervisor cluster using VM Service.
 
 **Post-Processors**
 
-- `vsphere` - This post-processor uploads an artifact to a vSphere endpoint. The artifact must be a
-  VMX, OVA, or OVF file.
+- `vsphere` - This post-processor uploads an artifact to a vSphere endpoint. The
+  artifact must be a `.vmx`, `.ova`, or `.ovf` file.
 
-- `vsphere-template` - This post-processor uses an artifact from the vSphere post-processor. 
-  It then marks the virtual machine as a template and moves it to your specified path.
+- `vsphere-template` - This post-processor uses an artifact from the vSphere
+  post-processor. It then marks the virtual machine as a template and moves it to your
+  specified path.
 
 ## Requirements
 
@@ -39,27 +43,22 @@ your desired strategy:
 
     The plugin supports versions in accordance with the [Broadcom Product Lifecycle][product-lifecycle].
 
-- [Go 1.23.12][golang-install]
-
-    Required if building the plugin.
+- [Go 1.23.12][golang-install] is required to build the plugin from source.
 
 ## Installation
 
-### Using Pre-built Releases
+### Using the Releases
 
 #### Automatic Installation
 
-Packer v1.7.0 and later supports the `packer init` command which enables the automatic installation
-of Packer plugins. For more information, see the [Packer documentation][docs-packer-init].
-
-To install this plugin, copy and paste this code (HCL2) into your Packer configuration and run
-`packer init`.
+Include the following in your configuration to automatically install the plugin when you
+run `packer init`.
 
 ```hcl
 packer {
   required_version = ">= 1.7.0"
   required_plugins {
-    vsphere = {
+    vmware = {
       version = ">= 2.1.1"
       source  = "github.com/vmware/vsphere"
     }
@@ -67,47 +66,58 @@ packer {
 }
 ```
 
+For more information, please refer to the Packer [documentation][docs-packer-init].
+
 #### Manual Installation
 
-You can download [pre-built binary releases][releases-vsphere-plugin] of the plugin on GitHub. Once
-you have downloaded the latest release archive for your target operating system and architecture,
-extract the release archive to retrieve the plugin binary file for your platform.
+You can install the plugin using the `packer plugins install` command.
 
-To install the downloaded plugin, please follow the Packer documentation on [installing a plugin][docs-packer-plugin-install].
+Examples:
+
+1. Install the latest version of the plugin:
+
+    ```shell
+    packer plugins install github.com/vmware/vsphere
+    ```
+
+2. Install a specific version of the plugin:
+
+    ```shell
+    packer plugins install github.com/vmware/vsphere@v2.1.1
+    ```
 
 ### Using the Source
 
-If you prefer to build the plugin from sources, clone the GitHub repository locally and run the
-command `go build` from the repository root directory. Upon successful compilation, a
-`packer-plugin-vsphere` plugin binary file can be found in the root directory.
+You can build from source by cloning the GitHub repository and running `make build` from
+the repository root. After a successful build, the `packer-plugin-vsphere` binary is
+created in the root directory.
 
-To install the compiled plugin, please follow the Packer documentation on [installing a plugin][docs-packer-plugin-install].
+To install the compiled plugin, please refer to the Packer [documentation][docs-packer-plugin-install].
 
-### Documentation
+## Documentation
 
-For more information on how to use the plugin, please refer to the [documentation][docs-vsphere-plugin].
+- Please refer to the plugin [documentation][docs-vsphere-plugin] for more information on
+the plugin usage.
 
 ## Contributing
 
-The Packer Plugin for VMware vSphere is the work of many contributors and the project team appreciates your help!
-
-If you discover a bug or would like to suggest an enhancement, submit [an issue][issues].
-
-If you would like to submit a pull request, please read the [contribution guidelines][contributing] to get started. In case of enhancement or feature contribution, we kindly ask you to open an issue to discuss it beforehand.
+Please read the [code of conduct][code-of-conduct] and [contribution guidelines][contributing]
+to get started.
 
 ## Support
 
-The Packer Plugin for VMware vSphere is supported by the maintainers and the plugin community.
+The Packer Plugin for VMware vSphere is supported by the maintainers and the
+plugin community.
 
 ## License
 
-© Broadcom. All Rights Reserved.
-The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
-
-The Packer Plugin for VMware vSphere is available under the [Mozilla Public License, version 2.0][license] license.
+© Broadcom. All Rights Reserved.</br>
+The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.</br>
+Licensed under the [Mozilla Public License, version 2.0][license].
 
 [license]: LICENSE
 [contributing]: .github/CONTRIBUTING.md
+[code-of-conduct]: .github/CODE_OF_CONDUCT.md
 [issues]: https://github.com/vmware/packer-plugin-vsphere/issues
 [docs-packer-init]: https://developer.hashicorp.com/packer/docs/commands/init
 [docs-packer-plugin-install]: https://developer.hashicorp.com/packer/docs/plugins/install-plugins
