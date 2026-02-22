@@ -6,7 +6,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*.*.*' # Match release tags (stable and pre-releases), e.g. v1.2.3, v1.2.3-rc.1
 
 permissions:
   contents: write
