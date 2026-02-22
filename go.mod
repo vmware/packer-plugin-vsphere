@@ -1,6 +1,6 @@
 module github.com/vmware/packer-plugin-vsphere
 
-go 1.23.12
+go 1.24.13
 
 require (
 	github.com/google/go-cmp v0.7.0
@@ -10,7 +10,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/vmware-tanzu/image-registry-operator-api v0.0.0-20240422225856-ad6a4cd477e0
 	github.com/vmware-tanzu/vm-operator/api v1.8.7-0.20250406160248-af0c660a6ede
-	github.com/vmware/govmomi v0.52.0
+	github.com/vmware/govmomi v0.53.0
 	github.com/zclconf/go-cty v1.13.3
 	golang.org/x/mobile v0.0.0-20210901025245-1fde1d6c3ca1
 	gopkg.in/yaml.v2 v2.4.0
@@ -124,10 +124,10 @@ require (
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sync v0.16.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.150.0 // indirect
