@@ -14,7 +14,7 @@ their respective End of General Support dates. For detailed information, refer t
 - Basic examples are available in the [examples](https://github.com/vmware/packer-plugin-vsphere/tree/main/examples/)
   directory of the GitHub repository.
 
-- Additional examples are available in the [`vmware-samples/packer-examples-for-vsphere`](https://github.com/vmware-samples/packer-examples-for-vsphere)
+- Additional examples are available in the [`vmware/packer-examples-for-vsphere`](https://github.com/vmware/packer-examples-for-vsphere)
   GitHub repository maintained by VMware by Broadcom.
 
 ## Configuration Reference
