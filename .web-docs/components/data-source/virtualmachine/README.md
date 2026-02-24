@@ -76,8 +76,7 @@ virtual machine can be used in the vSphere Clone builder to select a template.
 
 <!-- Code generated from the comments of the ConnectConfig struct in builder/vsphere/common/step_connect.go; DO NOT EDIT MANUALLY -->
 
-- `vcenter_server` (string) - The fully qualified domain name or IP address of the vCenter instance
-  instance.
+- `vcenter_server` (string) - The fully qualified domain name or IP address of the vCenter instance.
 
 - `username` (string) - The username to authenticate with the vCenter instance.
 

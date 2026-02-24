@@ -49,7 +49,7 @@ type Config struct {
 	SnapshotName string `mapstructure:"snapshot_name"`
 	// Convert the virtual machine to a template after the build is complete.
 	// Defaults to `false`.
-	// If set to `true`, the virtual machine can not be imported into a content library.
+	// If set to `true`, the virtual machine cannot be imported into a content library.
 	ConvertToTemplate bool `mapstructure:"convert_to_template"`
 	// The configuration for exporting the virtual machine to an OVF.
 	// The virtual machine is not exported if [export configuration](#export-configuration) is not specified.

@@ -28,10 +28,10 @@ type FloppyConfig struct {
 	// A list of directories to copy files from.
 	FloppyDirectories []string `mapstructure:"floppy_dirs"`
 	// Key/Values to add to the floppy disk. The keys represent the paths, and
-	// the values contents. It can be used alongside `floppy_files` or
+	// the value contents. It can be used alongside `floppy_files` or
 	// `floppy_dirs`, which is useful to add large files without loading them
-	// into memory. If any paths are specified by both, the contents in
-	// `floppy_content` will take precedence.
+	// into memory. If both specify a path, the contents in `floppy_content` will take
+	// precedence.
 	//
 	// HCL Example:
 	//
@@ -43,8 +43,8 @@ type FloppyConfig struct {
 	// ```
 	FloppyContent map[string]string `mapstructure:"floppy_content"`
 	// The label to use for the floppy disk that is attached when the virtual
-	// machine is booted. This is most useful for cloud-init, Kickstart or other
-	// early initialization tools, which can benefit from labelled floppy disks.
+	// machine is booted. This is most useful for cloud-init, Kickstart, or other
+	// early initialization tools, which can benefit from labeled floppy disks.
 	// By default, the floppy label will be 'packer'.
 	FloppyLabel string `mapstructure:"floppy_label"`
 }
