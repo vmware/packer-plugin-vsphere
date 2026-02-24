@@ -6,7 +6,11 @@ SPDX-License-Identifier: MPL-2.0
 
 <!-- markdownlint-disable first-line-h1 no-inline-html -->
 
+<img src="docs/images/icon-color.svg" alt="VMware vSphere" width="150">
+
 # Packer Plugin for VMware vSphere
+
+[![Latest Release](https://img.shields.io/github/v/tag/vmware/packer-plugin-vsphere?label=latest%20release&style=for-the-badge)][releases-vsphere-plugin] [![License](https://img.shields.io/github/license/vmware/packer-plugin-vsphere.svg?style=for-the-badge)][license]
 
 The Packer Plugin for VMware vSphere is a plugin for creating virtual machine images for
 use with [VMware vSphere][docs-vsphere]®.
