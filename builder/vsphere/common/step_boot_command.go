@@ -56,7 +56,7 @@ func (s *StepBootCommand) Run(ctx context.Context, state multistep.StateBag) mul
 		return multistep.ActionContinue
 	}
 
-	// Wait the for the vm to boot.
+	// Wait for the vm to boot.
 	if int64(s.Config.BootWait) > 0 {
 		ui.Sayf("Waiting %s for boot...", s.Config.BootWait.String())
 		select {
@@ -115,7 +115,7 @@ func (s *StepBootCommand) Run(ctx context.Context, state multistep.StateBag) mul
 			}
 		}
 
-		// Check if IP address was determined.
+		// Check if the IP address was determined.
 		if ip == "" {
 			err := fmt.Errorf("error determining IP address")
 			state.Put("error", err)

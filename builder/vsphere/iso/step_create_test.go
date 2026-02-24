@@ -281,7 +281,7 @@ func TestStepCreateVM_Cleanup(t *testing.T) {
 	vm := new(driver.VirtualMachineMock)
 	state.Put("vm", vm)
 
-	// Clean up when state is cancelled
+	// Clean up when state is canceled
 	state.Put(multistep.StateCancelled, true)
 	step.Cleanup(state)
 	if !vm.DestroyCalled {
@@ -290,7 +290,7 @@ func TestStepCreateVM_Cleanup(t *testing.T) {
 	vm.DestroyCalled = false
 	state.Remove(multistep.StateCancelled)
 
-	// Clean up when state is halted
+	// Clean up when the state is halted
 	state.Put(multistep.StateHalted, true)
 	step.Cleanup(state)
 	if !vm.DestroyCalled {
@@ -308,7 +308,7 @@ func TestStepCreateVM_Cleanup(t *testing.T) {
 	vm.DestroyCalled = false
 	state.Remove("destroy_vm")
 
-	// Don't clean up if state is not set with previous values
+	// Don't clean up if the state is not set with previous values
 	step.Cleanup(state)
 	if vm.DestroyCalled {
 		t.Fatalf("unexpected result: expected '%s' not to be called", "Destroy")
@@ -353,7 +353,7 @@ func basicStepCreateVM() *StepCreateVM {
 	return step
 }
 
-// basicLocationConfig initializes and returns a default LocationConfig with predefined test values for virtual machine.
+// basicLocationConfig initializes and returns a default LocationConfig with predefined test values for the virtual machine.
 func basicLocationConfig() *common.LocationConfig {
 	return &common.LocationConfig{
 		VMName:       "test-vm",

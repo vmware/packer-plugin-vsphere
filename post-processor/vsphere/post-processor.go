@@ -105,7 +105,7 @@ type Config struct {
 	// same as the source virtual machine's.
 	//
 	// This option is useful when deploying to vCenter instance or an ESX host whose
-	// version is different than the one used to create the artifact.
+	// version is different from the one used to create the artifact.
 	//
 	// Refer to [KB 315655](https://knowledge.broadcom.com/external/article?articleNumber=315655)
 	// for more information on supported virtual hardware versions.

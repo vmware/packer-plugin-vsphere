@@ -825,7 +825,7 @@ func (vm *VirtualMachineDriver) PowerOn() error {
 	return err
 }
 
-// WaitForIP waits for the virtual machine to obtain an IP address.
+// WaitForIP waits for the virtual machine to get an IP address.
 func (vm *VirtualMachineDriver) WaitForIP(ctx context.Context, ipNet *net.IPNet) (string, error) {
 	netIP, err := vm.vm.WaitForNetIP(ctx, false)
 	if err != nil {
@@ -975,7 +975,7 @@ func (vm *VirtualMachineDriver) ImportOvfToContentLibrary(ovf vcenter.OVF) error
 
 	item, err := vm.driver.FindContentLibraryItem(l.library.ID, ovf.Spec.Name)
 	if err == nil {
-		// Update the content library item, if it exists.
+		// Update the content library item if it exists.
 		ovf.Target.LibraryItemID = item.ID
 		if item.Description != nil && ovf.Spec.Description != *item.Description {
 			err = vm.driver.UpdateContentLibraryItem(item, ovf.Spec.Name, ovf.Spec.Description)
@@ -1095,7 +1095,7 @@ func (vm *VirtualMachineDriver) GetDir() (string, error) {
 }
 
 // addNetwork adds a network to the virtual machine. Returns a list of devices
-// with the network added or an error if the  operation fails.
+// with the network added or an error if the operation fails.
 func addNetwork(d *VCenterDriver, devices object.VirtualDeviceList, config *CreateConfig) (object.VirtualDeviceList, error) {
 	for _, nic := range config.NICs {
 		network, err := findNetwork(nic.Network, config.Host, d)
@@ -1137,7 +1137,7 @@ func findNetwork(network string, host string, d *VCenterDriver) (object.NetworkR
 			return networks[0].network, nil
 		}
 
-		// If there are multiple networks then try to match the host.
+		// If there are multiple networks, then try to match the host.
 		if host != "" {
 			h, err := d.FindHost(host)
 			if err != nil {

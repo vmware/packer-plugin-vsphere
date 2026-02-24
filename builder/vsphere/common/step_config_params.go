@@ -20,7 +20,7 @@ import (
 )
 
 type ConfigParamsConfig struct {
-	// A map of key-value pairs to sent to the [`extraConfig`](https://dp-downloads.broadcom.com/api-content/apis/API_VWSA_001/8.0U3/html/ReferenceGuides/vim.vm.ConfigSpec.html#extraConfig).
+	// A map of key-value pairs to send to the [`extraConfig`](https://dp-downloads.broadcom.com/api-content/apis/API_VWSA_001/8.0U3/html/ReferenceGuides/vim.vm.ConfigSpec.html#extraConfig).
 	// in the vSphere API's `VirtualMachineConfigSpec`.
 	//
 	// HCL Example:
@@ -44,7 +44,7 @@ type ConfigParamsConfig struct {
 	// ```
 	//
 	// ~> **Note:** Configuration keys that would conflict with parameters that
-	// are explicitly configurable through other fields in the `ConfigSpec`` object
+	// are explicitly configurable through other fields in the `ConfigSpec` object
 	// are silently ignored. Refer to the [`VirtualMachineConfigSpec`](https://dp-downloads.broadcom.com/api-content/apis/API_VWSA_001/8.0U3/html/ReferenceGuides/vim.vm.ConfigSpec.html)
 	// in the vSphere API documentation.
 	ConfigParams map[string]string `mapstructure:"configuration_parameters"`

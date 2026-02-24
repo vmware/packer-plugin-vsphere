@@ -19,8 +19,7 @@ import (
 )
 
 type ConnectConfig struct {
-	// The fully qualified domain name or IP address of the vCenter instance
-	// instance.
+	// The fully qualified domain name or IP address of the vCenter instance.
 	VCenterServer string `mapstructure:"vcenter_server"`
 	// The username to authenticate with the vCenter instance.
 	Username string `mapstructure:"username"`

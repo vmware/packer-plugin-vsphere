@@ -16,7 +16,7 @@ import (
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
 
-// Dynamic DirectPath I/O is component of the Assignable Hardware framework in VMware vSphere.
+// Dynamic DirectPath I/O is the component of the Assignable Hardware framework in VMware vSphere.
 // Dynamic DirectPath I/O enables the Assignable Hardware intelligence for passthrough devices and
 // the hardware address of the PCIe device is no longer directly mapped to the virtual machine
 // configuration. Instead, the attributes, or capabilities, are exposed to the virtual machine.

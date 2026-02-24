@@ -107,8 +107,7 @@ wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/foo/bar/preseed.cfg
 
 <!-- Code generated from the comments of the ConnectConfig struct in builder/vsphere/common/step_connect.go; DO NOT EDIT MANUALLY -->
 
-- `vcenter_server` (string) - The fully qualified domain name or IP address of the vCenter instance
-  instance.
+- `vcenter_server` (string) - The fully qualified domain name or IP address of the vCenter instance.
 
 - `username` (string) - The username to authenticate with the vCenter instance.
 
@@ -182,7 +181,7 @@ wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/foo/bar/preseed.cfg
 
 - `convert_to_template` (bool) - Convert the virtual machine to a template after the build is complete.
   Defaults to `false`.
-  If set to `true`, the virtual machine can not be imported into a content library.
+  If set to `true`, the virtual machine cannot be imported into a content library.
 
 - `export` (\*common.ExportConfig) - The configuration for exporting the virtual machine to an OVF.
   The virtual machine is not exported if [export configuration](#export-configuration) is not specified.
@@ -652,10 +651,10 @@ boot time.
 - `floppy_dirs` ([]string) - A list of directories to copy files from.
 
 - `floppy_content` (map[string]string) - Key/Values to add to the floppy disk. The keys represent the paths, and
-  the values contents. It can be used alongside `floppy_files` or
+  the value contents. It can be used alongside `floppy_files` or
   `floppy_dirs`, which is useful to add large files without loading them
-  into memory. If any paths are specified by both, the contents in
-  `floppy_content` will take precedence.
+  into memory. If both specify a path, the contents in `floppy_content` will take
+  precedence.
   
   HCL Example:
   
@@ -667,8 +666,8 @@ boot time.
   ```
 
 - `floppy_label` (string) - The label to use for the floppy disk that is attached when the virtual
-  machine is booted. This is most useful for cloud-init, Kickstart or other
-  early initialization tools, which can benefit from labelled floppy disks.
+  machine is booted. This is most useful for cloud-init, Kickstart, or other
+  early initialization tools, which can benefit from labeled floppy disks.
   By default, the floppy label will be 'packer'.
 
 <!-- End of code generated from the comments of the FloppyConfig struct in builder/vsphere/common/step_add_floppy.go; -->
@@ -1617,7 +1616,7 @@ JSON Example:
 
 <!-- Code generated from the comments of the ConfigParamsConfig struct in builder/vsphere/common/step_config_params.go; DO NOT EDIT MANUALLY -->
 
-- `configuration_parameters` (map[string]string) - A map of key-value pairs to sent to the [`extraConfig`](https://dp-downloads.broadcom.com/api-content/apis/API_VWSA_001/8.0U3/html/ReferenceGuides/vim.vm.ConfigSpec.html#extraConfig).
+- `configuration_parameters` (map[string]string) - A map of key-value pairs to send to the [`extraConfig`](https://dp-downloads.broadcom.com/api-content/apis/API_VWSA_001/8.0U3/html/ReferenceGuides/vim.vm.ConfigSpec.html#extraConfig).
   in the vSphere API's `VirtualMachineConfigSpec`.
   
   HCL Example:
@@ -1641,7 +1640,7 @@ JSON Example:
   ```
   
   ~> **Note:** Configuration keys that would conflict with parameters that
-  are explicitly configurable through other fields in the `ConfigSpec`` object
+  are explicitly configurable through other fields in the `ConfigSpec` object
   are silently ignored. Refer to the [`VirtualMachineConfigSpec`](https://dp-downloads.broadcom.com/api-content/apis/API_VWSA_001/8.0U3/html/ReferenceGuides/vim.vm.ConfigSpec.html)
   in the vSphere API documentation.
 
