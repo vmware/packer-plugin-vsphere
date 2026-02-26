@@ -17,17 +17,63 @@ func TestVCenterDriver_FindResourcePool(t *testing.T) {
 	}
 	defer sim.Close()
 
-	res, err := sim.driver.FindResourcePool("", "DC0_H0", "")
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	if res == nil {
-		t.Fatalf("unexpected result: expected '%v', but returned 'nil'", res)
-	}
-	expectedResourcePool := "Resources"
-	if res.pool.Name() != expectedResourcePool {
-		t.Fatalf("unexpected result: expected '%s', but returned '%s'", expectedResourcePool, res.pool.Name())
-	}
+	t.Run("empty name with host", func(t *testing.T) {
+		res, err := sim.driver.FindResourcePool("", "DC0_H0", "")
+		if err != nil {
+			t.Fatalf("unexpected error: '%s'", err)
+		}
+		if res == nil {
+			t.Fatalf("unexpected result: expected resource pool, but returned 'nil'")
+		}
+		expectedResourcePool := "Resources"
+		if res.pool.Name() != expectedResourcePool {
+			t.Fatalf("unexpected result: expected '%s', but returned '%s'", expectedResourcePool, res.pool.Name())
+		}
+	})
+
+	t.Run("empty name with cluster", func(t *testing.T) {
+		res, err := sim.driver.FindResourcePool("DC0_C0", "", "")
+		if err != nil {
+			t.Fatalf("unexpected error: '%s'", err)
+		}
+		if res == nil {
+			t.Fatalf("unexpected result: expected resource pool, but returned 'nil'")
+		}
+		if res.pool.Name() != "Resources" {
+			t.Fatalf("unexpected result: expected 'Resources', but returned '%s'", res.pool.Name())
+		}
+	})
+
+	t.Run("relative path", func(t *testing.T) {
+		res, err := sim.driver.FindResourcePool("DC0_C0", "", "foo")
+
+		if err == nil {
+			t.Fatalf("expected error when using unknown relative resource pool path 'foo', but got none")
+		}
+		if res != nil {
+			t.Fatalf("unexpected result: expected no resource pool for unknown path 'foo', but got one")
+		}
+	})
+
+	t.Run("absolute path", func(t *testing.T) {
+		res, err := sim.driver.FindResourcePool("", "", "/DC0/host/DC0_H0/Resources")
+		if err != nil {
+			t.Fatalf("unexpected error: '%s'", err)
+		}
+		if res == nil || res.pool == nil {
+			t.Fatalf("unexpected result: expected resource pool, but returned 'nil'")
+		}
+	})
+
+	t.Run("whitespace trimming", func(t *testing.T) {
+		res, err := sim.driver.FindResourcePool("", "DC0_H0", "  ")
+		if err != nil {
+			t.Fatalf("unexpected error: '%s'", err)
+		}
+		if res == nil {
+			t.Fatalf("unexpected result: expected resource pool, but returned 'nil'")
+		}
+	})
 }
 
 func TestVCenterDriver_FindResourcePoolStandaloneESX(t *testing.T) {

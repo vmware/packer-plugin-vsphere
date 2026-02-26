@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
@@ -34,6 +35,8 @@ func (d *VCenterDriver) NewResourcePool(ref *types.ManagedObjectReference) *Reso
 // pool or a vApp if the specified pool is not found. Returns a ResourcePool
 // object or an error if neither the specified nor default pool is accessible.
 func (d *VCenterDriver) FindResourcePool(cluster string, host string, name string) (*ResourcePool, error) {
+	name = strings.TrimSpace(name)
+
 	var res string
 	if cluster != "" {
 		res = cluster
@@ -41,20 +44,36 @@ func (d *VCenterDriver) FindResourcePool(cluster string, host string, name strin
 		res = host
 	}
 
-	resourcePath := fmt.Sprintf("%v/Resources/%v", res, name)
+	var resourcePath string
+	switch {
+	case name == "":
+		resourcePath = fmt.Sprintf("%v/Resources", res)
+	case strings.HasPrefix(name, "/"):
+		resourcePath = name
+	default:
+		resourcePath = fmt.Sprintf("%v/Resources/%v", res, name)
+	}
+
 	p, err := d.Finder.ResourcePool(d.Ctx, resourcePath)
 	if err != nil {
-		log.Printf("[WARN] %s not found. Looking for default resource pool.", resourcePath)
+		log.Printf("[WARN] %s not found. Attempting to use default resource pool.", resourcePath)
+
 		dp, dperr := d.Finder.DefaultResourcePool(d.Ctx)
 		var notFoundError *find.NotFoundError
 		if errors.As(dperr, &notFoundError) {
 			vapp, verr := d.Finder.VirtualApp(d.Ctx, name)
 			if verr != nil {
-				return nil, err
+				return nil, fmt.Errorf("could not resolve '%s': %w", name, verr)
 			}
 			dp = vapp.ResourcePool
+		} else if dperr != nil {
+			return nil, fmt.Errorf("error finding default resource pool: %w", dperr)
 		}
 		p = dp
+	}
+
+	if p == nil {
+		return nil, fmt.Errorf("resource pool '%s' resolved to nil", resourcePath)
 	}
 
 	return &ResourcePool{
