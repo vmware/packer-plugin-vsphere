@@ -127,6 +127,10 @@ func (d *DriverMock) UpdateContentLibraryItem(item *library.Item, name string, d
 	return nil
 }
 
+func (d *DriverMock) DeleteContentLibraryItem(itemID string) error {
+	return nil
+}
+
 func (d *DriverMock) GetRestClient() *rest.Client {
 	return nil
 }

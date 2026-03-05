@@ -21,6 +21,7 @@ import (
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/ovf"
 	"github.com/vmware/govmomi/property"
+	"github.com/vmware/govmomi/vapi/library"
 	"github.com/vmware/govmomi/vapi/vcenter"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
@@ -52,6 +53,8 @@ type VirtualMachine interface {
 	ConvertToVirtualMachine(vsphereCluster string, vsphereHost string, vsphereResourcePool string) error
 	ImportOvfToContentLibrary(ovf vcenter.OVF) error
 	ImportToContentLibrary(template vcenter.Template) error
+	FindContentLibraryItem(libraryName string, itemName string) (*library.Item, error)
+	DeleteContentLibraryItem(itemID string) error
 	GetDir() (string, error)
 	AddFloppy(imgPath string) error
 	SetBootOrder(order []string) error
@@ -1499,6 +1502,47 @@ func (vm *VirtualMachineDriver) NewNetwork(ref *types.ManagedObjectReference) *N
 // Datacenter returns the datacenter of the virtual machine.
 func (vm *VirtualMachineDriver) Datacenter() *object.Datacenter {
 	return vm.driver.Datacenter
+}
+
+// FindContentLibraryItem finds a content library item by library name and item name.
+// Returns the library item or an error if not found.
+func (vm *VirtualMachineDriver) FindContentLibraryItem(libraryName string, itemName string) (*library.Item, error) {
+	err := vm.driver.RestClient.Login(vm.driver.Ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	l, err := vm.driver.FindContentLibraryByName(libraryName)
+	if err != nil {
+		log.Printf("cannot find content library: %v", err)
+		vm.logout()
+		return nil, err
+	}
+
+	item, err := vm.driver.FindContentLibraryItem(l.library.ID, itemName)
+	if err != nil {
+		vm.logout()
+		return nil, err
+	}
+
+	_ = vm.driver.RestClient.Logout(vm.driver.Ctx)
+	return item, nil
+}
+
+// DeleteContentLibraryItem deletes a content library item by its ID.
+func (vm *VirtualMachineDriver) DeleteContentLibraryItem(itemID string) error {
+	err := vm.driver.RestClient.Login(vm.driver.Ctx)
+	if err != nil {
+		return err
+	}
+
+	if err := vm.driver.DeleteContentLibraryItem(itemID); err != nil {
+		log.Printf("cannot delete content library item: %v", err)
+		vm.logout()
+		return err
+	}
+
+	return vm.driver.RestClient.Logout(vm.driver.Ctx)
 }
 
 // FindContentLibraryItemUUID finds a content library item by name.
