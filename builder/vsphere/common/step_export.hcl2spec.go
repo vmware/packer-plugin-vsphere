@@ -3,7 +3,7 @@
 package common
 
 import (
-	"io/fs"
+	"os"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/zclconf/go-cty/cty"
@@ -12,14 +12,14 @@ import (
 // FlatExportConfig is an auto-generated flat version of ExportConfig.
 // Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
 type FlatExportConfig struct {
-	Name       *string      `mapstructure:"name" cty:"name" hcl:"name"`
-	Force      *bool        `mapstructure:"force" cty:"force" hcl:"force"`
-	ImageFiles *bool        `mapstructure:"image_files" cty:"image_files" hcl:"image_files"`
-	Manifest   *string      `mapstructure:"manifest" cty:"manifest" hcl:"manifest"`
-	OutputDir  *string      `mapstructure:"output_directory" required:"false" cty:"output_directory" hcl:"output_directory"`
-	DirPerm    *fs.FileMode `mapstructure:"directory_permission" required:"false" cty:"directory_permission" hcl:"directory_permission"`
-	Options    []string     `mapstructure:"options" cty:"options" hcl:"options"`
-	Format     *string      `mapstructure:"output_format" cty:"output_format" hcl:"output_format"`
+	Name       *string     `mapstructure:"name" cty:"name" hcl:"name"`
+	Force      *bool       `mapstructure:"force" cty:"force" hcl:"force"`
+	ImageFiles *bool       `mapstructure:"image_files" cty:"image_files" hcl:"image_files"`
+	Manifest   *string     `mapstructure:"manifest" cty:"manifest" hcl:"manifest"`
+	OutputDir  *string     `mapstructure:"output_directory" required:"false" cty:"output_directory" hcl:"output_directory"`
+	DirPerm    os.FileMode `mapstructure:"directory_permission" required:"false" cty:"directory_permission" hcl:"directory_permission"`
+	Options    []string    `mapstructure:"options" cty:"options" hcl:"options"`
+	Format     *string     `mapstructure:"output_format" cty:"output_format" hcl:"output_format"`
 }
 
 // FlatMapstructure returns a new FlatExportConfig.
