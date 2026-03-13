@@ -159,7 +159,7 @@ func (c *ExportConfig) Prepare(ctx *interpolate.Context, lc *LocationConfig, pc 
 	}
 
 	// Check if the output directory exists.
-	if err := os.MkdirAll(c.OutputDir.OutputDir, c.OutputDir.DirPerm); err != nil {
+	if err := os.MkdirAll(c.OutputDir.OutputDir, *c.OutputDir.DirPerm); err != nil {
 		errs = packersdk.MultiErrorAppend(errs, errors.Wrap(err, "unable to make directory for export"))
 	}
 

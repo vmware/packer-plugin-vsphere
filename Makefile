@@ -29,6 +29,11 @@ testacc: dev
 
 generate: install-packer-sdc
 	@go generate ./...
+	# Patch the generated files to use *os.FileMode so null values are handled correctly.
+	@for f in builder/vsphere/common/output_config.hcl2spec.go builder/vsphere/common/step_export.hcl2spec.go; do \
+		awk '/DirPerm/{gsub(/ os\.FileMode/, " *os.FileMode")} {print}' "$$f" > "$$f.tmp" && mv "$$f.tmp" "$$f"; \
+	done
+	@go fmt ./...
 	@rm -rf .docs
 	@packer-sdc renderdocs -src "docs" -partials docs-partials/ -dst ".docs/"
 	@./.web-docs/scripts/compile-to-webdocs.sh "." ".docs" ".web-docs" "hashicorp"

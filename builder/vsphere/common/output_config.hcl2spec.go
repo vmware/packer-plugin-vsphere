@@ -12,8 +12,8 @@ import (
 // FlatOutputConfig is an auto-generated flat version of OutputConfig.
 // Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
 type FlatOutputConfig struct {
-	OutputDir *string     `mapstructure:"output_directory" required:"false" cty:"output_directory" hcl:"output_directory"`
-	DirPerm   os.FileMode `mapstructure:"directory_permission" required:"false" cty:"directory_permission" hcl:"directory_permission"`
+	OutputDir *string      `mapstructure:"output_directory" required:"false" cty:"output_directory" hcl:"output_directory"`
+	DirPerm   *os.FileMode `mapstructure:"directory_permission" required:"false" cty:"directory_permission" hcl:"directory_permission"`
 }
 
 // FlatMapstructure returns a new FlatOutputConfig.

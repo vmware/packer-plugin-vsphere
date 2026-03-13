@@ -1489,7 +1489,7 @@ The above configuration would create the following files:
   created, must be empty prior to running the builder. By default, this is
   "output-<buildName>" where "buildName" is the name of the build.
 
-- `directory_permission` (os.FileMode) - The permissions to apply to the "output_directory", and to any parent
+- `directory_permission` (\*os.FileMode) - The permissions to apply to the "output_directory", and to any parent
   directories that get created for output_directory.  By default, this is
   "0750". You should express the permission as quoted string with a
   leading zero such as "0755" in JSON file, because JSON does not support
