@@ -31,7 +31,7 @@ type OutputConfig struct {
 	// leading zero such as "0755" in JSON file, because JSON does not support
 	// octal value. In Unix-like OS, the actual permission may differ from
 	// this value because of umask.
-	DirPerm os.FileMode `mapstructure:"directory_permission" required:"false"`
+	DirPerm *os.FileMode `mapstructure:"directory_permission" required:"false"`
 }
 
 func (c *OutputConfig) Prepare(ctx *interpolate.Context, pc *common.PackerConfig) []error {
@@ -39,8 +39,9 @@ func (c *OutputConfig) Prepare(ctx *interpolate.Context, pc *common.PackerConfig
 		c.OutputDir = fmt.Sprintf("output-%s", pc.PackerBuildName)
 	}
 
-	if runtime.GOOS != "windows" && c.DirPerm == 0 {
-		c.DirPerm = 0750
+	if runtime.GOOS != "windows" && (c.DirPerm == nil || *c.DirPerm == 0) {
+		perm := os.FileMode(0750)
+		c.DirPerm = &perm
 	}
 
 	return nil
