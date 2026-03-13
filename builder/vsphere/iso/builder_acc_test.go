@@ -239,8 +239,11 @@ func checkHardware(name string) error {
 	}
 
 	cpuCores := vmInfo.Config.Hardware.NumCoresPerSocket
-	if cpuCores != 2 {
-		return fmt.Errorf("VM should have 2 CPU cores per socket, but returned %v", cpuCores)
+	if cpuCores == nil {
+		return fmt.Errorf("VM should have 2 CPU cores per socket, but returned nil")
+	}
+	if *cpuCores != 2 {
+		return fmt.Errorf("VM should have 2 CPU cores per socket, but returned %v", *cpuCores)
 	}
 
 	cpuReservation := *vmInfo.Config.CpuAllocation.Reservation
@@ -288,7 +291,7 @@ func checkHardware(name string) error {
 
 	v := l.SelectByType((*types.VirtualMachineVideoCard)(nil))
 	if len(v) != 1 {
-		return fmt.Errorf("virtual machine should have one video card")
+		return fmt.Errorf("virtual machine")
 	}
 	if v[0].(*types.VirtualMachineVideoCard).VideoRamSizeInKB != 8192 {
 		return fmt.Errorf("video memory should be equal 8192")

@@ -609,7 +609,9 @@ func (vm *VirtualMachineDriver) Destroy() error {
 func (vm *VirtualMachineDriver) Configure(config *HardwareConfig) error {
 	var confSpec types.VirtualMachineConfigSpec
 	confSpec.NumCPUs = config.CPUs
-	confSpec.NumCoresPerSocket = config.CpuCores
+	if config.CpuCores != 0 {
+		confSpec.NumCoresPerSocket = &config.CpuCores
+	}
 	confSpec.MemoryMB = config.RAM
 
 	var cpuSpec types.ResourceAllocationInfo
