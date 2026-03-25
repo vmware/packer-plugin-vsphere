@@ -12,7 +12,7 @@ require (
 	github.com/vmware-tanzu/vm-operator/api v1.8.7-0.20250406160248-af0c660a6ede
 	github.com/vmware/govmomi v0.53.0
 	github.com/zclconf/go-cty v1.18.0
-	golang.org/x/mobile v0.0.0-20210901025245-1fde1d6c3ca1
+	golang.org/x/mobile v0.0.0-20260312152759-81488f6aeb60
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.31.0
 	k8s.io/apimachinery v0.31.0
