@@ -32,24 +32,24 @@ your desired strategy:
 
 #### Builders
 
-- [vsphere-iso](/packer/integrations/hashicorp/vsphere/latest/components/builder/vsphere-iso) - 
+- [vsphere-iso](./builders/vsphere-iso.mdx) - 
   This builder starts from an ISO file and uses the vSphere API to build a virtual machine image on
   an ESX host.
 
-- [vsphere-clone](/packer/integrations/hashicorp/vsphere/latest/components/builder/vsphere-clone) -
+- [vsphere-clone](./builders/vsphere-clone.mdx) -
   This builder clones a virtual machine from an existing template using the uses the vSphere API and
   then modifies and saves it as a new template.
 
-- [vsphere-supervisor](/packer/integrations/hashicorp/vsphere/latest/components/builder/vsphere-supervisor) -
+- [vsphere-supervisor](./builders/vsphere-supervisor.mdx) -
   This builder deploys and publishes new virtual machine to a vSphere Supervisor cluster using VM
   Service.
 
 #### Post-Processors
 
-- [vsphere](/packer/integrations/hashicorp/vsphere/latest/components/post-processor/vsphere) -
+- [vsphere](./post-processors/vsphere.mdx) -
   This post-processor uploads an artifact to a vSphere endpoint. The artifact must be a VMX, OVA,
   or OVF file.
 
-- [vsphere-template](/packer/integrations/hashicorp/vsphere/latest/components/post-processor/vsphere-template) - 
+- [vsphere-template](./post-processors/vsphere-template.mdx) - 
   This post-processor uses an artifact from the vSphere post-processor. It then marks the virtual
   machine as a template and moves it to your specified path.
