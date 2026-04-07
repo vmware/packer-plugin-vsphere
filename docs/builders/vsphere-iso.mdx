@@ -319,7 +319,7 @@ Only use the `host` option. Optionally, specify a `resource_pool`:
 HCL Example:
 
 ```hcl
-  host = ""esxi-01.example.com""
+  host = "esxi-01.example.com"
   resource_pool = "example_resource_pool"
 ```
 
@@ -374,51 +374,54 @@ access to the infrastructure.
 
 For example, a named service account (_e.g._ `svc-packer-vsphere@example.com`).
 
-Clone the default **Read-Only** vSphere role and add the following privileges, which are based on
-the capabilities of the `vsphere-iso` plugin:
+Clone the default **Read-Only** vSphere role and add the following privileges:
 
-| Category        | Privilege                                           | Reference                                          |
-| --------------- | --------------------------------------------------- | -------------------------------------------------- |
-| Content Library | Add library item                                    | `ContentLibrary.AddLibraryItem`                    |
-| ...             | Update Library Item                                 | `ContentLibrary.UpdateLibraryItem`                 |
-| Datastore       | Allocate space                                      | `Datastore.AllocateSpace`                          |
-| ...             | Browse datastore                                    | `Datastore.Browse`                                 |
-| ...             | Low level file operations                           | `Datastore.FileManagement`                         |
-| Network         | Assign network                                      | `Network.Assign`                                   |
-| Resource        | Assign virtual machine to resource pool             | `Resource.AssignVMToPool`                          |
-| vApp            | Export                                              | `vApp.Export`                                      |
-| Virtual Machine | Configuration > Add new disk                        | `VirtualMachine.Config.AddNewDisk`                 |
-| ...             | Configuration > Add or remove device                | `VirtualMachine.Config.AddRemoveDevice`            |
-| ...             | Configuration > Advanced configuration              | `VirtualMachine.Config.AdvancedConfig`             |
-| ...             | Configuration > Change CPU count                    | `VirtualMachine.Config.CPUCount`                   |
-| ...             | Configuration > Change memory                       | `VirtualMachine.Config.Memory`                     |
-| ...             | Configuration > Change settings                     | `VirtualMachine.Config.Settings`                   |
-| ...             | Configuration > Change Resource                     | `VirtualMachine.Config.Resource`                   |
-| ...             | Configuration > Set annotation                      | `VirtualMachine.Config.Annotation`                 |
-| ...             | Edit Inventory > Create from existing               | `VirtualMachine.Inventory.CreateFromExisting`      |
-| ...             | Edit Inventory > Create new                         | `VirtualMachine.Inventory.Create`                  |
-| ...             | Edit Inventory > Remove                             | `VirtualMachine.Inventory.Delete`                  |
-| ...             | Interaction > Configure CD media                    | `VirtualMachine.Interact.SetCDMedia`               |
-| ...             | Interaction > Configure floppy media                | `VirtualMachine.Interact.SetFloppyMedia`           |
-| ...             | Interaction > Connect devices                       | `VirtualMachine.Interact.DeviceConnection`         |
-| ...             | Interaction > Inject USB HID scan codes             | `VirtualMachine.Interact.PutUsbScanCodes`          |
-| ...             | Interaction > Power off                             | `VirtualMachine.Interact.PowerOff`                 |
-| ...             | Interaction > Power on                              | `VirtualMachine.Interact.PowerOn`                  |
-| ...             | Provisioning > Create template from virtual machine | `VirtualMachine.Provisioning.CreateTemplateFromVM` |
-| ...             | Provisioning > Mark as template                     | `VirtualMachine.Provisioning.MarkAsTemplate`       |
-| ...             | Provisioning > Mark as virtual machine              | `VirtualMachine.Provisioning.MarkAsVM`             |
-| ...             | State > Create snapshot                             | `VirtualMachine.State.CreateSnapshot`              |
+| Category                 | Privilege                                           | Reference                                          |
+| ------------------------ | --------------------------------------------------- | -------------------------------------------------- |
+| Content Library          | Add library item                                    | `ContentLibrary.AddLibraryItem`                    |
+| ...                      | Update library Item                                 | `ContentLibrary.UpdateLibraryItem`                 |
+| Cryptographic Operations | Direct access                                       | `Cryptographer.Access`                             |
+| ...                      | Encrypt                                             | `Cryptographer.Encrypt`                            |
+| Datastore                | Allocate space                                      | `Datastore.AllocateSpace`                          |
+| ...                      | Browse datastore                                    | `Datastore.Browse`                                 |
+| ...                      | Low level file operations                           | `Datastore.FileManagement`                         |
+| Network                  | Assign network                                      | `Network.Assign`                                   |
+| Resource                 | Assign virtual machine to resource pool             | `Resource.AssignVMToPool`                          |
+| vApp                     | Export                                              | `vApp.Export`                                      |
+| Virtual Machine          | Configuration > Add new disk                        | `VirtualMachine.Config.AddNewDisk`                 |
+| ...                      | Configuration > Add or remove device                | `VirtualMachine.Config.AddRemoveDevice`            |
+| ...                      | Configuration > Advanced configuration              | `VirtualMachine.Config.AdvancedConfig`             |
+| ...                      | Configuration > Change CPU count                    | `VirtualMachine.Config.CPUCount`                   |
+| ...                      | Configuration > Change memory                       | `VirtualMachine.Config.Memory`                     |
+| ...                      | Configuration > Change settings                     | `VirtualMachine.Config.Settings`                   |
+| ...                      | Configuration > Change Resource                     | `VirtualMachine.Config.Resource`                   |
+| ...                      | Configuration > Set annotation                      | `VirtualMachine.Config.Annotation`                 |
+| ...                      | Edit Inventory > Create from existing               | `VirtualMachine.Inventory.CreateFromExisting`      |
+| ...                      | Edit Inventory > Create new                         | `VirtualMachine.Inventory.Create`                  |
+| ...                      | Edit Inventory > Remove                             | `VirtualMachine.Inventory.Delete`                  |
+| ...                      | Interaction > Configure CD media                    | `VirtualMachine.Interact.SetCDMedia`               |
+| ...                      | Interaction > Configure floppy media                | `VirtualMachine.Interact.SetFloppyMedia`           |
+| ...                      | Interaction > Connect devices                       | `VirtualMachine.Interact.DeviceConnection`         |
+| ...                      | Interaction > Inject USB HID scan codes             | `VirtualMachine.Interact.PutUsbScanCodes`          |
+| ...                      | Interaction > Power off                             | `VirtualMachine.Interact.PowerOff`                 |
+| ...                      | Interaction > Power on                              | `VirtualMachine.Interact.PowerOn`                  |
+| ...                      | Provisioning > Create template from virtual machine | `VirtualMachine.Provisioning.CreateTemplateFromVM` |
+| ...                      | Provisioning > Mark as template                     | `VirtualMachine.Provisioning.MarkAsTemplate`       |
+| ...                      | Provisioning > Mark as virtual machine              | `VirtualMachine.Provisioning.MarkAsVM`             |
+| ...                      | Snapshot Management > Create snapshot               | `VirtualMachine.State.CreateSnapshot`              |
 
 Global permissions **[are required](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-security-8-0/vsphere-permissions-and-user-management-tasks/understanding-authorization-in-vsphere.html)** for the content library based on the hierarchical inheritance of permissions. Once the custom vSphere role is created, assign **Global Permissions** in vSphere to the accounts or groups used for the Packer to vSphere integration, if using the content library.
 
 For example:
 
-1. Log in to the vCenter Server at _https://<management_vcenter_server_fqdn>/ui_ as `administrator@vsphere.local`.
+1. Log in to the vCenter at _https://<vcenter_fqdn>/ui_ as `administrator@vsphere.local`.
 2. Select **Menu** > **Administration**.
-3. In the left pane, select **Access control** > **Global permissions** and click the **Add permissions** icon.
-4. In the **Add permissions** dialog box, enter the service account (_e.g._
-   `svc-packer-vsphere@example.com`), select the custom role (_e.g._ Packer to vSphere Integration
-   Role) and the **Propagate to children** check box, and click **OK**.
+3. In the left pane, select **Access control** > **Global permissions** and click the
+   **Add permissions** icon.
+4. In the **Add permissions** dialog box, enter the service account
+   (_e.g._ `svc-packer-vsphere@example.com`), select the custom role
+   (_e.g._ Packer to vSphere Integration Role) and the **Propagate to children** check box,
+   and click **OK**.
 
 In an environment with many vCenter instances, such as management and workload, in enhanced
 linked-mode, you may wish to further reduce the scope of access across the vSphere infrastructure if
