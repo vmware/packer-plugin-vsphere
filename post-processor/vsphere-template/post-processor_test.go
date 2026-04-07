@@ -12,7 +12,7 @@ func getTestConfig() Config {
 	return Config{
 		Username: "administrator@vsphere.local",
 		Password: "password",
-		Host:     "vcenter.example.com",
+		Host:     "vc01.example.com",
 	}
 }
 

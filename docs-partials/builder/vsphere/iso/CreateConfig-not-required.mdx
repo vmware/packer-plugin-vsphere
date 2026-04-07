@@ -12,9 +12,9 @@
   ESX host, run the following PowerShell command using `VMware.PowerCLI`:
   
   ```powershell
-  Connect-VIServer -Server "vcenter.example.com" -User "administrator@vsphere.local" -Password "password"
-  $esxiHost = Get-VMHost -Name "esxi-01.example.com"
-  $environmentBrowser = Get-View -Id $esxiHost.ExtensionData.Parent.ExtensionData.ConfigManager.EnvironmentBrowser
+  Connect-VIServer -Server "vc01.example.com" -User "administrator@vsphere.local" -Password "password"
+  $esxHost = Get-VMHost -Name "esx01.example.com"
+  $environmentBrowser = Get-View -Id $esxHost.ExtensionData.Parent.ExtensionData.ConfigManager.EnvironmentBrowser
   $vmxVersion = ($environmentBrowser.QueryConfigOptionDescriptor() | Where-Object DefaultConfigOption).Key
   $osDescriptor = $environmentBrowser.QueryConfigOption($vmxVersion, $null).GuestOSDescriptor
   $osDescriptor | Select-Object Id, Fullname

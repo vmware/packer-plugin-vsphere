@@ -15,8 +15,8 @@ source "vsphere-iso" "example_windows" {
   floppy_files         = ["${path.root}/setup/"]
   floppy_img_path      = "[datastore1] ISO/VMware Tools/10.2.0/pvscsi-Windows8.flp"
   guest_os_type        = "windows9_64Guest"
-  host                 = "esxi-01.example.com"
-  insecure_connection  = "true"
+  host                 = "esx01.example.com"
+  insecure_connection  = true
   iso_paths            = ["[datastore1] ISO/en_windows_10_multi-edition_vl_version_1709_updated_dec_2017_x64_dvd_100406172.iso", "[datastore1] ISO/VMware Tools/10.2.0/windows.iso"]
   network_adapters {
     network_card = "vmxnet3"
@@ -27,7 +27,7 @@ source "vsphere-iso" "example_windows" {
     disk_thin_provisioned = true
   }
   username       = "administrator@vsphere.local"
-  vcenter_server = "vcenter.example.com"
+  vcenter_server = "vc01.example.com"
   vm_name        = "example-windows"
   winrm_password = "VMw@re1!"
   winrm_username = "packer"

@@ -26,7 +26,7 @@ source "vsphere-iso" "example" {
   disk_controller_type = ["pvscsi"]
   floppy_files         = ["${path.root}/preseed.cfg"]
   guest_os_type        = "ubuntu64Guest"
-  host                 = "esxi-01.example.com"
+  host                 = "esx01.example.com"
   insecure_connection  = true
   iso_paths            = ["[datastore1] ISO/ubuntu-16.04.3-server-amd64.iso"]
   network_adapters {
@@ -40,7 +40,7 @@ source "vsphere-iso" "example" {
     disk_thin_provisioned = true
   }
   username       = "administrator@vsphere.local"
-  vcenter_server = "vcenter.example.com"
+  vcenter_server = "vc01.example.com"
   vm_name        = "example-ubuntu"
 }
 

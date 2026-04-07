@@ -13,7 +13,7 @@ packer {
 
 variable "vcenter_server" {
   type        = string
-  default     = "vcenter.example.com"
+  default     = "vc01.example.com"
   description = "The vCenter instance used for managing the ESX host."
 }
 
@@ -39,7 +39,7 @@ variable "insecure_connection" {
 
 variable "host" {
   type        = string
-  default     = "esx-01.example.com"
+  default     = "esx01.example.com"
   description = "The ESX host where the virtual machine will be built."
 }
 

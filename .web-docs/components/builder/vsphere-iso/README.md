@@ -3,7 +3,7 @@ Type: `vsphere-iso`
 Artifact BuilderId: `vmware.vsphere`
 
 This builder starts from a guest operating system ISO file and builds a virtual machine image on a
-vSphere cluster or an ESXi host using the vSphere API.
+vSphere cluster or an ESX host using the vSphere API.
 
 -> **Note:** This builder is developed to maintain compatibility with VMware vSphere versions until
 their respective End of General Support dates. For detailed information, refer to the
@@ -294,9 +294,9 @@ wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/foo/bar/preseed.cfg
   ESX host, run the following PowerShell command using `VMware.PowerCLI`:
   
   ```powershell
-  Connect-VIServer -Server "vcenter.example.com" -User "administrator@vsphere.local" -Password "password"
-  $esxiHost = Get-VMHost -Name "esxi-01.example.com"
-  $environmentBrowser = Get-View -Id $esxiHost.ExtensionData.Parent.ExtensionData.ConfigManager.EnvironmentBrowser
+  Connect-VIServer -Server "vc01.example.com" -User "administrator@vsphere.local" -Password "password"
+  $esxHost = Get-VMHost -Name "esx01.example.com"
+  $environmentBrowser = Get-View -Id $esxHost.ExtensionData.Parent.ExtensionData.ConfigManager.EnvironmentBrowser
   $vmxVersion = ($environmentBrowser.QueryConfigOptionDescriptor() | Where-Object DefaultConfigOption).Key
   $osDescriptor = $environmentBrowser.QueryConfigOption($vmxVersion, $null).GuestOSDescriptor
   $osDescriptor | Select-Object Id, Fullname
@@ -464,7 +464,7 @@ For each ISO defined in the CD-ROM configuration, a CD-ROM device is added.
 
 If the `iso_url` is defined in addition to the `iso_paths`, the `iso_url` is added to the virtual
 machine first. This keeps the `iso_url` first in the boot order by default, allowing the boot ISO to
-be defined by the `iso_url` and the VMware Tools ISO added from ESXi host.
+be defined by the `iso_url` and the VMware Tools ISO added from ESX host.
 
 HCL Example:
 
@@ -1673,21 +1673,21 @@ JSON Example:
 
 ## Working with Clusters and Hosts
 
-### Standalone ESXi Hosts
+### Standalone ESX Hosts
 
 Only use the `host` option. Optionally, specify a `resource_pool`:
 
 HCL Example:
 
 ```hcl
-  host = "esxi-01.example.com"
+  host = "esx01.example.com"
   resource_pool = "example_resource_pool"
 ```
 
 JSON Example:
 
 ```json
-  "host": "esxi-01.example.com",
+  "host": "esx01.example.com",
   "resource_pool": "example_resource_pool",
 ```
 
@@ -1717,14 +1717,14 @@ HCL Example:
 
 ```hcl
   cluster = "cluster-01"
-  host = "esxi-01.example.com"
+  host = "esx01.example.com"
 ```
 
 JSON Example:
 
 ```json
   "cluster": "cluster-01",
-  "host": "esxi-01.example.com",
+  "host": "esx01.example.com",
 ```
 
 ## Privileges

@@ -114,7 +114,7 @@ virtual machine that matches the specified tag filters.
 
 ```hcl
 data "vsphere-virtualmachine" "example" {
-  vcenter_server = "vcenter.example.com"
+  vcenter_server = "vc01.example.com"
   username       = "administrator@vsphere.local"
   password       = "VMware1!"
   datacenter     = "dc-01"
@@ -159,7 +159,7 @@ machines matching a specific naming convention.
 
 ```hcl
 data "vsphere-virtualmachine" "example" {
-  vcenter_server = "vcenter.example.com"
+  vcenter_server = "vc01.example.com"
   username       = "administrator@vsphere.local"
   password       = "VMware1!"
   datacenter     = "dc-01"
@@ -179,7 +179,7 @@ matching with regular expressions.
 
 ```hcl
 data "vsphere-virtualmachine" "example" {
-  vcenter_server = "vcenter.example.com"
+  vcenter_server = "vc01.example.com"
   username       = "administrator@vsphere.local"
   password       = "VMware1!"
   datacenter     = "dc-01"
@@ -199,7 +199,7 @@ machine templates.
 
 ```hcl
 data "vsphere-virtualmachine" "example" {
-  vcenter_server = "vcenter.example.com"
+  vcenter_server = "vc01.example.com"
   username       = "administrator@vsphere.local"
   password       = "VMware1!"
   datacenter     = "dc-01"
@@ -219,11 +219,11 @@ combined with other filters.
 
 ```hcl
 data "vsphere-virtualmachine" "example" {
-  vcenter_server = "vcenter.example.com"
+  vcenter_server = "vc01.example.com"
   username       = "administrator@vsphere.local"
   password       = "VMware1!"
   datacenter     = "dc-01"
-  host           = "esxi-01.example.com"
+  host           = "esx01.example.com"
   name           = "linux-debian-13-*"
   latest         = true
 }

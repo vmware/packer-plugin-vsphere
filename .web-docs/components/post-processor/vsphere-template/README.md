@@ -2,7 +2,7 @@ Type: `vsphere-template`
 
 Artifact BuilderId: `packer.post-processor.vsphere`
 
-This post-processor uses an artifact from the `vmware-iso` builder with an ESXi host or an artifact
+This post-processor uses an artifact from the `vmware-iso` builder with an ESX host or an artifact
 from the [vSphere](/packer/integrations/hashicorp/vsphere/latest/components/post-processor/vsphere) post-processor. It then marks
 the virtual machine as a template and moves it to your specified path.
 
@@ -84,7 +84,7 @@ build {
 
     post-processors {
       post-processor "vsphere-template"{
-          host                = "vcenter.example.com"
+          host                = "vc01.example.com"
           insecure            = false
           username            = "administrator@vsphere.local"
           password            = "VMw@re1!"
@@ -109,7 +109,7 @@ JSON Example:
     [
       {
         "type": "vsphere-template",
-        "host": "vcenter.example.com",
+        "host": "vc01.example.com",
         "insecure": true,
         "username": "administrator@vsphere.local",
         "password": "VMw@re1!",

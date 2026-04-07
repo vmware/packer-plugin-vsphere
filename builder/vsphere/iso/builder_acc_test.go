@@ -703,7 +703,7 @@ func checkBootOrder(name string) error {
 func TestISOBuilderAcc_cluster(t *testing.T) {
 	config := defaultConfig()
 	config["cluster"] = "cluster1"
-	config["host"] = "esxi-02.example.com"
+	config["host"] = "esx02.example.com"
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-iso_bootOrder_test",
 		Template: vsphere.RenderConfig("vsphere-iso", config),
