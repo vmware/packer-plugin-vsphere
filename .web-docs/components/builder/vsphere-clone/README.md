@@ -1746,21 +1746,21 @@ JSON Example:
 
 ## Working with Clusters and Hosts
 
-### Standalone ESXi Hosts
+### Standalone ESX Hosts
 
 Only use the `host` option. Optionally, specify a `resource_pool`:
 
 HCL Example:
 
 ```hcl
-  host = "esxi-01.example.com"
+  host = "esx01.example.com"
   resource_pool = "example_resource_pool"
 ```
 
 JSON Example:
 
 ```json
-  "host": "esxi-01.example.com",
+  "host": "esx01.example.com",
   "resource_pool": "example_resource_pool",
 ```
 
@@ -1790,14 +1790,14 @@ HCL Example:
 
 ```hcl
   cluster = "cluster-01"
-  host = "esxi-01.example.com"
+  host = "esx01.example.com"
 ```
 
 JSON Example:
 
 ```json
   "cluster": "cluster-01",
-  "host": "esxi-01.example.com",
+  "host": "esx01.example.com",
 ```
 
 ## Privileges

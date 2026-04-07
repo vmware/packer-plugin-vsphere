@@ -122,7 +122,7 @@ build {
     post-processors {
       post-processor "vsphere"{
           vm_name             = "foo"
-          host                = "vcenter.example.com"
+          host                = "vc01.example.com"
           username            = "administrator@vsphere.local"
           password            = "VMw@re1!"
           datacenter          = "dc-01"
@@ -150,7 +150,7 @@ JSON Example:
       {
         "type": "vsphere",
         "vm_name": "foo",
-        "host": "vcenter.example.com",
+        "host": "vc01.example.com",
         "username": "administrator@vsphere.local",
         "password": "VMw@re1!",
         "datacenter": "dc-01",

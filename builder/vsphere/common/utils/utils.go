@@ -9,10 +9,10 @@ import (
 )
 
 const (
-	DefaultVcenterServer   = "vcenter.example.com"
+	DefaultVcenterServer   = "vc01.example.com"
 	DefaultVsphereUsername = "administrator@vsphere.local"
 	DefaultVspherePassword = "VMw@re1!"
-	DefaultVsphereHost     = "esxi-01.example.com"
+	DefaultVsphereHost     = "esx01.example.com"
 
 	EnvVcenterServer   = "VSPHERE_VCENTER_SERVER"
 	EnvVsphereUsername = "VSPHERE_USERNAME"
