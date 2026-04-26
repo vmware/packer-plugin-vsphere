@@ -18,6 +18,9 @@ type Disk struct {
 	DiskThinProvisioned bool
 	ControllerIndex     int
 	ControllerUnit      string
+	// StoragePolicyID is the UUID of the vSphere storage policy to associate
+	// with this disk. Empty means no explicit policy; the datastore default applies.
+	StoragePolicyID string
 }
 
 type StorageConfig struct {
@@ -29,6 +32,8 @@ type StorageConfig struct {
 // AddStorageDevices adds virtual storage devices to an existing device list.
 // Disks with ControllerUnit attach at explicit addresses; disks without use
 // disk_controller_index against newly created controllers from DiskControllerType.
+// When a disk has a StoragePolicyID, a VirtualMachineDefinedProfileSpec is attached
+// to that disk's device config spec.
 func (c *StorageConfig) AddStorageDevices(existingDevices object.VirtualDeviceList) ([]types.BaseVirtualDeviceConfigSpec, error) {
 	return c.addStorageDevices(existingDevices, storageAttachOptions{linkControllerDevices: true, validateAggregate: true})
 }
@@ -52,6 +57,7 @@ func (c *StorageConfig) addStorageDevices(existingDevices object.VirtualDeviceLi
 
 	newDevices := object.VirtualDeviceList{}
 	typeIndex := 0
+	policyByKey := map[int32]string{}
 
 	var legacyDisks []int
 	var explicitDisks []int
@@ -97,6 +103,9 @@ func (c *StorageConfig) addStorageDevices(existingDevices object.VirtualDeviceLi
 			existingDevices.AssignController(disk, controller)
 			existingDevices = append(existingDevices, disk)
 			newDevices = append(newDevices, disk)
+			if c.Storage[i].StoragePolicyID != "" {
+				policyByKey[disk.Key] = c.Storage[i].StoragePolicyID
+			}
 		}
 
 		typeIndex = len(c.DiskControllerType)
@@ -158,6 +167,9 @@ func (c *StorageConfig) addStorageDevices(existingDevices object.VirtualDeviceLi
 		assignDiskAtUnit(existingDevices, disk, controller, int32(addr.Unit), opts.linkControllerDevices)
 		existingDevices = append(existingDevices, disk)
 		newDevices = append(newDevices, disk)
+		if c.Storage[i].StoragePolicyID != "" {
+			policyByKey[disk.Key] = c.Storage[i].StoragePolicyID
+		}
 		pendingUnits[raw] = struct{}{}
 	}
 
@@ -167,7 +179,26 @@ func (c *StorageConfig) addStorageDevices(existingDevices object.VirtualDeviceLi
 		}
 	}
 
-	return newDevices.ConfigSpec(types.VirtualDeviceConfigSpecOperationAdd)
+	specs, err := newDevices.ConfigSpec(types.VirtualDeviceConfigSpecOperationAdd)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, spec := range specs {
+		vdcs, ok := spec.(*types.VirtualDeviceConfigSpec)
+		if !ok || vdcs.Device == nil {
+			continue
+		}
+		if policyID, ok := policyByKey[vdcs.Device.GetVirtualDevice().Key]; ok {
+			vdcs.Profile = []types.BaseVirtualMachineProfileSpec{
+				&types.VirtualMachineDefinedProfileSpec{
+					ProfileId: policyID,
+				},
+			}
+		}
+	}
+
+	return specs, nil
 }
 
 func (c *StorageConfig) buildDisk(devices object.VirtualDeviceList, dc Disk, index int) *types.VirtualDisk {

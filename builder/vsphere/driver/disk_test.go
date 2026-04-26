@@ -262,3 +262,47 @@ func TestAddStorageDevicesTypePoolExhausted(t *testing.T) {
 		t.Fatalf("expected type pool exhausted error, got %v", err)
 	}
 }
+
+// TestAddStorageDevices_WithStoragePolicy verifies that a disk with a
+// StoragePolicyID gets a VirtualMachineDefinedProfileSpec in its config spec,
+// while a disk without a policy gets no profile entry.
+func TestAddStorageDevices_WithStoragePolicy(t *testing.T) {
+	const policyUUID = "aaaabbbb-cccc-dddd-eeee-ffffffffffff"
+
+	config := &StorageConfig{
+		DiskControllerType: []string{"pvscsi"},
+		Storage: []Disk{
+			{DiskSize: 10240, DiskThinProvisioned: true, ControllerIndex: 0, StoragePolicyID: policyUUID},
+			{DiskSize: 20480, DiskThinProvisioned: true, ControllerIndex: 0},
+		},
+	}
+
+	specs, err := config.AddStorageDevices(object.VirtualDeviceList{})
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	// 1 controller + 2 disks
+	if len(specs) != 3 {
+		t.Fatalf("expected 3 specs, got %d", len(specs))
+	}
+
+	// specs[0] = controller (no profile expected)
+	// specs[1] = first disk (policy set)
+	// specs[2] = second disk (no policy)
+	disk0spec := specs[1].(*types.VirtualDeviceConfigSpec)
+	if len(disk0spec.Profile) != 1 {
+		t.Fatalf("expected 1 profile on disk 0, got %d", len(disk0spec.Profile))
+	}
+	profileSpec, ok := disk0spec.Profile[0].(*types.VirtualMachineDefinedProfileSpec)
+	if !ok {
+		t.Fatal("expected VirtualMachineDefinedProfileSpec on disk 0")
+	}
+	if profileSpec.ProfileId != policyUUID {
+		t.Fatalf("expected profile ID %q, got %q", policyUUID, profileSpec.ProfileId)
+	}
+
+	disk1spec := specs[2].(*types.VirtualDeviceConfigSpec)
+	if len(disk1spec.Profile) != 0 {
+		t.Fatalf("expected no profile on disk 1, got %d", len(disk1spec.Profile))
+	}
+}
