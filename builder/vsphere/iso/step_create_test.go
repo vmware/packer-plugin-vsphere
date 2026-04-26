@@ -7,6 +7,7 @@ package iso
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"path"
 	"strings"
@@ -244,7 +245,7 @@ func TestStepCreateVM_Run(t *testing.T) {
 		t.Fatalf("unexpected result: expected '%s' to be called", "CreateVM")
 	}
 	if diff := cmp.Diff(driverMock.CreateConfig, driverCreateConfig(step.Config, step.Location)); diff != "" {
-		t.Fatalf("unexpected result: %s", diff)
+		t.Fatalf("unexpected CreateConfig: %s", diff)
 	}
 	vm, ok := state.GetOk("vm")
 	if !ok {
@@ -405,7 +406,8 @@ func createConfig() *CreateConfig {
 
 // driverCreateConfig converts CreateConfig and LocationConfig into driver.CreateConfig for virtual machine creation.
 // It maps network interfaces, disks, and other configuration details to the required driver.CreateConfig structure.
-func driverCreateConfig(config *CreateConfig, location *common.LocationConfig) *driver.CreateConfig {
+// resolvedPolicyIDs maps disk index to pre-resolved storage policy UUID (empty string = no policy).
+func driverCreateConfig(config *CreateConfig, location *common.LocationConfig, resolvedPolicyIDs ...string) *driver.CreateConfig {
 	var networkCards []driver.NIC
 	for _, nic := range config.NICs {
 		networkCards = append(networkCards, driver.NIC{
@@ -417,13 +419,17 @@ func driverCreateConfig(config *CreateConfig, location *common.LocationConfig) *
 	}
 
 	var disks []driver.Disk
-	for _, disk := range config.StorageConfig.Storage {
-		disks = append(disks, driver.Disk{
+	for i, disk := range config.StorageConfig.Storage {
+		d := driver.Disk{
 			DiskSize:            disk.DiskSize,
 			DiskEagerlyScrub:    disk.DiskEagerlyScrub,
 			DiskThinProvisioned: disk.DiskThinProvisioned,
 			ControllerIndex:     disk.DiskControllerIndex,
-		})
+		}
+		if i < len(resolvedPolicyIDs) {
+			d.StoragePolicyID = resolvedPolicyIDs[i]
+		}
+		disks = append(disks, d)
 	}
 
 	return &driver.CreateConfig{
@@ -442,5 +448,57 @@ func driverCreateConfig(config *CreateConfig, location *common.LocationConfig) *
 		NICs:          networkCards,
 		USBController: config.USBController,
 		Version:       config.Version,
+	}
+}
+
+// TestStepCreateVM_Run_WithStoragePolicy verifies that a storage policy name is
+// resolved to a UUID and forwarded to CreateVM as StoragePolicyID on the disk.
+func TestStepCreateVM_Run_WithStoragePolicy(t *testing.T) {
+	const policyName = "gold-policy"
+	const policyUUID = "aaaabbbb-cccc-dddd-eeee-ffffffffffff"
+
+	state := basicStateBag()
+	driverMock := driver.NewDriverMock()
+	driverMock.FindStoragePolicyIDResult = policyUUID
+	state.Put("driver", driverMock)
+
+	config := createConfig()
+	config.StorageConfig.Storage[0].StoragePolicyName = policyName
+
+	step := &StepCreateVM{Config: config, Location: basicLocationConfig()}
+
+	if action := step.Run(context.TODO(), state); action == multistep.ActionHalt {
+		t.Fatalf("unexpected halt: %v", state.Get("error"))
+	}
+
+	if !driverMock.FindStoragePolicyIDCalled {
+		t.Fatal("expected FindStoragePolicyID to be called")
+	}
+	if driverMock.FindStoragePolicyIDName != policyName {
+		t.Fatalf("expected policy name %q, got %q", policyName, driverMock.FindStoragePolicyIDName)
+	}
+	if diff := cmp.Diff(driverMock.CreateConfig, driverCreateConfig(config, basicLocationConfig(), policyUUID)); diff != "" {
+		t.Fatalf("unexpected CreateConfig: %s", diff)
+	}
+}
+
+// TestStepCreateVM_Run_StoragePolicyNotFound verifies that a missing storage
+// policy causes the step to halt with a descriptive error.
+func TestStepCreateVM_Run_StoragePolicyNotFound(t *testing.T) {
+	state := basicStateBag()
+	driverMock := driver.NewDriverMock()
+	driverMock.FindStoragePolicyIDErr = fmt.Errorf("no pbm profile found with name: %q", "nonexistent")
+	state.Put("driver", driverMock)
+
+	config := createConfig()
+	config.StorageConfig.Storage[0].StoragePolicyName = "nonexistent"
+
+	step := &StepCreateVM{Config: config, Location: basicLocationConfig()}
+
+	if action := step.Run(context.TODO(), state); action != multistep.ActionHalt {
+		t.Fatalf("expected ActionHalt, got %v", action)
+	}
+	if state.Get("error") == nil {
+		t.Fatal("expected an error in state, got nil")
 	}
 }

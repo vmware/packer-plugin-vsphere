@@ -30,6 +30,10 @@ type DiskConfig struct {
 	// Only supported by the `vsphere-clone` builder. Mutually exclusive with
 	// `disk_controller_index`.
 	DiskControllerUnit string `mapstructure:"disk_controller_unit"`
+	// The name of the storage policy to apply to the disk. The storage policy
+	// must already exist on the vCenter Server. If not specified, the default
+	// storage policy of the target datastore is used.
+	StoragePolicyName string `mapstructure:"storage_policy"`
 }
 
 // Disk layout depends on the builder and clone source. For `vsphere-clone`,

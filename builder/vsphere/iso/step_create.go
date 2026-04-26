@@ -208,12 +208,21 @@ func (s *StepCreateVM) Run(_ context.Context, state multistep.StateBag) multiste
 
 	var disks []driver.Disk
 	for _, disk := range s.Config.StorageConfig.Storage {
-		disks = append(disks, driver.Disk{
+		dd := driver.Disk{
 			DiskSize:            disk.DiskSize,
 			DiskEagerlyScrub:    disk.DiskEagerlyScrub,
 			DiskThinProvisioned: disk.DiskThinProvisioned,
 			ControllerIndex:     disk.DiskControllerIndex,
-		})
+		}
+		if disk.StoragePolicyName != "" {
+			id, err := d.FindStoragePolicyID(disk.StoragePolicyName)
+			if err != nil {
+				state.Put("error", fmt.Errorf("error resolving storage policy %q: %v", disk.StoragePolicyName, err))
+				return multistep.ActionHalt
+			}
+			dd.StoragePolicyID = id
+		}
+		disks = append(disks, dd)
 	}
 
 	datastoreName := s.Location.Datastore

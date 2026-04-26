@@ -151,6 +151,52 @@ func TestVirtualMachineDriver_CreateVMWithMultipleDisks(t *testing.T) {
 	}
 }
 
+// TestVirtualMachineDriver_CreateVM_WithStoragePolicy verifies that CreateVM
+// succeeds when a disk carries a StoragePolicyID, exercising the VmProfile
+// code path in the VM config spec.
+func TestVirtualMachineDriver_CreateVM_WithStoragePolicy(t *testing.T) {
+	sim := mustVPXSimulator(t)
+
+	_, datastore := mustPreCreatedDatastore(t, sim)
+
+	config := &CreateConfig{
+		Name:      "mock-vm-with-policy",
+		Host:      "DC0_H0",
+		Datastore: datastore.Name,
+		NICs: []NIC{
+			{
+				Network:     "VM Network",
+				NetworkCard: "vmxnet3",
+			},
+		},
+		StorageConfig: StorageConfig{
+			DiskControllerType: []string{"pvscsi"},
+			Storage: []Disk{
+				{
+					DiskSize:            10240,
+					DiskThinProvisioned: true,
+					ControllerIndex:     0,
+					StoragePolicyID:     "aaaabbbb-cccc-dddd-eeee-ffffffffffff",
+				},
+				{
+					DiskSize:        20480,
+					ControllerIndex: 0,
+					// No policy on this disk — VmProfile should still be set
+					// from the first disk's policy.
+				},
+			},
+		},
+	}
+
+	vm, err := newSimulatorDriver(sim).CreateVM(config)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	if vm == nil {
+		t.Fatal("expected a VM, got nil")
+	}
+}
+
 func TestVirtualMachineDriver_CloneWithPrimaryDiskResize(t *testing.T) {
 	sim := mustVPXSimulator(t)
 

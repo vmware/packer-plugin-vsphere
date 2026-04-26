@@ -65,6 +65,11 @@ type DriverMock struct {
 	DeployContentLibraryItemShouldFail bool
 	DeployContentLibraryItemError      error
 	DeployContentLibraryItemVM         VirtualMachine
+
+	FindStoragePolicyIDCalled bool
+	FindStoragePolicyIDName   string
+	FindStoragePolicyIDResult string
+	FindStoragePolicyIDErr    error
 }
 
 // NewDriverMock creates a new instance of DriverMock for testing.
@@ -263,6 +268,12 @@ func (d *DriverMock) DeployContentLibraryItem(ctx context.Context, config *Conte
 		d.DeployContentLibraryItemVM = new(VirtualMachineMock)
 	}
 	return d.DeployContentLibraryItemVM, nil
+}
+
+func (d *DriverMock) FindStoragePolicyID(name string) (string, error) {
+	d.FindStoragePolicyIDCalled = true
+	d.FindStoragePolicyIDName = name
+	return d.FindStoragePolicyIDResult, d.FindStoragePolicyIDErr
 }
 
 func (d *DriverMock) Cleanup() (error, error) {
