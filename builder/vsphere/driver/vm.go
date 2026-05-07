@@ -509,7 +509,7 @@ func (vm *VirtualMachineDriver) Clone(ctx context.Context, config *CloneConfig) 
 	vmRef, ok := info.Result.(types.ManagedObjectReference)
 	if !ok {
 		log.Printf("[ERROR] unexpected result during cloning operation: %s", info.Result)
-		return nil, fmt.Errorf("error occured while cloning the virtual machine")
+		return nil, fmt.Errorf("error occurred while cloning the virtual machine")
 	}
 
 	created := vm.driver.NewVM(&vmRef)
@@ -525,7 +525,7 @@ func (vm *VirtualMachineDriver) updateVAppConfig(ctx context.Context, newProps m
 
 	vProps, _ := vm.Properties(ctx)
 	if vProps.Config.VAppConfig == nil {
-		return nil, fmt.Errorf("no vApp configuration found; cannot set vApp propertie")
+		return nil, fmt.Errorf("no vApp configuration found; cannot set vApp properties")
 	}
 
 	allProperties := vProps.Config.VAppConfig.GetVmConfigInfo().Property
