@@ -50,7 +50,7 @@ The following configuration options are available for the post-processor.
   When specified, Storage DRS will automatically select the optimal datastore.
   Mutually exclusive with `datastore`.
 
-- `disk_mode` (string) - The disk format of the target virtual machine. One of `thin`, `thick`,
+- `disk_mode` (string) - The disk format of the target virtual machine. One of `thin` or `thick`.
 
 - `esxi_host` (string) - The fully qualified domain name or IP address of the ESX host to upload the
   virtual machine. This is _not required_ if `host` is a vCenter instance.

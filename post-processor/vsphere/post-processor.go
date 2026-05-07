@@ -64,7 +64,7 @@ type Config struct {
 	// When specified, Storage DRS will automatically select the optimal datastore.
 	// Mutually exclusive with `datastore`.
 	DatastoreCluster string `mapstructure:"datastore_cluster"`
-	// The disk format of the target virtual machine. One of `thin`, `thick`,
+	// The disk format of the target virtual machine. One of `thin` or `thick`.
 	DiskMode string `mapstructure:"disk_mode"`
 	// The fully qualified domain name or IP address of the vCenter instance or ESX host.
 	Host string `mapstructure:"host" required:"true"`

@@ -43,6 +43,8 @@ func TestConfigure_ReregisterVM_Default(t *testing.T) {
 }
 
 func TestConfigure_Override(t *testing.T) {
+	trueVal := true
+	falseVal := false
 	tests := []struct {
 		name     string
 		override *bool
@@ -55,12 +57,12 @@ func TestConfigure_Override(t *testing.T) {
 		},
 		{
 			name:     "true",
-			override: &[]bool{true}[0],
+			override: &trueVal,
 			expected: true,
 		},
 		{
 			name:     "false",
-			override: &[]bool{false}[0],
+			override: &falseVal,
 			expected: false,
 		},
 	}
