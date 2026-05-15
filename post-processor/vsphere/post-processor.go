@@ -38,7 +38,7 @@ const (
 var ovftool = "ovftool"
 
 var (
-	// Regular expression to validate an RFC1035 hostname from and FQDN or simple
+	// Regular expression to validate an RFC1035 hostname from an FQDN or simple
 	// hostname. For example "esxi-01". Requires proper DNS setup and/or correct DNS
 	// search domain setting.
 	hostnameRegex = regexp.MustCompile(`^[[:alnum:]][[:alnum:]\-]{0,61}[[:alnum:]]|[[:alpha:]]$`)
@@ -315,7 +315,7 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packersdk.Ui, artifa
 		ShouldRetry: func(err error) bool {
 			return err != nil
 		},
-		RetryDelay: (&retry.Backoff{InitialBackoff: 200 * time.Millisecond, MaxBackoff: 30 * time.Second, Multiplier: 2}).Linear,
+		RetryDelay: (&retry.Backoff{InitialBackoff: 200 * time.Millisecond, MaxBackoff: 30 * time.Second, Multiplier: 2}).Exponential,
 	}.Run(ctx, func(ctx context.Context) error {
 		cmd := &packersdk.RemoteCmd{Command: flattenedCmd}
 		err = cmd.RunWithUi(ctx, comm, ui)
