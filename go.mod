@@ -10,7 +10,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/vmware-tanzu/image-registry-operator-api v0.0.0-20240422225856-ad6a4cd477e0
 	github.com/vmware-tanzu/vm-operator/api v1.8.7-0.20250406160248-af0c660a6ede
-	github.com/vmware/govmomi v0.53.1
+	github.com/vmware/govmomi v0.54.0
 	github.com/zclconf/go-cty v1.18.0
 	golang.org/x/mobile v0.0.0-20260312152759-81488f6aeb60
 	gopkg.in/yaml.v2 v2.4.0
