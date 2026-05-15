@@ -100,7 +100,7 @@ func TestVCenterDriver_FindResourcePoolStandaloneESX(t *testing.T) {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
 	if res == nil {
-		t.Fatalf("unexpected result: expected '%v', but returned 'nil'", res)
+		t.Fatalf("unexpected result: expected resource pool, but returned nil")
 	}
 	expectedResourcePool := "Resources"
 	if res.pool.Name() != expectedResourcePool {
@@ -113,7 +113,7 @@ func TestVCenterDriver_FindResourcePoolStandaloneESX(t *testing.T) {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
 	if res == nil {
-		t.Fatalf("unexpected result: expected '%v', but returned 'nil'", res)
+		t.Fatalf("unexpected result: expected non-nil resource pool, but returned nil")
 	}
 	if res.pool.Name() != expectedResourcePool {
 		t.Fatalf("unexpected result: expected '%s', but returned '%s'", expectedResourcePool, res.pool.Name())
