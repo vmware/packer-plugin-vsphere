@@ -41,7 +41,7 @@ var (
 	// Regular expression to validate an RFC1035 hostname from an FQDN or simple
 	// hostname. For example "esxi-01". Requires proper DNS setup and/or correct DNS
 	// search domain setting.
-	hostnameRegex = regexp.MustCompile(`^[[:alnum:]][[:alnum:]\-]{0,61}[[:alnum:]]|[[:alpha:]]$`)
+	hostnameRegex = regexp.MustCompile(`^([[:alnum:]][[:alnum:]\-]{0,61}[[:alnum:]]|[[:alpha:]])$`)
 
 	// Simple regular expression to validate IPv4 values.
 	// For example "192.168.168.1".
@@ -310,17 +310,25 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packersdk.Ui, artifa
 		ExecuteCommand: commandAndArgs,
 	}
 	flattenedCmd := strings.Join(commandAndArgs, " ")
+	backoff := &retry.Backoff{
+		InitialBackoff: 200 * time.Millisecond,
+		MaxBackoff:     30 * time.Second,
+		Multiplier:     2,
+	}
 	err = retry.Config{
 		Tries: p.config.MaxRetries,
 		ShouldRetry: func(err error) bool {
 			return err != nil
 		},
-		RetryDelay: (&retry.Backoff{InitialBackoff: 200 * time.Millisecond, MaxBackoff: 30 * time.Second, Multiplier: 2}).Exponential,
+		RetryDelay: backoff.Exponential,
 	}.Run(ctx, func(ctx context.Context) error {
 		cmd := &packersdk.RemoteCmd{Command: flattenedCmd}
 		err = cmd.RunWithUi(ctx, comm, ui)
-		if err != nil || cmd.ExitStatus() != 0 {
-			return fmt.Errorf("error uploading virtual machine")
+		if err != nil {
+			return fmt.Errorf("error uploading virtual machine: %w", err)
+		}
+		if cmd.ExitStatus() != 0 {
+			return fmt.Errorf("error uploading virtual machine: exit status %d", cmd.ExitStatus())
 		}
 		return nil
 	})
