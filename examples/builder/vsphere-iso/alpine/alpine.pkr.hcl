@@ -2,7 +2,7 @@
 # The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: MPL-2.0
 
-// Minimum Version: Alpine Linux 3.20.2
+// Minimum Version: Alpine Linux 3.23.4
 // alpine-standard-<version>-x86_64.iso
 
 packer {
@@ -16,7 +16,7 @@ packer {
 
 variable "alpine_version" {
   type        = string
-  default     = "3.20.3"
+  default     = "3.23.4"
   description = "The version of Alpine Linux to be used."
 }
 
@@ -28,7 +28,7 @@ variable "vm_name_prefix" {
 
 variable "guest_os_type" {
   type        = string
-  default     = "other5xLinux64Guest"
+  default     = "other6xLinux64Guest"
   description = "The type of guest OS to configure for the virtual machine."
 }
 
@@ -64,6 +64,12 @@ variable "insecure_connection" {
   description = "Set to true to allow insecure connections to the vCenter instance."
 }
 
+variable "vm_version" {
+  type        = string
+  default     = "21"
+  description = "The virtual hardware version to use for the virtual machine."
+}
+
 variable "root_password" {
   type        = string
   default     = "VMw@re1!"
@@ -79,7 +85,7 @@ variable "ssh_username" {
 
 variable "datastore" {
   type        = string
-  default     = "example-datastore"
+  default     = "local-ssd01-esx01"
   description = "The ESX datastore where the ISO and virtual machine will be stored."
 }
 
@@ -103,7 +109,7 @@ variable "ram" {
 
 variable "network_name" {
   type        = string
-  default     = "example-workload"
+  default     = "VM Network"
   description = "The network name to attach the virtual machine to."
 }
 
@@ -126,7 +132,7 @@ variable "network_card" {
 }
 
 locals {
-  iso_path  = "[${var.datastore}] ${var.datastore_path}/alpine-standard-${var.alpine_version}-x86_64.iso"
+  iso_path  = "[${var.datastore}] ${var.datastore_path}/linux/alpine/3/amd64/alpine-standard-${var.alpine_version}-x86_64.iso"
   timestamp = regex_replace(timestamp(), "[- TZ:]", "")
 }
 
@@ -136,27 +142,28 @@ source "vsphere-iso" "example" {
   vcenter_server      = var.vcenter_server
   host                = var.host
   insecure_connection = var.insecure_connection
+  vm_version          = var.vm_version
   vm_name             = "${var.vm_name_prefix}-${local.timestamp}"
   ssh_password        = var.root_password
   ssh_username        = var.ssh_username
   iso_paths           = [local.iso_path]
-  floppy_files          = ["${path.root}/answerfile", "${path.root}/setup.sh"]
+  floppy_files        = ["${path.root}/answerfile", "${path.root}/setup.sh"]
   guest_os_type       = var.guest_os_type
   CPUs                = var.cpus
   RAM                 = var.ram
-  RAM_reserve_all     = true
   boot_command = [
+    "<wait30>",
     "root<enter><wait>",
     "mount -t vfat /dev/fd0 /media/floppy<enter><wait>",
     "setup-alpine -f /media/floppy/answerfile<enter>",
-    "<wait5>",
+    "<wait10>",
     "${var.root_password}<enter>",
     "${var.root_password}<enter>",
     "<wait5>",
     "y<enter>",
-    "<wait10><wait10><wait10><wait10><wait10><wait10>",
+    "<wait20>",
     "reboot<enter>",
-    "<wait10><wait10>",
+    "<wait20>",
     "root<enter>",
     "${var.root_password}<enter><wait>",
     "mount -t vfat /dev/fd0 /media/floppy<enter><wait>",
@@ -172,6 +179,7 @@ source "vsphere-iso" "example" {
     disk_thin_provisioned = true
   }
   disk_controller_type = var.disk_controller_type
+  datastore            = var.datastore
 }
 
 build {
