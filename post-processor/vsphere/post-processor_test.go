@@ -7,6 +7,7 @@ package vsphere
 import (
 	"fmt"
 	"net/url"
+	"os/exec"
 	"strings"
 	"testing"
 )
@@ -30,7 +31,6 @@ func TestArgs(t *testing.T) {
 	var p PostProcessor
 
 	p.config = getTestConfig()
-	p.resolvedDatastore = p.config.Datastore
 
 	source := "something.vmx"
 	ovftoolURI := fmt.Sprintf("vi://%s:%s@%s/%s/host/%s",
@@ -132,4 +132,67 @@ func TestGetEncodedPassword(t *testing.T) {
 		t.Fatalf("unexpected result: expected 'false', but returned '%t'", isSet)
 	}
 
+}
+
+func TestConfigure_WithTags(t *testing.T) {
+	// Skip if ovftool is not available
+	if _, err := exec.LookPath(ovftool); err != nil {
+		t.Skip("ovftool not found, skipping test")
+	}
+
+	var p PostProcessor
+
+	config := map[string]interface{}{
+		"username":   "me",
+		"password":   "notpassword",
+		"host":       "myhost",
+		"datacenter": "mydc",
+		"cluster":    "mycluster",
+		"vm_name":    "my vm",
+		"datastore":  "my datastore",
+		"tags":       []string{"urn:vmomi:InventoryServiceTag:12345678-1234-1234-1234-123456789012:GLOBAL"},
+	}
+
+	err := p.Configure(config)
+	if err != nil {
+		t.Fatalf("unexpected error with valid tag configuration: %s", err)
+	}
+
+	if len(p.config.Tags) != 1 {
+		t.Fatalf("expected 1 tag, got %d", len(p.config.Tags))
+	}
+}
+
+func TestConfigure_WithTagBlocks(t *testing.T) {
+	// Skip if ovftool is not available
+	if _, err := exec.LookPath(ovftool); err != nil {
+		t.Skip("ovftool not found, skipping test")
+	}
+
+	var p PostProcessor
+
+	config := map[string]interface{}{
+		"username":   "me",
+		"password":   "notpassword",
+		"host":       "myhost",
+		"datacenter": "mydc",
+		"cluster":    "mycluster",
+		"vm_name":    "my vm",
+		"datastore":  "my datastore",
+		"tag": []map[string]interface{}{
+			{
+				"category": "environment",
+				"name":     "production",
+			},
+		},
+	}
+
+	err := p.Configure(config)
+	if err != nil {
+		t.Fatalf("unexpected error with valid tag block configuration: %s", err)
+	}
+
+	if len(p.config.Tag) != 1 {
+		t.Fatalf("expected 1 tag block, got %d", len(p.config.Tag))
+	}
 }

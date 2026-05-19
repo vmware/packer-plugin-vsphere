@@ -67,6 +67,8 @@ type Config struct {
 	ReregisterVM config.Trilean `mapstructure:"reregister_vm"`
 	// Overwrite existing template. Defaults to `false`.
 	Override bool `mapstructure:"override"`
+	// Tags configuration for the template.
+	vsphere.TagsConfig `mapstructure:",squash"`
 
 	ctx interpolate.Context
 }
@@ -118,6 +120,14 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 	sdk.User = url.UserPassword(p.config.Username, p.config.Password)
 	p.url = sdk
 
+	// Validate tags configuration
+	if len(p.config.Tags) > 0 || len(p.config.Tag) > 0 {
+		tagManager := vsphere.NewTagManager(nil, &p.config.TagsConfig, p.config.ctx)
+		if err := tagManager.ValidateConfig(); err != nil {
+			errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("tag configuration validation failed: %s", err))
+		}
+	}
+
 	if len(errs.Errors) > 0 {
 		return errs
 	}
@@ -155,6 +165,7 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packersdk.Ui, artifa
 	state := new(multistep.BasicStateBag)
 	state.Put("ui", ui)
 	state.Put("client", c)
+	state.Put("rest_credentials", url.UserPassword(p.config.Username, p.config.Password))
 
 	steps := []multistep.Step{
 		&stepChooseDatacenter{
@@ -165,6 +176,10 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packersdk.Ui, artifa
 		},
 		NewStepCreateSnapshot(artifact, p),
 		NewStepMarkAsTemplate(artifact, p),
+		&StepApplyTags{
+			TagsConfig: &p.config.TagsConfig,
+			Ctx:        p.config.ctx,
+		},
 	}
 	runner := commonsteps.NewRunnerWithPauseFn(steps, p.config.PackerConfig, ui, state)
 	runner.Run(ctx, state)

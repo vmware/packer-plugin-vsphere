@@ -116,6 +116,10 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			Host:                       b.config.Host,
 			SetHostForDatastoreUploads: b.config.SetHostForDatastoreUploads,
 		},
+		&common.StepApplyTags{
+			TagsConfig: &b.config.TagsConfig,
+			Ctx:        b.config.ctx,
+		},
 	)
 
 	// Set the address for the HTTP server based on the configuration

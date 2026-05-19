@@ -88,6 +88,12 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		steps = append(steps, new(commonsteps.StepProvision))
 	}
 
+	// Apply tags to the virtual machine.
+	steps = append(steps, &common.StepApplyTags{
+		TagsConfig: &b.config.TagsConfig,
+		Ctx:        b.config.ctx,
+	})
+
 	// Publish the provisioned source VM to a vSphere content library (if specified).
 	steps = append(steps, &StepPublishSource{
 		Config: &b.config.PublishSourceConfig,

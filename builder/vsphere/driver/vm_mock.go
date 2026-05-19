@@ -313,3 +313,7 @@ func (vm *VirtualMachineMock) RemoveNetworkAdapters() error {
 func (vm *VirtualMachineMock) Datacenter() *object.Datacenter {
 	return nil
 }
+
+func (vm *VirtualMachineMock) Reference() types.ManagedObjectReference {
+	return types.ManagedObjectReference{}
+}

@@ -17,8 +17,7 @@
 - `options` ([]string) - Options to send to `ovftool` when uploading the virtual machine.
   Use `ovftool --help` to list all the options available.
 
-- `overwrite` (bool) - Overwrite existing files.
-  If `true`, forces overwrites of existing files. Defaults to `false`.
+- `overwrite` (bool) - Overwrite existing files. Defaults to `false`.
 
 - `resource_pool` (string) - The name of the resource pool to place the virtual machine.
 
@@ -31,15 +30,14 @@
 
 - `hardware_version` (string) - The maximum virtual hardware version for the deployed virtual machine.
   
-  It does not upgrade the virtual hardware version of the source VM. Instead, it
-  limits the virtual hardware version of the deployed virtual machine to the
-  specified version. If the source virtual machine's hardware version is higher
-  than the specified version, the deployed virtual machine's hardware version will
-  be downgraded to the specified version.
+  It does not upgrade the virtual hardware version of the source VM. Instead, it limits the
+  virtual hardware version of the deployed virtual machine  to the specified version.
+  If the source virtual machine's hardware version is higher than the specified version, the
+  deployed virtual machine's hardware version will be downgraded to the specified version.
   
-  If the source virtual machine's hardware version is lower than or equal to the
-  specified version, the deployed virtual machine's hardware version will be the
-  same as the source virtual machine's.
+  If the source virtual machine's hardware version is lower than or equal to the specified
+  version, the deployed virtual machine's hardware version will be the same as the source
+  virtual machine's.
   
   This option is useful when deploying to vCenter instance or an ESX host whose
   version is different from the one used to create the artifact.

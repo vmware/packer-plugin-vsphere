@@ -4,38 +4,41 @@ package vsphere
 
 import (
 	"github.com/hashicorp/hcl/v2/hcldec"
+	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // FlatConfig is an auto-generated flat version of Config.
 // Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
 type FlatConfig struct {
-	PackerBuildName     *string           `mapstructure:"packer_build_name" cty:"packer_build_name" hcl:"packer_build_name"`
-	PackerBuilderType   *string           `mapstructure:"packer_builder_type" cty:"packer_builder_type" hcl:"packer_builder_type"`
-	PackerCoreVersion   *string           `mapstructure:"packer_core_version" cty:"packer_core_version" hcl:"packer_core_version"`
-	PackerDebug         *bool             `mapstructure:"packer_debug" cty:"packer_debug" hcl:"packer_debug"`
-	PackerForce         *bool             `mapstructure:"packer_force" cty:"packer_force" hcl:"packer_force"`
-	PackerOnError       *string           `mapstructure:"packer_on_error" cty:"packer_on_error" hcl:"packer_on_error"`
-	PackerUserVars      map[string]string `mapstructure:"packer_user_variables" cty:"packer_user_variables" hcl:"packer_user_variables"`
-	PackerSensitiveVars []string          `mapstructure:"packer_sensitive_variables" cty:"packer_sensitive_variables" hcl:"packer_sensitive_variables"`
-	Cluster             *string           `mapstructure:"cluster" required:"true" cty:"cluster" hcl:"cluster"`
-	Datacenter          *string           `mapstructure:"datacenter" required:"true" cty:"datacenter" hcl:"datacenter"`
-	Datastore           *string           `mapstructure:"datastore" cty:"datastore" hcl:"datastore"`
-	DatastoreCluster    *string           `mapstructure:"datastore_cluster" cty:"datastore_cluster" hcl:"datastore_cluster"`
-	DiskMode            *string           `mapstructure:"disk_mode" cty:"disk_mode" hcl:"disk_mode"`
-	Host                *string           `mapstructure:"host" required:"true" cty:"host" hcl:"host"`
-	ESXHost             *string           `mapstructure:"esxi_host" cty:"esxi_host" hcl:"esxi_host"`
-	Insecure            *bool             `mapstructure:"insecure" cty:"insecure" hcl:"insecure"`
-	Options             []string          `mapstructure:"options" cty:"options" hcl:"options"`
-	Overwrite           *bool             `mapstructure:"overwrite" cty:"overwrite" hcl:"overwrite"`
-	Password            *string           `mapstructure:"password" required:"true" cty:"password" hcl:"password"`
-	ResourcePool        *string           `mapstructure:"resource_pool" cty:"resource_pool" hcl:"resource_pool"`
-	Username            *string           `mapstructure:"username" required:"true" cty:"username" hcl:"username"`
-	VMFolder            *string           `mapstructure:"vm_folder" cty:"vm_folder" hcl:"vm_folder"`
-	VMName              *string           `mapstructure:"vm_name" cty:"vm_name" hcl:"vm_name"`
-	VMNetwork           *string           `mapstructure:"vm_network" cty:"vm_network" hcl:"vm_network"`
-	HardwareVersion     *string           `mapstructure:"hardware_version" cty:"hardware_version" hcl:"hardware_version"`
-	MaxRetries          *int              `mapstructure:"max_retries" cty:"max_retries" hcl:"max_retries"`
+	PackerBuildName     *string                `mapstructure:"packer_build_name" cty:"packer_build_name" hcl:"packer_build_name"`
+	PackerBuilderType   *string                `mapstructure:"packer_builder_type" cty:"packer_builder_type" hcl:"packer_builder_type"`
+	PackerCoreVersion   *string                `mapstructure:"packer_core_version" cty:"packer_core_version" hcl:"packer_core_version"`
+	PackerDebug         *bool                  `mapstructure:"packer_debug" cty:"packer_debug" hcl:"packer_debug"`
+	PackerForce         *bool                  `mapstructure:"packer_force" cty:"packer_force" hcl:"packer_force"`
+	PackerOnError       *string                `mapstructure:"packer_on_error" cty:"packer_on_error" hcl:"packer_on_error"`
+	PackerUserVars      map[string]string      `mapstructure:"packer_user_variables" cty:"packer_user_variables" hcl:"packer_user_variables"`
+	PackerSensitiveVars []string               `mapstructure:"packer_sensitive_variables" cty:"packer_sensitive_variables" hcl:"packer_sensitive_variables"`
+	Cluster             *string                `mapstructure:"cluster" required:"true" cty:"cluster" hcl:"cluster"`
+	Datacenter          *string                `mapstructure:"datacenter" required:"true" cty:"datacenter" hcl:"datacenter"`
+	Datastore           *string                `mapstructure:"datastore" cty:"datastore" hcl:"datastore"`
+	DatastoreCluster    *string                `mapstructure:"datastore_cluster" cty:"datastore_cluster" hcl:"datastore_cluster"`
+	DiskMode            *string                `mapstructure:"disk_mode" cty:"disk_mode" hcl:"disk_mode"`
+	Host                *string                `mapstructure:"host" required:"true" cty:"host" hcl:"host"`
+	ESXHost             *string                `mapstructure:"esxi_host" cty:"esxi_host" hcl:"esxi_host"`
+	Insecure            *bool                  `mapstructure:"insecure" cty:"insecure" hcl:"insecure"`
+	Options             []string               `mapstructure:"options" cty:"options" hcl:"options"`
+	Overwrite           *bool                  `mapstructure:"overwrite" cty:"overwrite" hcl:"overwrite"`
+	Password            *string                `mapstructure:"password" required:"true" cty:"password" hcl:"password"`
+	ResourcePool        *string                `mapstructure:"resource_pool" cty:"resource_pool" hcl:"resource_pool"`
+	Username            *string                `mapstructure:"username" required:"true" cty:"username" hcl:"username"`
+	VMFolder            *string                `mapstructure:"vm_folder" cty:"vm_folder" hcl:"vm_folder"`
+	VMName              *string                `mapstructure:"vm_name" cty:"vm_name" hcl:"vm_name"`
+	VMNetwork           *string                `mapstructure:"vm_network" cty:"vm_network" hcl:"vm_network"`
+	HardwareVersion     *string                `mapstructure:"hardware_version" cty:"hardware_version" hcl:"hardware_version"`
+	MaxRetries          *int                   `mapstructure:"max_retries" cty:"max_retries" hcl:"max_retries"`
+	Tags                []string               `mapstructure:"tags" cty:"tags" hcl:"tags"`
+	Tag                 []common.FlatTagConfig `mapstructure:"tag" cty:"tag" hcl:"tag"`
 }
 
 // FlatMapstructure returns a new FlatConfig.
@@ -76,6 +79,8 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"vm_network":                 &hcldec.AttrSpec{Name: "vm_network", Type: cty.String, Required: false},
 		"hardware_version":           &hcldec.AttrSpec{Name: "hardware_version", Type: cty.String, Required: false},
 		"max_retries":                &hcldec.AttrSpec{Name: "max_retries", Type: cty.Number, Required: false},
+		"tags":                       &hcldec.AttrSpec{Name: "tags", Type: cty.List(cty.String), Required: false},
+		"tag":                        &hcldec.BlockListSpec{TypeName: "tag", Nested: hcldec.ObjectSpec((*common.FlatTagConfig)(nil).HCL2Spec())},
 	}
 	return s
 }

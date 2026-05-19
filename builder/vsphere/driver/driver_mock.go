@@ -9,6 +9,7 @@ import (
 
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/vmware/govmomi/vapi/library"
+	"github.com/vmware/govmomi/vapi/rest"
 	"github.com/vmware/govmomi/vim25/types"
 )
 
@@ -123,6 +124,10 @@ func (d *DriverMock) FindContentLibraryFileDatastorePath(isoPath string) (string
 }
 
 func (d *DriverMock) UpdateContentLibraryItem(item *library.Item, name string, description string) error {
+	return nil
+}
+
+func (d *DriverMock) GetRestClient() *rest.Client {
 	return nil
 }
 

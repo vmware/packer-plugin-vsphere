@@ -60,7 +60,7 @@ func (s *StepMarkAsTemplate) Run(ctx context.Context, state multistep.StateBag) 
 	folder := state.Get("folder").(*object.Folder)
 	dcPath := state.Get("dcPath").(string)
 
-	vm, err := findVirtualMachine(cli, dcPath, s.VMName, s.RemoteFolder)
+	vm, err := findVirtualMachineWithFallback(cli, dcPath, s.VMName, s.RemoteFolder)
 	if err != nil {
 		state.Put("error", err)
 		ui.Errorf("%s", err)
@@ -88,6 +88,10 @@ func (s *StepMarkAsTemplate) Run(ctx context.Context, state multistep.StateBag) 
 			ui.Errorf("vm.MarkAsTemplate: %s", err)
 			return multistep.ActionHalt
 		}
+
+		// Put the template VM in state for tag application
+		state.Put("vm", vm)
+
 		return multistep.ActionContinue
 	}
 
@@ -145,6 +149,17 @@ func (s *StepMarkAsTemplate) Run(ctx context.Context, state multistep.StateBag) 
 		return multistep.ActionHalt
 	}
 
+	// Get the newly registered template for tag application
+	template, err := findTemplate(cli, folder, artifactName)
+	if err != nil {
+		state.Put("error", err)
+		ui.Errorf("findTemplate: %s", err)
+		return multistep.ActionHalt
+	}
+
+	// Put the template VM in state for tag application
+	state.Put("vm", template)
+
 	return multistep.ActionContinue
 }
 
@@ -180,7 +195,7 @@ func datastorePath(vm *object.VirtualMachine) (*object.DatastorePath, error) {
 
 func findVirtualMachine(cli *govmomi.Client, dcPath, name, remoteFolder string) (*object.VirtualMachine, error) {
 	si := object.NewSearchIndex(cli.Client)
-	fullPath := path.Join(dcPath, "vm", remoteFolder, name)
+	fullPath := path.Join(dcPath, "vm", strings.TrimPrefix(remoteFolder, "/"), name)
 
 	ref, err := si.FindByInventoryPath(context.Background(), fullPath)
 	if err != nil {
@@ -196,6 +211,28 @@ func findVirtualMachine(cli *govmomi.Client, dcPath, name, remoteFolder string) 
 		vm.SetInventoryPath(fullPath)
 	}
 	return vm, nil
+}
+
+func findVirtualMachineWithFallback(cli *govmomi.Client, dcPath, name, remoteFolder string) (*object.VirtualMachine, error) {
+	var lastErr error
+	tried := map[string]bool{}
+
+	candidates := []string{remoteFolder, "Discovered virtual machine", ""}
+	for _, folder := range candidates {
+		folder = strings.TrimSpace(folder)
+		if tried[folder] {
+			continue
+		}
+		tried[folder] = true
+
+		vm, err := findVirtualMachine(cli, dcPath, name, folder)
+		if err == nil {
+			return vm, nil
+		}
+		lastErr = err
+	}
+
+	return nil, lastErr
 }
 
 func unregisterVirtualMachine(cli *govmomi.Client, folder *object.Folder, name string) error {

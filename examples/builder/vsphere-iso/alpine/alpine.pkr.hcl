@@ -143,7 +143,7 @@ source "vsphere-iso" "example" {
   host                = var.host
   insecure_connection = var.insecure_connection
   vm_version          = var.vm_version
-  vm_name             = "${var.vm_name_prefix}-${local.timestamp}"
+  vm_name             = "${var.vm_name_prefix}"
   ssh_password        = var.root_password
   ssh_username        = var.ssh_username
   iso_paths           = [local.iso_path]

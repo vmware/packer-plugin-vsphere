@@ -21,13 +21,13 @@ their respective End of General Support dates. For detailed information, refer t
 
 ## Examples
 
-Examples are available in the [examples](https://github.com/vmware/packer-plugin-vsphere/tree/main/examples/)
-directory of the GitHub repository.
+- Examples are available in the [examples](https://github.com/vmware/packer-plugin-vsphere/tree/main/builder/vsphere/examples/)
+  directory of the GitHub repository.
 
 HCL Example:
 
 ```hcl
-source "vsphere-supervisor" "example-vm" {
+source "vsphere-supervisor" "example" {
   image_name = "<Image name of the source VM, e.g. 'ubuntu-impish-21.10-cloudimg'>"
   class_name = "<VM class that describes the virtual hardware settings, e.g. 'best-effort-large'>"
   storage_class = "<Storage class that provides the backing storage for volume, e.g. 'wcplocal-storage-profile'>"
@@ -37,14 +37,14 @@ source "vsphere-supervisor" "example-vm" {
 }
 
 build {
-  sources = ["source.vsphere-supervisor.example-vm"]
+  sources = ["source.vsphere-supervisor.example"]
 }
 ```
 
 HCL Example with image import:
 
 ```hcl
-source "vsphere-supervisor" "example-vm" {
+source "vsphere-supervisor" "example" {
   import_source_url = "<Remote URL to import image from, optional, e.g. 'https://example.com/example.ovf'>"
   import_source_ssl_certificate = "<SSL certificate of the remote HTTPS server, optional, e.g. '-----BEGIN CERTIFICATE-----xxxxx-----END CERTIFICATE-----'>"
   import_target_location_name = "<Target location / content library for the imported image, optional, e.g. 'cl-6066c61f7931c5ef9'>"
@@ -58,7 +58,7 @@ source "vsphere-supervisor" "example-vm" {
 }
 
 build {
-  sources = ["source.vsphere-supervisor.example-vm"]
+  sources = ["source.vsphere-supervisor.example"]
 }
 ```
 
@@ -214,6 +214,90 @@ items are listed below as well as the _optional_ configurations.
 
 <!-- End of code generated from the comments of the PublishSourceConfig struct in builder/vsphere/supervisor/step_publish_source.go; -->
 
+
+### Tags Configuration
+
+**Optional**:
+
+Tags provide a flexible metadata system that allows you to attach key-value information to virtual machines
+and templates.
+
+This plugin supports the following configuration formats:
+
+<!-- Code generated from the comments of the TagsConfig struct in builder/vsphere/common/tags_config.go; DO NOT EDIT MANUALLY -->
+
+- `tags` ([]string) - List of tag IDs to attach.
+
+- `tag` ([]TagConfig) - List of tag configuration blocks.
+
+<!-- End of code generated from the comments of the TagsConfig struct in builder/vsphere/common/tags_config.go; -->
+
+
+Tags consist of the following parts::
+
+<!-- Code generated from the comments of the TagConfig struct in builder/vsphere/common/tags_config.go; DO NOT EDIT MANUALLY -->
+
+- `category` (string) - The tag category name. Mutually exclusive with `id`.
+
+- `name` (string) - The tag name within the category. Mutually exclusive with `id`.
+
+- `id` (string) - The tag ID (URN). Mutually exclusive with `category` and `name`.
+
+<!-- End of code generated from the comments of the TagConfig struct in builder/vsphere/common/tags_config.go; -->
+
+
+Both formats can be used together, and all tags will be merged and applied to the virtual machine.
+
+~> **Important:** When using `tag` blocks with `category` and `name`, the tag `category` must already exist
+in vSphere and be associable with virtual machines. The plugin will create tags within existing
+categories if they do not exist and the account context used to run the build has the appropriate
+privileges.
+
+HCL Example:
+
+```hcl
+source "vsphere-supervisor" "example" {
+  # ... other configuration ...
+  tags = [
+    "urn:vmomi:InventoryServiceTag:abcdefgh-1234-5678-90ab-cdef12345678:GLOBAL",
+    "urn:vmomi:InventoryServiceTag:bcdefghj-2345-6789-01bc-def123456789:GLOBAL"
+  ]
+  tag {
+    id = "urn:vmomi:InventoryServiceTag:cdef1234-5678-90ab-cdef-1234567890ab:GLOBAL"
+  }
+  tag {
+    category = "os-distribution"
+    name     = "ubuntu"
+  }
+  tag {
+    category = "os-version"
+    name     = "26.04"
+  }
+  # ... other configuration ...
+}
+```
+
+JSON Example:
+
+```json
+  "tags": [
+    "urn:vmomi:InventoryServiceTag:abcdefgh-1234-5678-90ab-cdef12345678:GLOBAL",
+    "urn:vmomi:InventoryServiceTag:bcdefghj-2345-6789-01bc-def123456789:GLOBAL"
+  ],
+  "tag": [
+    {
+      "id": "urn:vmomi:InventoryServiceTag:cdef1234-5678-90ab-cdef-1234567890ab:GLOBAL"
+    },
+    {
+      "category": "build-date",
+      "name": "{{ timestamp }}"
+    },
+    {
+      "category": "packer-version",
+      "name": "{{ packer_version }}"
+    }
+  ]
+```
 
 ### Communicator Configuration
 
@@ -388,6 +472,30 @@ items are listed below as well as the _optional_ configurations.
 
 <!-- End of code generated from the comments of the WinRM struct in communicator/config.go; -->
 
+
+## Privileges
+
+The vsphere-supervisor builder requires appropriate permissions to interact with the vSphere
+Supervisor cluster and VM Service API. Refer to the
+[vSphere Supervisor documentation](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere-supervisor/8-0/vsphere-supervisor-services-and-workloads-8-0/deploying-and-managing-virtual-machines-in-vsphere-iaas-control-plane.html)
+for detailed information on required permissions.
+
+### Additional Privileges for Tags
+
+If using the tags configuration, the following additional privileges are required:
+
+- Tagging (Global):
+
+  ```text
+  Tagging > Assign or unassign tag
+  Tagging > Create tag
+  Tagging > Read tag
+  Tagging > Read tag category
+  ```
+
+~> **Note:** Tag privileges are part of the vSphere REST API and are managed separately from
+traditional vSphere privileges. These privileges must be assigned at the **Global** level to work
+correctly with the tagging service.
 
 ## Deprovisioning Tasks
 
