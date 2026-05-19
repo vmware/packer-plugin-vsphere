@@ -1485,7 +1485,7 @@ Refer to the [VMware](https://docs.cloud-init.io/en/latest/reference/data-source
 
 - `winrm_insecure` (bool) - If `true`, do not check server certificate chain and host name.
 
-- `winrm_use_ntlm` (bool) - If `true`, NTLMv2 authentication (with session security) will be used
+- `winrm_use_ntlm` (boolean) - If `true`, NTLMv2 authentication (with session security) will be used
   for WinRM, rather than default (basic authentication), removing the
   requirement for basic authentication to be enabled within the target
   guest. Further reading for remote connection authentication can be found
