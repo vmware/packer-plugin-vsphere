@@ -6,12 +6,14 @@ package driver
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"time"
 
 	"github.com/vmware/govmomi/nfc"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/ovf"
+	"github.com/vmware/govmomi/vapi/library"
 	"github.com/vmware/govmomi/vapi/vcenter"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
@@ -194,6 +196,14 @@ func (vm *VirtualMachineMock) ImportOvfToContentLibrary(ovf vcenter.OVF) error {
 }
 
 func (vm *VirtualMachineMock) ImportToContentLibrary(template vcenter.Template) error {
+	return nil
+}
+
+func (vm *VirtualMachineMock) FindContentLibraryItem(libraryName string, itemName string) (*library.Item, error) {
+	return nil, fmt.Errorf("content library item %s not found", itemName)
+}
+
+func (vm *VirtualMachineMock) DeleteContentLibraryItem(itemID string) error {
 	return nil
 }
 

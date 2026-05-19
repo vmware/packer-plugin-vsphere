@@ -22,6 +22,7 @@ type FlatContentLibraryDestinationConfig struct {
 	Ovf          *bool    `mapstructure:"ovf" cty:"ovf" hcl:"ovf"`
 	SkipImport   *bool    `mapstructure:"skip_import" cty:"skip_import" hcl:"skip_import"`
 	OvfFlags     []string `mapstructure:"ovf_flags" cty:"ovf_flags" hcl:"ovf_flags"`
+	Overwrite    *bool    `mapstructure:"overwrite" cty:"overwrite" hcl:"overwrite"`
 }
 
 // FlatMapstructure returns a new FlatContentLibraryDestinationConfig.
@@ -48,6 +49,7 @@ func (*FlatContentLibraryDestinationConfig) HCL2Spec() map[string]hcldec.Spec {
 		"ovf":           &hcldec.AttrSpec{Name: "ovf", Type: cty.Bool, Required: false},
 		"skip_import":   &hcldec.AttrSpec{Name: "skip_import", Type: cty.Bool, Required: false},
 		"ovf_flags":     &hcldec.AttrSpec{Name: "ovf_flags", Type: cty.List(cty.String), Required: false},
+		"overwrite":     &hcldec.AttrSpec{Name: "overwrite", Type: cty.Bool, Required: false},
 	}
 	return s
 }

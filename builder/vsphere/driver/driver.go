@@ -49,6 +49,7 @@ type Driver interface {
 	FindContentLibraryFileDatastorePath(isoPath string) (string, error)
 	UpdateContentLibraryItem(item *library.Item, name string, description string) error
 	GetRestClient() *rest.Client
+	DeleteContentLibraryItem(itemID string) error
 	Cleanup() (error, error)
 }
 

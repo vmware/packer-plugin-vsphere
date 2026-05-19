@@ -9,6 +9,7 @@ package common
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
@@ -28,17 +29,19 @@ type ContentLibraryDestinationConfig struct {
 	// must be of type Local to allow deploying virtual machines.
 	Library string `mapstructure:"library"`
 	// The name of the content library item that will be created or updated.
-	// For VM templates, the name of the item should be different from
-	// [vm_name](#vm_name) and the default is [vm_name](#vm_name) + timestamp
-	// when not set. VM templates will always be imported to a new library item.
-	// For OVF templates, the name defaults to [vm_name](#vm_name) when not set,
-	// and if an item with the same name already exists it will be then updated
-	// with the new OVF template, otherwise a new item will be created.
 	//
-	// ~> **Note:** It's not possible to update existing content library items
-	// with a new VM template. If updating an existing content library item is
-	// necessary, use an OVF template instead by setting the [ovf](#ovf) option
-	// as `true`.
+	// For VM templates, the default is [vm_name](#vm_name) + timestamp when not set.
+	// VM templates are always imported as new library items. If an item with the
+	// specified name already exists, the import will fail unless [overwrite](#overwrite)
+	// is set to `true`.
+	//
+	// For OVF templates, the name defaults to [vm_name](#vm_name) when not set.
+	// If an item with the same name already exists, it will be updated with the
+	// new OVF template, otherwise a new item will be created.
+	//
+	// ~> **Note:** VM templates cannot update existing content library items in-place
+	// like OVF templates. When [overwrite](#overwrite) is enabled, the existing item
+	// will be deleted before creating the new one.
 	Name string `mapstructure:"name"`
 	// A description for the content library item that will be created.
 	// Defaults to "Packer imported [vm_name](#vm_name) VM template".
@@ -80,6 +83,11 @@ type ContentLibraryDestinationConfig struct {
 	// obtained using ExportFlag.list. If unset, no flags will be used.
 	// Known values: `EXTRA_CONFIG`, `PRESERVE_MAC`.
 	OvfFlags []string `mapstructure:"ovf_flags"`
+	// Overwrite the content library item if it already exists. This only applies
+	// to VM templates. For OVF templates, existing items are always updated.
+	// When enabled for VM templates, the existing item will be deleted before
+	// creating the new one. Defaults to `false`.
+	Overwrite bool `mapstructure:"overwrite"`
 }
 
 func (c *ContentLibraryDestinationConfig) Prepare(lc *LocationConfig) []error {
@@ -89,14 +97,22 @@ func (c *ContentLibraryDestinationConfig) Prepare(lc *LocationConfig) []error {
 		errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("a library name must be provided"))
 	}
 
+	if c.Overwrite {
+		if c.Ovf {
+			errs = packersdk.MultiErrorAppend(errs,
+				fmt.Errorf("overwrite is only supported for VM template imports (set ovf to false)"))
+		}
+		if c.Name == "" {
+			errs = packersdk.MultiErrorAppend(errs,
+				fmt.Errorf("overwrite requires content_library_destination.name to be set"))
+		}
+	}
+
 	if c.Ovf {
 		if c.Name == "" {
 			c.Name = lc.VMName
 		}
 	} else {
-		if c.Name == lc.VMName {
-			errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("the content library destination name must be different from the VM name"))
-		}
 
 		if c.Name == "" {
 			// Add timestamp to the name to differentiate from the original VM
@@ -116,6 +132,11 @@ func (c *ContentLibraryDestinationConfig) Prepare(lc *LocationConfig) []error {
 		}
 		if c.ResourcePool == "" {
 			c.ResourcePool = lc.ResourcePool
+		}
+
+		if c.Name == lc.VMName {
+			errs = packersdk.MultiErrorAppend(errs,
+				fmt.Errorf("content_library_destination.name must differ from vm_name for VM template imports"))
 		}
 	}
 	if c.Description == "" {
@@ -212,6 +233,19 @@ func (s *StepImportToContentLibrary) importOvfTemplate(vm *driver.VirtualMachine
 }
 
 func (s *StepImportToContentLibrary) importVmTemplate(vm *driver.VirtualMachineDriver) error {
+	existingItem, err := vm.FindContentLibraryItem(s.ContentLibConfig.Library, s.ContentLibConfig.Name)
+	if err == nil {
+		// Item exists
+		if !s.ContentLibConfig.Overwrite {
+			return fmt.Errorf("content library item '%s' already exists; set overwrite to true to replace it", s.ContentLibConfig.Name)
+		}
+		log.Printf("Deleting existing content library item '%s' before re-import", s.ContentLibConfig.Name)
+		if err := vm.DeleteContentLibraryItem(existingItem.ID); err != nil {
+			return fmt.Errorf("failed to delete existing content library item: %s", err)
+		}
+	}
+	// If err != nil the item was not found, which is the normal case — continue.
+
 	template := vcenter.Template{
 		Name:        s.ContentLibConfig.Name,
 		Description: s.ContentLibConfig.Description,

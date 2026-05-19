@@ -1678,17 +1678,19 @@ The template is stored in an existing or newly created library item.
   must be of type Local to allow deploying virtual machines.
 
 - `name` (string) - The name of the content library item that will be created or updated.
-  For VM templates, the name of the item should be different from
-  [vm_name](#vm_name) and the default is [vm_name](#vm_name) + timestamp
-  when not set. VM templates will always be imported to a new library item.
-  For OVF templates, the name defaults to [vm_name](#vm_name) when not set,
-  and if an item with the same name already exists it will be then updated
-  with the new OVF template, otherwise a new item will be created.
   
-  ~> **Note:** It's not possible to update existing content library items
-  with a new VM template. If updating an existing content library item is
-  necessary, use an OVF template instead by setting the [ovf](#ovf) option
-  as `true`.
+  For VM templates, the default is [vm_name](#vm_name) + timestamp when not set.
+  VM templates are always imported as new library items. If an item with the
+  specified name already exists, the import will fail unless [overwrite](#overwrite)
+  is set to `true`.
+  
+  For OVF templates, the name defaults to [vm_name](#vm_name) when not set.
+  If an item with the same name already exists, it will be updated with the
+  new OVF template, otherwise a new item will be created.
+  
+  ~> **Note:** VM templates cannot update existing content library items in-place
+  like OVF templates. When [overwrite](#overwrite) is enabled, the existing item
+  will be deleted before creating the new one.
 
 - `description` (string) - A description for the content library item that will be created.
   Defaults to "Packer imported [vm_name](#vm_name) VM template".
@@ -1729,6 +1731,11 @@ The template is stored in an existing or newly created library item.
 - `ovf_flags` ([]string) - Flags to use for OVF package creation. The supported flags can be
   obtained using ExportFlag.list. If unset, no flags will be used.
   Known values: `EXTRA_CONFIG`, `PRESERVE_MAC`.
+
+- `overwrite` (bool) - Overwrite the content library item if it already exists. This only applies
+  to VM templates. For OVF templates, existing items are always updated.
+  When enabled for VM templates, the existing item will be deleted before
+  creating the new one. Defaults to `false`.
 
 <!-- End of code generated from the comments of the ContentLibraryDestinationConfig struct in builder/vsphere/common/step_import_to_content_library.go; -->
 

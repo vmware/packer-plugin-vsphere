@@ -124,6 +124,13 @@ func (d *VCenterDriver) UpdateContentLibraryItem(item *library.Item, name string
 	return lm.UpdateLibraryItem(d.Ctx, item)
 }
 
+// DeleteContentLibraryItem deletes a content library item by its ID.
+// Returns an error if the deletion fails.
+func (d *VCenterDriver) DeleteContentLibraryItem(itemID string) error {
+	lm := library.NewManager(d.RestClient.client)
+	return lm.DeleteLibraryItem(d.Ctx, &library.Item{ID: itemID})
+}
+
 type LibraryFilePath struct {
 	path string
 }
