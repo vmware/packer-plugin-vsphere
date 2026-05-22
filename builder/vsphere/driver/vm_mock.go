@@ -181,7 +181,7 @@ func (vm *VirtualMachineMock) PowerOn() error {
 	return nil
 }
 
-func (vm *VirtualMachineMock) WaitForIP(ctx context.Context, ipNet *net.IPNet) (string, error) {
+func (vm *VirtualMachineMock) WaitForIP(ctx context.Context, ipNet *net.IPNet, adapterIndex *int) (string, error) {
 	return "", nil
 }
 

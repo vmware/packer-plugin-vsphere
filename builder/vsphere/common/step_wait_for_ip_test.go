@@ -7,6 +7,8 @@ package common
 import (
 	"testing"
 	"time"
+
+	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
 
 func TestWaitIpConfig_Prepare_defaults(t *testing.T) {
@@ -61,4 +63,27 @@ func TestWaitIpConfig_ValidateDisableIpWait(t *testing.T) {
 			t.Fatalf("expected no warnings or errors for communicator none, got warnings=%v errs=%v", warnings, errs)
 		}
 	})
+}
+
+func TestWaitIpConfig_Prepare_adapterIndex(t *testing.T) {
+	neg := -1
+	c := WaitIpConfig{WaitAdapterIndex: &neg}
+	errs := c.Prepare()
+	if len(errs) != 1 {
+		t.Fatalf("expected 1 error, got %v", errs)
+	}
+
+	zero := 0
+	c = WaitIpConfig{WaitAdapterIndex: &zero}
+	if errs := c.Prepare(); len(errs) != 0 {
+		t.Fatalf("unexpected errors: %v", errs)
+	}
+}
+
+func TestAdapterIndexOutOfRangeError(t *testing.T) {
+	err := driver.AdapterIndexOutOfRangeError(18, 4, "network adapters")
+	want := "ip_wait_adapter_index is 18; valid indexes are 0 to 3 (4 network adapters)"
+	if err.Error() != want {
+		t.Fatalf("got %q, want %q", err.Error(), want)
+	}
 }

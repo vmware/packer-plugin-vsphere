@@ -9,6 +9,26 @@ import (
 	"testing"
 )
 
+func TestISOConfig_AdapterIndexOutOfRange(t *testing.T) {
+	raw := minimalISOConfig()
+	raw["ip_wait_adapter_index"] = 18
+	raw["network_adapters"] = []any{
+		map[string]any{"network": "VM Network", "network_card": "vmxnet3"},
+		map[string]any{"network": "VM Network", "network_card": "vmxnet3"},
+		map[string]any{"network": "VM Network", "network_card": "vmxnet3"},
+		map[string]any{"network": "VM Network", "network_card": "vmxnet3"},
+	}
+	c := new(Config)
+	_, err := c.Prepare(raw)
+	if err == nil {
+		t.Fatal("expected ip_wait_adapter_index error")
+	}
+	want := "ip_wait_adapter_index is 18; valid indexes are 0 to 3 (4 network adapters)"
+	if !strings.Contains(err.Error(), want) {
+		t.Fatalf("got %q, want it to contain %q", err.Error(), want)
+	}
+}
+
 func TestISOConfig_DisableIpWaitRequiresHost(t *testing.T) {
 	raw := minimalISOConfig()
 	raw["disable_ip_wait"] = true

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -41,7 +42,7 @@ type VirtualMachine interface {
 	Reconfigure(spec types.VirtualMachineConfigSpec) error
 	Customize(spec types.CustomizationSpec) error
 	ResizeDisk(diskSize int64) ([]types.BaseVirtualDeviceConfigSpec, error)
-	WaitForIP(ctx context.Context, ipNet *net.IPNet) (string, error)
+	WaitForIP(ctx context.Context, ipNet *net.IPNet, adapterIndex *int) (string, error)
 	PowerOn() error
 	PowerOff() error
 	IsPoweredOff() (bool, error)
@@ -821,30 +822,178 @@ func (vm *VirtualMachineDriver) PowerOn() error {
 	return err
 }
 
-// WaitForIP waits for the virtual machine to get an IP address.
-func (vm *VirtualMachineDriver) WaitForIP(ctx context.Context, ipNet *net.IPNet) (string, error) {
-	netIP, err := vm.vm.WaitForNetIP(ctx, false)
+// WaitForIP waits for a matching IP on a network adapter.
+func (vm *VirtualMachineDriver) WaitForIP(ctx context.Context, ipNet *net.IPNet, adapterIndex *int) (string, error) {
+	adapters, err := vm.NetworkAdapters(ctx)
+	if err != nil {
+		return "", err
+	}
+	if len(adapters) == 0 {
+		return "", fmt.Errorf("no network adapters found")
+	}
+
+	if adapterIndex != nil {
+		if *adapterIndex >= len(adapters) {
+			return "", AdapterIndexOutOfRangeError(*adapterIndex, len(adapters), "network adapters")
+		}
+		adapters = []NetworkAdapter{adapters[*adapterIndex]}
+	}
+
+	return vm.waitForMatchingNetIP(ctx, ipNet, adapters)
+}
+
+// AdapterIndexOutOfRangeError reports that ip_wait_adapter_index is not valid
+// for count adapters, named by noun (for example "network adapters").
+func AdapterIndexOutOfRangeError(index, count int, noun string) error {
+	if count <= 0 {
+		return fmt.Errorf("ip_wait_adapter_index is %d, but no %s are defined", index, noun)
+	}
+	return fmt.Errorf("ip_wait_adapter_index is %d; valid indexes are 0 to %d (%d %s)", index, count-1, count, noun)
+}
+
+// NetworkAdapter is a virtual network adapter, ordered the same way as
+// ip_wait_adapter_index (device key / network_adapters order).
+type NetworkAdapter struct {
+	Name string
+	MAC  string
+	Key  int32
+}
+
+func (vm *VirtualMachineDriver) waitForMatchingNetIP(ctx context.Context, ipNet *net.IPNet, adapters []NetworkAdapter) (string, error) {
+	p := property.DefaultCollector(vm.vm.Client())
+	var ip string
+	err := property.Wait(ctx, p, vm.vm.Reference(), []string{"guest.net"}, func(pc []types.PropertyChange) bool {
+		nics := guestNicsFromPropertyChange(pc)
+		if candidate := selectIPByNetworkAdapters(adapters, nics, ipNet); candidate != "" {
+			ip = candidate
+			return true
+		}
+		return false
+	})
 	if err != nil {
 		return "", err
 	}
 
-	for _, ips := range netIP {
-		for _, ip := range ips {
-			parseIP := net.ParseIP(ip)
-			if ipNet != nil && !ipNet.Contains(parseIP) {
-				// IP address is not in the expected range.
+	return ip, nil
+}
+
+// NetworkAdapters returns the virtual machine's network adapters in
+// ip_wait_adapter_index order, waiting until each has a MAC address.
+func (vm *VirtualMachineDriver) NetworkAdapters(ctx context.Context) ([]NetworkAdapter, error) {
+	p := property.DefaultCollector(vm.vm.Client())
+	var adapters []NetworkAdapter
+
+	err := property.Wait(ctx, p, vm.vm.Reference(), []string{"config.hardware.device"}, func(pc []types.PropertyChange) bool {
+		found := false
+		for _, c := range pc {
+			if c.Op != types.PropertyChangeOpAssign {
 				continue
 			}
-			// Default to IPv4 if no IPNet is provided.
-			if ipNet == nil && parseIP.To4() == nil {
+
+			devices := object.VirtualDeviceList(c.Val.(types.ArrayOfVirtualDevice).VirtualDevice)
+			nics := networkAdaptersFromDevices(devices)
+			if len(nics) == 0 {
+				return false
+			}
+			for _, nic := range nics {
+				if nic.MAC == "" {
+					return false
+				}
+			}
+			adapters = nics
+			found = true
+		}
+		return found
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return adapters, nil
+}
+
+func networkAdaptersFromDevices(devices object.VirtualDeviceList) []NetworkAdapter {
+	var adapters []NetworkAdapter
+	for _, d := range devices {
+		nic, ok := d.(types.BaseVirtualEthernetCard)
+		if !ok {
+			continue
+		}
+		card := nic.GetVirtualEthernetCard()
+		adapters = append(adapters, NetworkAdapter{
+			Name: devices.Name(d),
+			MAC:  strings.ToLower(card.MacAddress),
+			Key:  card.Key,
+		})
+	}
+	// Device keys increase as NICs are added, which matches network_adapters
+	// order. Unit number can be assigned out of that order and must not be used
+	// as the index.
+	sort.Slice(adapters, func(i, j int) bool {
+		return adapters[i].Key < adapters[j].Key
+	})
+	return adapters
+}
+
+func guestNicsFromPropertyChange(pc []types.PropertyChange) []types.GuestNicInfo {
+	var nics []types.GuestNicInfo
+	for _, c := range pc {
+		if c.Op != types.PropertyChangeOpAssign {
+			continue
+		}
+		nics = append(nics, c.Val.(types.ArrayOfGuestNicInfo).GuestNicInfo...)
+	}
+	return nics
+}
+
+func selectIPByNetworkAdapters(adapters []NetworkAdapter, nics []types.GuestNicInfo, ipNet *net.IPNet) string {
+	ipsByMAC := make(map[string][]string, len(nics))
+	v4 := ipNetWantsIPv4(ipNet)
+	for _, nic := range nics {
+		mac := strings.ToLower(nic.MacAddress)
+		if mac == "" || nic.IpConfig == nil {
+			continue
+		}
+		for _, addr := range nic.IpConfig.IpAddress {
+			if v4 && net.ParseIP(addr.IpAddress).To4() == nil {
 				continue
 			}
-			return ip, nil
+			ipsByMAC[mac] = append(ipsByMAC[mac], addr.IpAddress)
 		}
 	}
 
-	// Unable to find an IP address.
-	return "", nil
+	for _, adapter := range adapters {
+		for _, ip := range ipsByMAC[adapter.MAC] {
+			if ipMatchesFilter(ip, ipNet) {
+				return ip
+			}
+		}
+	}
+	return ""
+}
+
+func ipMatchesFilter(ip string, ipNet *net.IPNet) bool {
+	parseIP := net.ParseIP(ip)
+	if parseIP == nil {
+		return false
+	}
+	if ipNet != nil && !ipNet.Contains(parseIP) {
+		return false
+	}
+	if ipNet == nil && parseIP.To4() == nil {
+		return false
+	}
+	return true
+}
+
+// ipNetWantsIPv4 reports whether the wait filter should ignore non-IPv4 addresses
+// while waiting. Nil and IPv4 CIDRs (including the default 0.0.0.0/0) wait for IPv4
+// so IPv6 link-local addresses do not complete the wait.
+func ipNetWantsIPv4(ipNet *net.IPNet) bool {
+	if ipNet == nil {
+		return true
+	}
+	return ipNet.IP.To4() != nil
 }
 
 // PowerOff stops the virtual machine and waits for the operation to complete.
