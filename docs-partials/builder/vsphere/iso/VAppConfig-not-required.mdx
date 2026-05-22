@@ -1,0 +1,34 @@
+- `properties` (map[string]string) - The values for the available vApp properties. These are used to supply
+  configuration parameters to the virtual machine during installation.
+
+  Omitting the `vapp` block entirely disables vApp support. Including at least one property enables vApp
+  options for scratch-built virtual machines and creates any listed keys that do not already exist.
+
+  HCL Example:
+
+  ```hcl
+  vapp {
+    properties = {
+      hostname      = var.hostname
+      public-keys = ""
+    }
+  }
+  ```
+
+  JSON Example:
+
+  ```json
+  "vapp": {
+    "properties": {
+      "hostname": "{{ user `hostname`}}",
+      "public-keys": ""
+    }
+  }
+  ```
+
+  A `user-data` field requires the content of a YAML file to be encoded with base64. This can be done
+  using an environment variable:
+
+  ```console
+  export USERDATA=$(gzip -c9 <userdata.yaml | { base64 -w0 2>/dev/null || base64; })
+  ```

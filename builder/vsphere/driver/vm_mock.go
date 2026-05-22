@@ -110,8 +110,8 @@ func (vm *VirtualMachineMock) Clone(ctx context.Context, config *CloneConfig) (V
 	return vm, vm.CloneError
 }
 
-func (vm *VirtualMachineMock) updateVAppConfig(ctx context.Context, newProps map[string]string) (*types.VmConfigSpec, error) {
-	return nil, nil
+func (vm *VirtualMachineMock) SetVAppProperties(ctx context.Context, props map[string]string) error {
+	return nil
 }
 
 func (vm *VirtualMachineMock) AddPublicKeys(ctx context.Context, publicKeys string) error {

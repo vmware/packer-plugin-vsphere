@@ -56,8 +56,8 @@ variable "vm_name_prefix" {
 }
 
 variable "communicator" {
-  type        = string
-  default     = "none"
+  type    = string
+  default = "none"
 }
 
 locals { timestamp = regex_replace(timestamp(), "[- TZ:]", "") }
@@ -72,17 +72,6 @@ source "vsphere-clone" "example" {
   vm_name             = "${var.vm_name_prefix}-${local.timestamp}"
   template            = var.vm_name_prefix
   communicator        = var.communicator
-
-  tag {
-    category = "color"
-    name     = "orange"
-  }
-
-  tag {
-    category = "shape"
-    name     = "whatever"
-  }
-
 }
 
 build {

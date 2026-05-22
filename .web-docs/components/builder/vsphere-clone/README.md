@@ -93,7 +93,7 @@ references, which are necessary for a build to succeed and can be found further 
 - `destroy` (bool) - Destroy the virtual machine after the build is complete.
   Defaults to `false`.
 
-- `vapp` (vAppConfig) - The vApp Options for the virtual machine. For more information, refer to
+- `vapp` (common.VAppConfig) - The vApp Options for the virtual machine. For more information, refer to
   the [vApp Options Configuration](/packer/integrations/hashicorp/vmware/latest/components/builder/vsphere-clone#vapp-options-configuration)
   section.
 
@@ -240,49 +240,44 @@ JSON Example:
 
 **Optional:**
 
-<!-- Code generated from the comments of the vAppConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
-
 - `properties` (map[string]string) - The values for the available vApp properties. These are used to supply
-  configuration parameters to a virtual machine. This machine is cloned
-  from a template that originated from an imported OVF or OVA file.
-  
-  -> **Note:** The only supported usage path for vApp properties is for
-  existing user-configurable keys. These generally come from an existing
-  template that was created from an imported OVF or OVA file.
-  
-  You cannot set values for vApp properties on virtual machines created
-  from scratch, on virtual machines that lack a vApp configuration, or on
-  property keys that do not exist.
-  
+  configuration parameters to a virtual machine. This machine is cloned from a template that originated
+  from an imported OVF or OVA file.
+
+  -> **Note:** The only supported usage path for vApp properties is for existing user-configurable keys.
+  These generally come from an existing template that was created from an imported OVF or OVA file.
+
+  You cannot set values for vApp properties on virtual machines created from scratch, on virtual machines
+  that lack a vApp configuration, or on property keys that do not exist.
+
   HCL Example:
+
   ```hcl
-    vapp {
-      properties = {
-        hostname  = var.hostname
-        user-data = base64encode(var.user_data)
-      }
+  vapp {
+    properties = {
+      hostname  = var.hostname
+      user-data = base64encode(var.user_data)
     }
+  }
   ```
-  
+
   JSON Example:
-  
+
   ```json
-    "vapp": {
-        "properties": {
-            "hostname": "{{ user `hostname`}}",
-            "user-data": "{{ env `USERDATA`}}"
-        }
+  "vapp": {
+    "properties": {
+      "hostname": "{{ user `hostname`}}",
+      "user-data": "{{ env `USERDATA`}}"
     }
+  }
   ```
-  
-  A `user-data` field requires the content of a YAML file to be encoded
-  with base64. This can be done using an environment variable:
-  
+
+  A `user-data` field requires the content of a YAML file to be encoded with base64. This can be done
+  using an environment variable:
+
   ```console
   export USERDATA=$(gzip -c9 <userdata.yaml | { base64 -w0 2>/dev/null || base64; })
   ```
-
-<!-- End of code generated from the comments of the vAppConfig struct in builder/vsphere/clone/step_clone.go; -->
 
 
 ### Extra Configuration Parameters

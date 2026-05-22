@@ -81,6 +81,12 @@ their respective End of General Support dates. For detailed information, refer t
 
 @include 'builder/vsphere/iso/CreateConfig-not-required.mdx'
 
+### vApp Options Configuration
+
+**Optional:**
+
+@include 'builder/vsphere/iso/VAppConfig-not-required.mdx'
+
 ### ISO Configuration
 
 @include 'packer-plugin-sdk/multistep/commonsteps/ISOConfig.mdx'
@@ -238,6 +244,10 @@ JSON Example:
 @include 'packer-plugin-sdk/communicator/SSH-not-required.mdx'
 
 @include 'packer-plugin-sdk/communicator/SSH-Private-Key-File-not-required.mdx'
+
+-> **NOTE:** The builder uses vApp Options to inject SSH public keys to the virtual machine. The `temporary_key_pair_name`
+will only work if `vapp.properties` includes `public-keys`. If using `ssh_private_key_file`,
+provide the public key using the `configuration_parameters` or [vApp Options Configuration](#vapp-options-configuration) whenever the `guestinfo.userdata` is available.
 
 ##### Windows Remote Management (WinRM)
 

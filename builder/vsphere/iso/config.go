@@ -39,6 +39,11 @@ type Config struct {
 	common.WaitIpConfig               `mapstructure:",squash"`
 	Comm                              communicator.Config `mapstructure:",squash"`
 
+	// The vApp Options for the virtual machine. For more information, refer to the
+	// [vApp Options Configuration](/packer/plugins/builders/vmware/vsphere-iso#vapp-options-configuration)
+	// section.
+	VAppConfig common.VAppConfig `mapstructure:"vapp"`
+
 	common.ShutdownConfig `mapstructure:",squash"`
 	common.TagsConfig     `mapstructure:",squash"`
 
@@ -120,6 +125,7 @@ func (c *Config) Prepare(raws ...interface{}) ([]string, error) {
 	errs = packersdk.MultiErrorAppend(errs, c.BootConfig.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.WaitIpConfig.Prepare()...)
 	errs = packersdk.MultiErrorAppend(errs, c.Comm.Prepare(&c.ctx)...)
+	errs = packersdk.MultiErrorAppend(errs, c.VAppConfig.PrepareSSH(c.Comm)...)
 
 	shutdownWarnings, shutdownErrs := c.ShutdownConfig.Prepare(c.Comm)
 	warnings = append(warnings, shutdownWarnings...)

@@ -173,6 +173,10 @@ wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/foo/bar/preseed.cfg
 
 <!-- Code generated from the comments of the Config struct in builder/vsphere/iso/config.go; DO NOT EDIT MANUALLY -->
 
+- `vapp` (common.VAppConfig) - The vApp Options for the virtual machine. For more information, refer to the
+  [vApp Options Configuration](/packer/integrations/hashicorp/vmware/latest/components/builder/vsphere-iso#vapp-options-configuration)
+  section.
+
 - `create_snapshot` (bool) - Create a snapshot of the virtual machine to use as a base for linked clones.
   Defaults to `false`.
 
@@ -322,6 +326,46 @@ wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/foo/bar/preseed.cfg
   Defaults to `false`.
 
 <!-- End of code generated from the comments of the CreateConfig struct in builder/vsphere/iso/step_create.go; -->
+
+
+### vApp Options Configuration
+
+**Optional:**
+
+- `properties` (map[string]string) - The values for the available vApp properties. These are used to supply
+  configuration parameters to the virtual machine during installation.
+
+  Omitting the `vapp` block entirely disables vApp support. Including at least one property enables vApp
+  options for scratch-built virtual machines and creates any listed keys that do not already exist.
+
+  HCL Example:
+
+  ```hcl
+  vapp {
+    properties = {
+      hostname      = var.hostname
+      public-keys = ""
+    }
+  }
+  ```
+
+  JSON Example:
+
+  ```json
+  "vapp": {
+    "properties": {
+      "hostname": "{{ user `hostname`}}",
+      "public-keys": ""
+    }
+  }
+  ```
+
+  A `user-data` field requires the content of a YAML file to be encoded with base64. This can be done
+  using an environment variable:
+
+  ```console
+  export USERDATA=$(gzip -c9 <userdata.yaml | { base64 -w0 2>/dev/null || base64; })
+  ```
 
 
 ### ISO Configuration
@@ -1302,6 +1346,10 @@ JSON Example:
   The `~` can be used in path and will be expanded to the home directory
   of current user.
 
+
+-> **NOTE:** The builder uses vApp Options to inject SSH public keys to the virtual machine. The `temporary_key_pair_name`
+will only work if `vapp.properties` includes `public-keys`. If using `ssh_private_key_file`,
+provide the public key using the `configuration_parameters` or [vApp Options Configuration](#vapp-options-configuration) whenever the `guestinfo.userdata` is available.
 
 ##### Windows Remote Management (WinRM)
 

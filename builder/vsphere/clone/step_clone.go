@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 //go:generate packer-sdc struct-markdown
-//go:generate packer-sdc mapstructure-to-hcl2 -type CloneConfig,vAppConfig
+//go:generate packer-sdc mapstructure-to-hcl2 -type CloneConfig
 
 package clone
 
@@ -21,49 +21,6 @@ import (
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
-
-type vAppConfig struct {
-	// The values for the available vApp properties. These are used to supply
-	// configuration parameters to a virtual machine. This machine is cloned
-	// from a template that originated from an imported OVF or OVA file.
-	//
-	// -> **Note:** The only supported usage path for vApp properties is for
-	// existing user-configurable keys. These generally come from an existing
-	// template that was created from an imported OVF or OVA file.
-	//
-	// You cannot set values for vApp properties on virtual machines created
-	// from scratch, on virtual machines that lack a vApp configuration, or on
-	// property keys that do not exist.
-	//
-	// HCL Example:
-	// ```hcl
-	//   vapp {
-	//     properties = {
-	//       hostname  = var.hostname
-	//       user-data = base64encode(var.user_data)
-	//     }
-	//   }
-	// ```
-	//
-	// JSON Example:
-	//
-	// ```json
-	//   "vapp": {
-	//       "properties": {
-	//           "hostname": "{{ user `hostname`}}",
-	//           "user-data": "{{ env `USERDATA`}}"
-	//       }
-	//   }
-	// ```
-	//
-	// A `user-data` field requires the content of a YAML file to be encoded
-	// with base64. This can be done using an environment variable:
-	//
-	// ```console
-	// export USERDATA=$(gzip -c9 <userdata.yaml | { base64 -w0 2>/dev/null || base64; })
-	// ```
-	Properties map[string]string `mapstructure:"properties"`
-}
 
 type CloneConfig struct {
 	// The name of the source virtual machine to clone.
@@ -103,7 +60,7 @@ type CloneConfig struct {
 	// The vApp Options for the virtual machine. For more information, refer to
 	// the [vApp Options Configuration](/packer/plugins/builders/vmware/vsphere-clone#vapp-options-configuration)
 	// section.
-	VAppConfig    vAppConfig           `mapstructure:"vapp"`
+	VAppConfig    common.VAppConfig    `mapstructure:"vapp"`
 	StorageConfig common.StorageConfig `mapstructure:",squash"`
 }
 
