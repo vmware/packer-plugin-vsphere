@@ -38,6 +38,53 @@ func TestCloneConfig_Timeout(t *testing.T) {
 	}
 }
 
+func TestCloneConfig_DisableIpWaitRequiresHost(t *testing.T) {
+	raw := minimalConfig()
+	raw["disable_ip_wait"] = true
+	c := new(Config)
+	_, err := c.Prepare(raw)
+	testConfigErr(t, "disable_ip_wait", nil, err)
+}
+
+func TestCloneConfig_DisableIpWaitWithSSHHost(t *testing.T) {
+	raw := minimalConfig()
+	raw["disable_ip_wait"] = true
+	raw["ssh_host"] = "192.168.1.10"
+	c := new(Config)
+	warns, err := c.Prepare(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	found := false
+	for _, w := range warns {
+		if strings.Contains(w, "disable_ip_wait") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected disable_ip_wait warning, got %#v", warns)
+	}
+}
+
+func TestCloneConfig_DisableIpWaitWithCommunicatorNone(t *testing.T) {
+	raw := minimalConfig()
+	raw["disable_ip_wait"] = true
+	raw["communicator"] = "none"
+	delete(raw, "ssh_username")
+	delete(raw, "ssh_password")
+	c := new(Config)
+	warns, err := c.Prepare(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	for _, w := range warns {
+		if strings.Contains(w, "disable_ip_wait") {
+			t.Fatalf("did not expect disable_ip_wait warning with communicator none, got %#v", warns)
+		}
+	}
+}
+
 func TestCloneConfig_RAMReservation(t *testing.T) {
 	raw := minimalConfig()
 	raw["RAM_reservation"] = 1000

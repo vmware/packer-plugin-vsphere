@@ -150,9 +150,15 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 				Ctx:    b.config.ctx,
 				VMName: b.config.VMName,
 			},
-			&common.StepWaitForIp{
+		)
+
+		if !b.config.DisableIpWait {
+			steps = append(steps, &common.StepWaitForIp{
 				Config: &b.config.WaitIpConfig,
-			},
+			})
+		}
+
+		steps = append(steps,
 			&communicator.StepConnect{
 				Config:    &b.config.Comm,
 				Host:      common.CommHost(b.config.Comm.Host()),

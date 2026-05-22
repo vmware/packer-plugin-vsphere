@@ -13,10 +13,21 @@
   documentation for full details.
 
 - `ip_wait_address` (\*string) - Set this to a CIDR address to cause the service to wait for an address that is contained in
-  this network range. Defaults to `0.0.0.0/0` for any IPv4 address. Examples include:
+  this network range. Defaults to `0.0.0.0/0` for any IPv4 address.
   
+  -> **Note:** This only filters which guest-reported IP is accepted; it does not disable IP wait. Use `disable_ip_wait` to skip
+  waiting for a guest-reported IP entirely. When `disable_ip_wait` is true, this setting still applies to HTTP IP discovery.
+  
+  Examples include:
   * empty string ("") - remove all filters
   * `0:0:0:0:0:0:0:0/0` - allow only ipv6 addresses
   * `192.168.1.0/24` - only allow ipv4 addresses from 192.168.1.1 to 192.168.1.254
+
+- `disable_ip_wait` (bool) - When true, skip waiting for a guest-reported IP from vCenter. The default wait relies on
+  VMware Tools or open-vm-tools guest information. Use when they cannot be installed during
+  guest operating system install. Defaults to `false`.
+  
+  -> **Note:** You must set `ssh_host` or `winrm_host`; reachability timing uses `ssh_timeout`
+  or `winrm_timeout`, not `ip_wait_timeout`.
 
 <!-- End of code generated from the comments of the WaitIpConfig struct in builder/vsphere/common/step_wait_for_ip.go; -->

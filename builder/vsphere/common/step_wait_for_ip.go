@@ -33,16 +33,24 @@ type WaitIpConfig struct {
 	// documentation for full details.
 	SettleTimeout time.Duration `mapstructure:"ip_settle_timeout"`
 	// Set this to a CIDR address to cause the service to wait for an address that is contained in
-	// this network range. Defaults to `0.0.0.0/0` for any IPv4 address. Examples include:
+	// this network range. Defaults to `0.0.0.0/0` for any IPv4 address.
 	//
+	// -> **Note:** This only filters which guest-reported IP is accepted; it does not disable IP wait. Use `disable_ip_wait` to skip
+	// waiting for a guest-reported IP entirely. When `disable_ip_wait` is true, this setting still applies to HTTP IP discovery.
+	//
+	// Examples include:
 	// * empty string ("") - remove all filters
 	// * `0:0:0:0:0:0:0:0/0` - allow only ipv6 addresses
 	// * `192.168.1.0/24` - only allow ipv4 addresses from 192.168.1.1 to 192.168.1.254
 	WaitAddress *string `mapstructure:"ip_wait_address"`
 	ipnet       *net.IPNet
-
-	// WaitTimeout is a total timeout. If the virtual machine changes IP frequently, and does not settle down, wait
-	// until the timeout expires.
+	// When true, skip waiting for a guest-reported IP from vCenter. The default wait relies on
+	// VMware Tools or open-vm-tools guest information. Use when they cannot be installed during
+	// guest operating system install. Defaults to `false`.
+	//
+	// -> **Note:** You must set `ssh_host` or `winrm_host`; reachability timing uses `ssh_timeout`
+	// or `winrm_timeout`, not `ip_wait_timeout`.
+	DisableIpWait bool `mapstructure:"disable_ip_wait"`
 }
 
 type StepWaitForIp struct {
@@ -72,6 +80,26 @@ func (c *WaitIpConfig) Prepare() []error {
 	}
 
 	return errs
+}
+
+// ValidateDisableIpWait checks disable_ip_wait requirements against the communicator.
+// Validation is skipped when the communicator type is "none" because IP wait and connect
+// steps are not run in that mode.
+func (c *WaitIpConfig) ValidateDisableIpWait(commType, commHost string) ([]string, []error) {
+	if !c.DisableIpWait || commType == "none" {
+		return nil, nil
+	}
+
+	var warnings []string
+	var errs []error
+
+	if commHost == "" {
+		errs = append(errs, fmt.Errorf("disable_ip_wait is true but no ssh_host or winrm_host was set"))
+	}
+
+	warnings = append(warnings, "disable_ip_wait is set; ip_wait_timeout and ip_settle_timeout are ignored")
+
+	return warnings, errs
 }
 
 func (c *WaitIpConfig) GetIPNet() *net.IPNet {
