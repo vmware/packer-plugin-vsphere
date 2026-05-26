@@ -146,6 +146,7 @@ type FlatConfig struct {
 	WinRMUseSSL                     *bool                                       `mapstructure:"winrm_use_ssl" cty:"winrm_use_ssl" hcl:"winrm_use_ssl"`
 	WinRMInsecure                   *bool                                       `mapstructure:"winrm_insecure" cty:"winrm_insecure" hcl:"winrm_insecure"`
 	WinRMUseNTLM                    *bool                                       `mapstructure:"winrm_use_ntlm" cty:"winrm_use_ntlm" hcl:"winrm_use_ntlm"`
+	VAppConfig                      *common.FlatVAppConfig                      `mapstructure:"vapp" cty:"vapp" hcl:"vapp"`
 	Command                         *string                                     `mapstructure:"shutdown_command" cty:"shutdown_command" hcl:"shutdown_command"`
 	Timeout                         *string                                     `mapstructure:"shutdown_timeout" cty:"shutdown_timeout" hcl:"shutdown_timeout"`
 	DisableShutdown                 *bool                                       `mapstructure:"disable_shutdown" cty:"disable_shutdown" hcl:"disable_shutdown"`
@@ -310,6 +311,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"winrm_use_ssl":                  &hcldec.AttrSpec{Name: "winrm_use_ssl", Type: cty.Bool, Required: false},
 		"winrm_insecure":                 &hcldec.AttrSpec{Name: "winrm_insecure", Type: cty.Bool, Required: false},
 		"winrm_use_ntlm":                 &hcldec.AttrSpec{Name: "winrm_use_ntlm", Type: cty.Bool, Required: false},
+		"vapp":                           &hcldec.BlockSpec{TypeName: "vapp", Nested: hcldec.ObjectSpec((*common.FlatVAppConfig)(nil).HCL2Spec())},
 		"shutdown_command":               &hcldec.AttrSpec{Name: "shutdown_command", Type: cty.String, Required: false},
 		"shutdown_timeout":               &hcldec.AttrSpec{Name: "shutdown_timeout", Type: cty.String, Required: false},
 		"disable_shutdown":               &hcldec.AttrSpec{Name: "disable_shutdown", Type: cty.Bool, Required: false},

@@ -6,6 +6,7 @@ package iso
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/hashicorp/packer-plugin-sdk/communicator"
@@ -120,6 +121,9 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			TagsConfig: &b.config.TagsConfig,
 			Ctx:        b.config.ctx,
 		},
+		&common.StepSetVApp{
+			Config: &b.config.VAppConfig,
+		},
 	)
 
 	// Set the address for the HTTP server based on the configuration
@@ -146,6 +150,19 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 
 	steps = append(steps,
 		commonsteps.HTTPServerFromHTTPConfig(&b.config.HTTPConfig),
+	)
+
+	if b.config.Comm.Type == "ssh" && b.config.VAppConfig.NeedsEphemeralSSHKey(b.config.Comm) {
+		steps = append(steps,
+			&common.StepSshKeyPair{
+				Debug:        b.config.PackerDebug,
+				DebugKeyPath: fmt.Sprintf("%s.pem", b.config.PackerBuildName),
+				Comm:         &b.config.Comm,
+			},
+		)
+	}
+
+	steps = append(steps,
 		&common.StepRun{
 			Config:   &b.config.RunConfig,
 			SetOrder: true,

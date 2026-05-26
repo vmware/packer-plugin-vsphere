@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -33,7 +32,7 @@ type VirtualMachine interface {
 	CdromDevices() (object.VirtualDeviceList, error)
 	FloppyDevices() (object.VirtualDeviceList, error)
 	Clone(ctx context.Context, config *CloneConfig) (VirtualMachine, error)
-	updateVAppConfig(ctx context.Context, newProps map[string]string) (*types.VmConfigSpec, error)
+	SetVAppProperties(ctx context.Context, props map[string]string) error
 	AddPublicKeys(ctx context.Context, publicKeys string) error
 	Properties(ctx context.Context) (*mo.VirtualMachine, error)
 	Destroy() error
@@ -489,7 +488,7 @@ func (vm *VirtualMachineDriver) Clone(ctx context.Context, config *CloneConfig) 
 		configSpec.DeviceChange = append(configSpec.DeviceChange, config)
 	}
 
-	vAppConfig, err := vm.updateVAppConfig(ctx, config.VAppProperties)
+	vAppConfig, err := buildVAppConfigSpec(ctx, vm, false, config.VAppProperties)
 	if err != nil {
 		return nil, fmt.Errorf("error updating VAppConfig: %s", err)
 	}
@@ -520,62 +519,35 @@ func (vm *VirtualMachineDriver) Clone(ctx context.Context, config *CloneConfig) 
 	return created, nil
 }
 
-// updateVAppConfig updates the vApp configuration of a virtual machine with new
-// properties.
-func (vm *VirtualMachineDriver) updateVAppConfig(ctx context.Context, newProps map[string]string) (*types.VmConfigSpec, error) {
-	if len(newProps) == 0 {
-		return nil, nil
+// SetVAppProperties updates or creates vApp properties on the virtual machine.
+func (vm *VirtualMachineDriver) SetVAppProperties(ctx context.Context, props map[string]string) error {
+	config, err := buildVAppConfigSpec(ctx, vm, true, props)
+	if err != nil {
+		return err
+	}
+	if config == nil {
+		return nil
 	}
 
-	vProps, _ := vm.Properties(ctx)
-	if vProps.Config.VAppConfig == nil {
-		return nil, fmt.Errorf("no vApp configuration found; cannot set vApp properties")
+	confSpec := types.VirtualMachineConfigSpec{VAppConfig: config}
+	task, err := vm.vm.Reconfigure(vm.driver.Ctx, confSpec)
+	if err != nil {
+		return err
 	}
 
-	allProperties := vProps.Config.VAppConfig.GetVmConfigInfo().Property
-
-	var props []types.VAppPropertySpec
-	for _, p := range allProperties {
-		userValue, setByUser := newProps[p.Id]
-		if !setByUser {
-			continue
-		}
-
-		if !*p.UserConfigurable {
-			return nil, fmt.Errorf("vApp property with userConfigurable=false specified in vapp.properties: %+v", reflect.ValueOf(newProps).MapKeys())
-		}
-
-		prop := types.VAppPropertySpec{
-			ArrayUpdateSpec: types.ArrayUpdateSpec{
-				Operation: types.ArrayUpdateOperationEdit,
-			},
-			Info: &types.VAppPropertyInfo{
-				Key:              p.Key,
-				Id:               p.Id,
-				Value:            userValue,
-				UserConfigurable: p.UserConfigurable,
-			},
-		}
-		props = append(props, prop)
-
-		delete(newProps, p.Id)
-	}
-
-	if len(newProps) > 0 {
-		return nil, fmt.Errorf("unsupported vApp properties in vapp.properties: %+v", reflect.ValueOf(newProps).MapKeys())
-	}
-
-	return &types.VmConfigSpec{
-		Property: props,
-	}, nil
+	_, err = task.WaitForResult(vm.driver.Ctx, nil)
+	return err
 }
 
-// AddPublicKeys adds public keys to the virtual machine.
+// AddPublicKeys adds public keys to the virtual machine vApp property.
 func (vm *VirtualMachineDriver) AddPublicKeys(ctx context.Context, publicKeys string) error {
 	newProps := map[string]string{"public-keys": publicKeys}
-	config, err := vm.updateVAppConfig(ctx, newProps)
+	config, err := buildVAppConfigSpec(ctx, vm, true, newProps)
 	if err != nil {
 		return fmt.Errorf("not possible to save temporary public key: %s", err)
+	}
+	if config == nil {
+		return fmt.Errorf("not possible to save temporary public key: no vApp configuration updated")
 	}
 
 	confSpec := types.VirtualMachineConfigSpec{VAppConfig: config}

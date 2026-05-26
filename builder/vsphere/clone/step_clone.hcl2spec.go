@@ -18,7 +18,7 @@ type FlatCloneConfig struct {
 	MacAddress         *string                 `mapstructure:"mac_address" cty:"mac_address" hcl:"mac_address"`
 	Notes              *string                 `mapstructure:"notes" cty:"notes" hcl:"notes"`
 	Destroy            *bool                   `mapstructure:"destroy" cty:"destroy" hcl:"destroy"`
-	VAppConfig         *FlatvAppConfig         `mapstructure:"vapp" cty:"vapp" hcl:"vapp"`
+	VAppConfig         *common.FlatVAppConfig  `mapstructure:"vapp" cty:"vapp" hcl:"vapp"`
 	DiskControllerType []string                `mapstructure:"disk_controller_type" cty:"disk_controller_type" hcl:"disk_controller_type"`
 	Storage            []common.FlatDiskConfig `mapstructure:"storage" cty:"storage" hcl:"storage"`
 }
@@ -42,32 +42,9 @@ func (*FlatCloneConfig) HCL2Spec() map[string]hcldec.Spec {
 		"mac_address":          &hcldec.AttrSpec{Name: "mac_address", Type: cty.String, Required: false},
 		"notes":                &hcldec.AttrSpec{Name: "notes", Type: cty.String, Required: false},
 		"destroy":              &hcldec.AttrSpec{Name: "destroy", Type: cty.Bool, Required: false},
-		"vapp":                 &hcldec.BlockSpec{TypeName: "vapp", Nested: hcldec.ObjectSpec((*FlatvAppConfig)(nil).HCL2Spec())},
+		"vapp":                 &hcldec.BlockSpec{TypeName: "vapp", Nested: hcldec.ObjectSpec((*common.FlatVAppConfig)(nil).HCL2Spec())},
 		"disk_controller_type": &hcldec.AttrSpec{Name: "disk_controller_type", Type: cty.List(cty.String), Required: false},
 		"storage":              &hcldec.BlockListSpec{TypeName: "storage", Nested: hcldec.ObjectSpec((*common.FlatDiskConfig)(nil).HCL2Spec())},
-	}
-	return s
-}
-
-// FlatvAppConfig is an auto-generated flat version of vAppConfig.
-// Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
-type FlatvAppConfig struct {
-	Properties map[string]string `mapstructure:"properties" cty:"properties" hcl:"properties"`
-}
-
-// FlatMapstructure returns a new FlatvAppConfig.
-// FlatvAppConfig is an auto-generated flat version of vAppConfig.
-// Where the contents a fields with a `mapstructure:,squash` tag are bubbled up.
-func (*vAppConfig) FlatMapstructure() interface{ HCL2Spec() map[string]hcldec.Spec } {
-	return new(FlatvAppConfig)
-}
-
-// HCL2Spec returns the hcl spec of a vAppConfig.
-// This spec is used by HCL to read the fields of vAppConfig.
-// The decoded values from this spec will then be applied to a FlatvAppConfig.
-func (*FlatvAppConfig) HCL2Spec() map[string]hcldec.Spec {
-	s := map[string]hcldec.Spec{
-		"properties": &hcldec.AttrSpec{Name: "properties", Type: cty.Map(cty.String), Required: false},
 	}
 	return s
 }
