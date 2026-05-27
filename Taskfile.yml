@@ -1,0 +1,61 @@
+---
+version: "3"
+
+vars:
+  NAME: vsphere
+  BINARY: packer-plugin-{{.NAME}}
+  PLUGIN_FQN:
+    sh: grep -E '^module' <go.mod | sed -E 's/module *//'
+  COUNT: '{{.COUNT | default "1"}}'
+  TEST:
+    sh: go list ./... | tr '\n' ' '
+  HASHICORP_PACKER_PLUGIN_SDK_VERSION:
+    sh: go list -m github.com/hashicorp/packer-plugin-sdk | cut -d " " -f2
+
+tasks:
+  build:
+    desc: Build the plugin binary.
+    cmds:
+      - go build -o {{.BINARY}}
+
+  dev:
+    desc: Build and install the plugin locally for development.
+    cmds:
+      - go build -ldflags="-X '{{.PLUGIN_FQN}}/version.VersionPrerelease=dev'" -o "{{.BINARY}}"
+      - packer plugins install --path {{.BINARY}} "{{.PLUGIN_FQN | replace "packer-plugin-" ""}}"
+
+  test:
+    desc: Run unit tests.
+    cmds:
+      - go test -race -count {{.COUNT}} {{.TEST}} -timeout=3m
+
+  install-packer-sdc:
+    desc: Install the packer-sdc plugin-check tool for use in other tasks.
+    cmds:
+      - go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@{{.HASHICORP_PACKER_PLUGIN_SDK_VERSION}}
+
+  plugin-check:
+    desc: Run packer-sdc plugin-check against the built binary to validate it meets the plugin SDK requirements.
+    deps: [install-packer-sdc, build]
+    cmds:
+      - |
+        export PATH="$(go env GOPATH)/bin:$PATH"
+        packer-sdc plugin-check {{.BINARY}}
+
+  testacc:
+    desc: Run acceptance tests.
+    deps: [dev]
+    cmds:
+      - PACKER_ACC=1 go test -count {{.COUNT}} -v {{.TEST}} -timeout=120m
+
+  generate:
+    desc: Run code generation for docs and other generated code.
+    deps: [install-packer-sdc]
+    cmds:
+      - |
+        export PATH="$(go env GOPATH)/bin:$PATH"
+        go generate ./...
+        rm -rf .docs
+        packer-sdc renderdocs -src "docs" -partials docs-partials/ -dst ".docs/"
+        ./.web-docs/scripts/compile-to-webdocs.sh "." ".docs" ".web-docs" "hashicorp"
+        rm -r ".docs"
