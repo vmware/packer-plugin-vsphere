@@ -264,7 +264,13 @@ func findTemplate(cli *govmomi.Client, folder *object.Folder, name string) (*obj
 
 	if ref != nil {
 		if vm, ok := ref.(*object.VirtualMachine); ok {
-			return vm, nil
+			t, err := vm.IsTemplate(context.Background())
+			if err != nil {
+				return nil, err
+			}
+			if t {
+				return vm, nil
+			}
 		}
 	}
 	return nil, nil
