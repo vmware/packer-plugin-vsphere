@@ -1445,7 +1445,7 @@ boot time.
 
 -> **NOTE:** The builder uses vApp Options to inject SSH public keys to the virtual machine. The `temporary_key_pair_name`
 will only work if the template being cloned contains the vApp property `public-keys`. If using `ssh_private_key_file`,
-provide the public key using the `configuration_parameters` or [vApp Options Configuration](/packer/integrations/hashicorp/vsphere/latest/components/builder/vsphere-clone#vapp-options-configuration) whenever the `guestinto.userdata` is available.
+provide the public key using the `configuration_parameters` or [vApp Options Configuration](/packer/integrations/hashicorp/vsphere/latest/components/builder/vsphere-clone#vapp-options-configuration) whenever the `guestinfo.userdata` is available.
 Refer to the [VMware](https://docs.cloud-init.io/en/latest/reference/data-source/vmware.html) datasource in cloud-init 21.3 and later for additional information.
 
 #### Windows Remote Management (WinRM)
