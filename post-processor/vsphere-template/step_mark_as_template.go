@@ -28,6 +28,13 @@ type StepMarkAsTemplate struct {
 	Override     bool
 }
 
+func (s *StepMarkAsTemplate) getEffectiveTemplateName() string {
+	if s.TemplateName != "" {
+		return s.TemplateName
+	}
+	return s.VMName
+}
+
 func NewStepMarkAsTemplate(artifact packersdk.Artifact, p *PostProcessor) *StepMarkAsTemplate {
 	// Set the default folder.
 	remoteFolder := "Discovered virtual machine"
@@ -67,10 +74,7 @@ func (s *StepMarkAsTemplate) Run(ctx context.Context, state multistep.StateBag) 
 		return multistep.ActionHalt
 	}
 
-	templateName := s.VMName
-	if s.TemplateName != "" {
-		templateName = s.TemplateName
-	}
+	templateName := s.getEffectiveTemplateName()
 
 	action, err := handleExistingTemplate(cli, folder, templateName, s.Override, ui)
 	if err != nil {
@@ -115,10 +119,7 @@ func (s *StepMarkAsTemplate) Run(ctx context.Context, state multistep.StateBag) 
 		return multistep.ActionHalt
 	}
 
-	artifactName := s.VMName
-	if s.TemplateName != "" {
-		artifactName = s.TemplateName
-	}
+	artifactName := s.getEffectiveTemplateName()
 
 	if err := unregisterVirtualMachine(cli, folder, artifactName); err != nil {
 		state.Put("error", err)
