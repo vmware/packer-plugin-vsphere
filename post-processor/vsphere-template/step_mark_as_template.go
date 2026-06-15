@@ -37,16 +37,16 @@ func NewStepMarkAsTemplate(artifact packersdk.Artifact, p *PostProcessor) *StepM
 		remoteFolder = p.config.Folder
 	}
 
-	vmname := artifact.Id()
+	vmName := artifact.Id()
 
 	if artifact.BuilderId() == vsphere.BuilderId {
 		id := strings.Split(artifact.Id(), "::")
 		remoteFolder = id[1]
-		vmname = id[2]
+		vmName = id[2]
 	}
 
 	return &StepMarkAsTemplate{
-		VMName:       vmname,
+		VMName:       vmName,
 		TemplateName: p.config.TemplateName,
 		RemoteFolder: remoteFolder,
 		ReregisterVM: p.config.ReregisterVM,
