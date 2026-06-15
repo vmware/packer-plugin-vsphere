@@ -31,7 +31,7 @@ type DiskConfig struct {
 	// `disk_controller_index`.
 	DiskControllerUnit string `mapstructure:"disk_controller_unit"`
 	// The name of the storage policy to apply to the disk. The storage policy
-	// must already exist on the vCenter Server. If not specified, the default
+	// must already exist on the vCenter instance. If not specified, the default
 	// storage policy of the target datastore is used.
 	StoragePolicyName string `mapstructure:"storage_policy"`
 }

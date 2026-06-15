@@ -364,7 +364,7 @@ disks are stored.
   `disk_controller_index`.
 
 - `storage_policy` (string) - The name of the storage policy to apply to the disk. The storage policy
-  must already exist on the vCenter Server. If not specified, the default
+  must already exist on the vCenter instance. If not specified, the default
   storage policy of the target datastore is used.
 
 <!-- End of code generated from the comments of the DiskConfig struct in builder/vsphere/common/storage_config.go; -->
