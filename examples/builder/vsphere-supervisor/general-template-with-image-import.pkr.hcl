@@ -1,6 +1,8 @@
-# A Packer template to deploy and publish a VM-Service VM using the vsphere-supervisor builder.
+# © Broadcom. All Rights Reserved.
+# The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: MPL-2.0
 
-# image import configs.
+# Image import configs.
 variable "import_source_url" {
   type = string
 }

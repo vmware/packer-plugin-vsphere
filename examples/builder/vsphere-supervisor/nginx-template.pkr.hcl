@@ -2,9 +2,6 @@
 # The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: MPL-2.0
 
-# A Packer template to deploy a VM-Service VM using the vsphere-supervisor builder.
-# It runs Nginx and cleans up the VM using the Ansible provisioner.
-
 # VM-Service source VM configs.
 variable "image_name" {
   type = string
