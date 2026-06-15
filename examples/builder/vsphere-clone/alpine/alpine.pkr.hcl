@@ -55,6 +55,12 @@ variable "vm_name_prefix" {
   description = "Prefix for naming the virtual machine."
 }
 
+variable "template" {
+  type        = string
+  default     = "alpine-template"
+  description = "The name of the template to clone for building the virtual machine."
+}
+
 variable "communicator" {
   type    = string
   default = "none"
@@ -70,7 +76,7 @@ source "vsphere-clone" "example" {
   host                = var.host
   datastore           = var.datastore
   vm_name             = "${var.vm_name_prefix}-${local.timestamp}"
-  template            = var.vm_name_prefix
+  template            = var.template
   communicator        = var.communicator
 }
 
