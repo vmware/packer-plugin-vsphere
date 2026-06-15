@@ -42,11 +42,9 @@ variable "communicator" {
 }
 variable "ssh_username" {
   type    = string
-  default = "packer"
 }
 variable "ssh_password" {
   type      = string
-  default   = "packer"
   sensitive = true
 }
 variable "ssh_bastion_host" {
