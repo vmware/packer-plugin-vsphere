@@ -10,6 +10,72 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
 )
 
+func TestDatastorePath(t *testing.T) {
+	tests := []struct {
+		name        string
+		disk        string
+		wantDS      string
+		wantPathSfx string // suffix that vmxPath should end with
+		wantErr     bool
+	}{
+		{
+			name:        "valid disk path",
+			disk:        "[datastore01] vm/test-vm/test-vm.vmdk",
+			wantDS:      "datastore01",
+			wantPathSfx: "vm/test-vm/test-vm.vmx",
+			wantErr:     false,
+		},
+		{
+			name:    "missing datastore brackets",
+			disk:    "vm/test-vm/test-vm.vmdk",
+			wantErr: true,
+		},
+		{
+			name:    "empty datastore name",
+			disk:    "[] vm/test-vm/test-vm.vmdk",
+			wantErr: true,
+		},
+		{
+			name:    "no space separator",
+			disk:    "[datastore01]vm/test-vm/test-vm.vmdk",
+			wantErr: true,
+		},
+		{
+			name:    "only datastore bracket no path",
+			disk:    "[datastore01] ",
+			wantErr: true,
+		},
+		{
+			name:        "disk path with leading whitespace after bracket",
+			disk:        "[datastore01]   vm/test-vm/test-vm.vmdk",
+			wantDS:      "datastore01",
+			wantPathSfx: "vm/test-vm/test-vm.vmx",
+			wantErr:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := datastorePathFromDisk(tt.disk, "test-vm")
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
+			if result.Datastore != tt.wantDS {
+				t.Errorf("expected datastore %q, got %q", tt.wantDS, result.Datastore)
+			}
+			if tt.wantPathSfx != "" && result.Path[len(result.Path)-len(tt.wantPathSfx):] != tt.wantPathSfx {
+				t.Errorf("expected path suffix %q, got path %q", tt.wantPathSfx, result.Path)
+			}
+		})
+	}
+}
+
 func TestStepMarkAsTemplate_Override(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -85,13 +151,8 @@ func TestStepMarkAsTemplate_TemplateName(t *testing.T) {
 				ReregisterVM: config.TriFalse,
 			}
 
-			templateName := step.VMName
-			if step.TemplateName != "" {
-				templateName = step.TemplateName
-			}
-
-			if templateName != tt.expected {
-				t.Errorf("Expected template name to be %s, got %s", tt.expected, templateName)
+			if got := step.getEffectiveTemplateName(); got != tt.expected {
+				t.Errorf("expected template name %q, got %q", tt.expected, got)
 			}
 		})
 	}

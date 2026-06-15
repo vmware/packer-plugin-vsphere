@@ -181,12 +181,29 @@ func datastorePath(vm *object.VirtualMachine) (*object.DatastorePath, error) {
 	}
 
 	if disk == "" {
-		return nil, fmt.Errorf("error finding disk in '%v'", vm.Name())
+		return nil, fmt.Errorf("error finding disk in %q", vm.Name())
 	}
 
+	return datastorePathFromDisk(disk, vm.Name())
+}
+
+func datastorePathFromDisk(disk, vmName string) (*object.DatastorePath, error) {
 	re := regexp.MustCompile(`\[(.*?)\]`)
-	datastore := re.FindStringSubmatch(disk)[1]
-	vmxPath := path.Join("/", path.Dir(strings.Split(disk, " ")[1]), vm.Name()+".vmx")
+	matches := re.FindStringSubmatch(disk)
+	if len(matches) < 2 || matches[1] == "" {
+		return nil, fmt.Errorf("error parsing datastore from disk path %q", disk)
+	}
+	datastore := matches[1]
+
+	parts := strings.SplitN(disk, " ", 2)
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("error parsing virtual machine disk path %q", disk)
+	}
+	diskPath := strings.TrimSpace(parts[1])
+	if diskPath == "" {
+		return nil, fmt.Errorf("error parsing virtual machine disk path %q", disk)
+	}
+	vmxPath := path.Join("/", path.Dir(diskPath), vmName+".vmx")
 
 	return &object.DatastorePath{
 		Datastore: datastore,
