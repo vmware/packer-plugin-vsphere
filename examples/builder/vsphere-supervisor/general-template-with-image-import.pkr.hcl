@@ -122,32 +122,32 @@ variable "watch_publish_timeout_sec" {
 }
 
 source "vsphere-supervisor" "vm" {
-  kubeconfig_path               = "${var.kubeconfig_path}"
-  supervisor_namespace          = "${var.supervisor_namespace}"
-  class_name                    = "${var.class_name}"
-  import_source_url             = "${var.import_source_url}"
-  import_source_ssl_certificate = "${var.import_source_ssl_certificate}"
-  import_target_location_name   = "${var.import_target_location_name}"
-  import_target_image_type      = "${var.import_target_image_type}"
-  import_target_image_name      = "${var.import_target_image_name}"
-  clean_imported_image          = "${var.clean_imported_image}"
-  keep_import_request           = "${var.keep_import_request}"
-  source_name                   = "${var.source_name}"
-  storage_class                 = "${var.storage_class}"
-  bootstrap_provider            = "${var.bootstrap_provider}"
-  bootstrap_data_file           = "${var.bootstrap_data_file}"
-  communicator                  = "${var.communicator}"
-  ssh_username                  = "${var.ssh_username}"
-  ssh_password                  = "${var.ssh_password}"
-  ssh_bastion_host              = "${var.ssh_bastion_host}"
-  ssh_bastion_username          = "${var.ssh_bastion_username}"
-  ssh_bastion_password          = "${var.ssh_bastion_password}"
-  keep_input_artifact           = "${var.keep_input_artifact}"
-  publish_location_name         = "${var.publish_location_name}"
-  publish_image_name            = "${var.publish_image_name}"
-  watch_import_timeout_sec      = "${var.watch_import_timeout_sec}"
-  watch_source_timeout_sec      = "${var.watch_source_timeout_sec}"
-  watch_publish_timeout_sec     = "${var.watch_publish_timeout_sec}"
+  kubeconfig_path               = var.kubeconfig_path
+  supervisor_namespace          = var.supervisor_namespace
+  class_name                    = var.class_name
+  import_source_url             = var.import_source_url
+  import_source_ssl_certificate = var.import_source_ssl_certificate
+  import_target_location_name   = var.import_target_location_name
+  import_target_image_type      = var.import_target_image_type
+  import_target_image_name      = var.import_target_image_name
+  clean_imported_image          = var.clean_imported_image
+  keep_import_request           = var.keep_import_request
+  source_name                   = var.source_name
+  storage_class                 = var.storage_class
+  bootstrap_provider            = var.bootstrap_provider
+  bootstrap_data_file           = var.bootstrap_data_file
+  communicator                  = var.communicator
+  ssh_username                  = var.ssh_username
+  ssh_password                  = var.ssh_password
+  ssh_bastion_host              = var.ssh_bastion_host
+  ssh_bastion_username          = var.ssh_bastion_username
+  ssh_bastion_password          = var.ssh_bastion_password
+  keep_input_artifact           = var.keep_input_artifact
+  publish_location_name         = var.publish_location_name
+  publish_image_name            = var.publish_image_name
+  watch_import_timeout_sec      = var.watch_import_timeout_sec
+  watch_source_timeout_sec      = var.watch_source_timeout_sec
+  watch_publish_timeout_sec     = var.watch_publish_timeout_sec
 }
 
 build {

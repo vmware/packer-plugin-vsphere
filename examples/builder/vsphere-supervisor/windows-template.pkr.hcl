@@ -70,21 +70,21 @@ variable "keep_input_artifact" {
 }
 
 source "vsphere-supervisor" "vm" {
-  kubeconfig_path      = "${var.kubeconfig_path}"
-  supervisor_namespace = "${var.supervisor_namespace}"
-  class_name           = "${var.class_name}"
-  image_name           = "${var.image_name}"
-  source_name          = "${var.source_name}"
-  storage_class        = "${var.storage_class}"
-  bootstrap_provider   = "${var.bootstrap_provider}"
-  bootstrap_data_file  = "${var.bootstrap_data_file}"
-  communicator         = "${var.communicator}"
-  ssh_username         = "${var.ssh_username}"
-  ssh_password         = "${var.ssh_password}"
-  ssh_bastion_host     = "${var.ssh_bastion_host}"
-  ssh_bastion_username = "${var.ssh_bastion_username}"
-  ssh_bastion_password = "${var.ssh_bastion_password}"
-  keep_input_artifact  = "${var.keep_input_artifact}"
+  kubeconfig_path      = var.kubeconfig_path
+  supervisor_namespace = var.supervisor_namespace
+  class_name           = var.class_name
+  image_name           = var.image_name
+  source_name          = var.source_name
+  storage_class        = var.storage_class
+  bootstrap_provider   = var.bootstrap_provider
+  bootstrap_data_file  = var.bootstrap_data_file
+  communicator         = var.communicator
+  ssh_username         = var.ssh_username
+  ssh_password         = var.ssh_password
+  ssh_bastion_host     = var.ssh_bastion_host
+  ssh_bastion_username = var.ssh_bastion_username
+  ssh_bastion_password = var.ssh_bastion_password
+  keep_input_artifact  = var.keep_input_artifact
 }
 
 build {
