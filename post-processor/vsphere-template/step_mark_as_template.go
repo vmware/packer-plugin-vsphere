@@ -207,7 +207,10 @@ func findVirtualMachine(cli *govmomi.Client, dcPath, name, remoteFolder string) 
 		return nil, fmt.Errorf("error finding virtual machine at path %s", fullPath)
 	}
 
-	vm := ref.(*object.VirtualMachine)
+	vm, ok := ref.(*object.VirtualMachine)
+	if !ok {
+		return nil, fmt.Errorf("unexpected object type at path %s", fullPath)
+	}
 	if vm.InventoryPath == "" {
 		vm.SetInventoryPath(fullPath)
 	}
