@@ -47,7 +47,7 @@ depending on your desired strategy:
 
     The plugin supports versions in accordance with the [Broadcom Product Lifecycle][product-lifecycle].
 
-- [Go 1.26.3][golang-install] is required to build the plugin from source.
+- [Go 1.26.4][golang-install] is required to build the plugin from source.
 
 ## Installation
 
