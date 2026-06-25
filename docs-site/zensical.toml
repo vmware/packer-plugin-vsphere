@@ -1,0 +1,91 @@
+[project]
+site_name = "Packer Plugin for VMware vSphere"
+site_url = "https://vmware.github.io/packer-plugin-vsphere/"
+repo_url = "https://github.com/vmware/packer-plugin-vsphere"
+edit_uri = "edit/main/docs-site/extra/"
+docs_dir = ".build/docs"
+site_dir = "site"
+copyright = "Copyright © Broadcom. All Rights Reserved.<br/>The term \"Broadcom\" refers to Broadcom Inc. and/or its subsidiaries.<br/>Licensed under the Mozilla Public License, version 2.0."
+extra_css = ["stylesheets/extra.css"]
+extra_javascript = ["javascripts/version-slot.js"]
+
+[project.theme]
+variant = "modern"
+language = "en"
+logo = "assets/header-logo.png"
+font.text = "Inter"
+custom_dir = "overrides"
+
+[project.theme.icon]
+repo = "fontawesome/brands/github"
+
+features = [
+  "navigation.instant",
+  "navigation.instant.prefetch",
+  "navigation.tracking",
+  "navigation.indexes",
+  "navigation.sections",
+  "navigation.path",
+  "navigation.top",
+  "navigation.footer",
+  "search.highlight",
+  "content.code.copy",
+  "content.tooltips",
+  "content.tabs.link",
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme)"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "custom"
+accent = "custom"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to system preference"
+
+[project.extra]
+generator = false
+
+[project.extra.version]
+provider = "mike"
+default = ["latest", "development"]
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/vmware/packer-plugin-vsphere"
+
+[project.markdown_extensions.abbr]
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.attr_list]
+[project.markdown_extensions.def_list]
+[project.markdown_extensions.footnotes]
+[project.markdown_extensions.md_in_html]
+[project.markdown_extensions.pymdownx.details]
+[project.markdown_extensions.pymdownx.snippets]
+base_path = [".build/docs"]
+check_paths = true
+[project.markdown_extensions.pymdownx.superfences]
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+combine_header_slug = true
+[project.markdown_extensions.pymdownx.emoji]
+emoji_generator = "zensical.extensions.emoji.to_svg"
+emoji_index = "zensical.extensions.emoji.twemoji"
+[project.markdown_extensions.toc]
+permalink = true

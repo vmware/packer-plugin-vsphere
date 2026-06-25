@@ -6,7 +6,7 @@ COUNT?=1
 TEST?=$(shell go list ./...)
 HASHICORP_PACKER_PLUGIN_SDK_VERSION?=$(shell go list -m github.com/hashicorp/packer-plugin-sdk | cut -d " " -f2)
 
-.PHONY: dev
+.PHONY: dev build test install-packer-sdc plugin-check testacc generate docs-deps docs-prepare docs-test docs-test-links docs-test-internal-links docs-test-admonitions docs-test-example-labels docs-test-group-example-tabs docs-test-normalize docs-test-github-alerts docs-build docs-serve docs-serve-version docs-serve-mike docs-serve-mike-only docs-backfill
 
 build:
 	@go build -o ${BINARY}
@@ -38,3 +38,69 @@ generate: install-packer-sdc
 	@packer-sdc renderdocs -src "docs" -partials docs-partials/ -dst ".docs/"
 	@./.web-docs/scripts/compile-to-webdocs.sh "." ".docs" ".web-docs" "hashicorp"
 	@rm -r ".docs"
+
+DOCS_VENV?=$(CURDIR)/docs-site/.venv
+DOCS_PYTHON=$(DOCS_VENV)/bin/python
+DOCS_PIP=$(DOCS_VENV)/bin/pip
+
+docs-deps:
+	@test -d "$(DOCS_VENV)" || python3 -m venv "$(DOCS_VENV)"
+	@"$(DOCS_PIP)" install -r docs-site/requirements.txt
+
+docs-prepare:
+	@./docs-site/scripts/prepare-docs.sh
+
+docs-test:
+	@./docs-site/scripts/test/test-all.sh
+
+docs-test-links:
+	@./docs-site/scripts/test/test-rewrite-integration-links.sh
+
+docs-test-internal-links:
+	@./docs-site/scripts/test/test-fix-internal-links.sh
+
+docs-test-admonitions:
+	@./docs-site/scripts/test/test-convert-admonitions.sh
+
+docs-test-example-labels:
+	@./docs-site/scripts/test/test-format-example-labels.sh
+
+docs-test-group-example-tabs:
+	@./docs-site/scripts/test/test-group-example-tabs.sh
+
+docs-test-normalize:
+	@./docs-site/scripts/test/test-normalize-list-spacing.sh
+
+docs-test-strip-codegen:
+	@./docs-site/scripts/test/test-strip-codegen-comments.sh
+
+docs-test-repair-fences:
+	@./docs-site/scripts/test/test-repair-code-fences.sh
+
+docs-test-stage-markdown:
+	@./docs-site/scripts/test/test-stage-markdown.sh
+
+docs-test-github-alerts:
+	@./docs-site/scripts/test/test-convert-github-alerts.sh
+
+docs-build: generate docs-deps docs-prepare
+	@cd docs-site && "$(DOCS_VENV)/bin/zensical" build --config-file zensical.build.toml
+
+docs-serve: generate docs-deps docs-prepare
+	@cd docs-site && "$(DOCS_VENV)/bin/zensical" serve --config-file zensical.build.toml
+
+docs-serve-version: docs-deps
+	@test -n "$(VERSION)" || (echo "VERSION is required, e.g. make docs-serve-version VERSION=2.1.0" && exit 1)
+	@rm -rf .web-docs
+	@git checkout "v$(VERSION)" -- .web-docs
+	@INCLUDE_EXTRA=true ./docs-site/scripts/prepare-docs.sh
+	@cd docs-site && "$(DOCS_VENV)/bin/zensical" serve --config-file zensical.build.toml
+
+docs-serve-mike: generate docs-deps
+	@[ -z "$(VERSIONS)" ] || export MIKE_PREVIEW_VERSIONS="$(VERSIONS)"; ./docs-site/scripts/mike-preview.sh
+
+docs-serve-mike-only: docs-deps
+	@./docs-site/scripts/mike-preview.sh --serve-only
+
+docs-backfill: docs-deps
+	@./docs-site/scripts/mike-backfill.sh $(VERSIONS)
