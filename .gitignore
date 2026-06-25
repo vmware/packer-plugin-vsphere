@@ -1,0 +1,13 @@
+# Ignore files not required for documentation.
+**/.DS_Store
+.docs/*
+.idea/*
+.vscode/*
+builder/*
+docs/*
+docs-partials/*
+docs-site/*
+Documents/*
+examples/*
+post-processor/*
+testing/*
