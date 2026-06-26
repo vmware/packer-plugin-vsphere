@@ -87,7 +87,7 @@ type HardwareConfig struct {
 	VideoRAM int64 `mapstructure:"video_ram"`
 	// The number of video displays. Defaults to `1`.
 	//
-	//`-> **Note:** Refer to the [vSphere documentation](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-virtual-machine-administration-guide-8-0/configuring-virtual-machine-hardwarevsphere-vm-admin/virtual-machine-compatibilityvsphere-vm-admin/hardware-features-available-with-virtual-machine-compatibility-levelsvsphere-vm-admin.html)
+	// -> **Note:** Refer to the [vSphere documentation](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-virtual-machine-administration-guide-8-0/configuring-virtual-machine-hardwarevsphere-vm-admin/virtual-machine-compatibilityvsphere-vm-admin/hardware-features-available-with-virtual-machine-compatibility-levelsvsphere-vm-admin.html)
 	// for supported maximums.
 	Displays int32 `mapstructure:"displays"`
 	// Configure Dynamic DirectPath I/O [PCI Passthrough](#pci-passthrough-configuration) for

@@ -26,7 +26,7 @@ depending on your desired strategy:
   creating a new image.
 
 - `vsphere-clone` - This builder imports an existing virtual machine, runs provisioners
-  on the virtual machine, and then saves exports the virtual machine as an image. Use 
+  on the virtual machine, and then saves exports the virtual machine as an image. Use
   this builder to start from an existing image as the source.
 
 - `vsphere-supervisor` - This builder deploys and publishes a virtual machine to a
@@ -126,10 +126,10 @@ Licensed under the [Mozilla Public License, version 2.0][license].
 [docs-packer-init]: https://developer.hashicorp.com/packer/docs/commands/init
 [docs-packer-plugin-install]: https://developer.hashicorp.com/packer/docs/plugins/install-plugins
 [docs-vsphere]: https://techdocs.broadcom.com/us/en/vmware-cis/vsphere.html
-[docs-vsphere-clone]: https://developer.hashicorp.com/packer/integrations/vmware/vsphere/latest/components/builder/vsphere-clone
-[docs-vsphere-iso]: https://developer.hashicorp.com/packer/integrations/vmware/vsphere/latest/components/builder/vsphere-iso
-[docs-vsphere-supervisor]: https://developer.hashicorp.com/packer/integrations/vmware/vsphere/latest/components/builder/vsphere-supervisor
-[docs-vsphere-plugin]: https://developer.hashicorp.com/packer/integrations/vmware/vsphere
+[docs-vsphere-clone]: https://vmware.github.io/packer-plugin-vsphere/latest/builders/vsphere-clone/
+[docs-vsphere-iso]: https://vmware.github.io/packer-plugin-vsphere/latest/builders/vsphere-iso/
+[docs-vsphere-supervisor]: https://vmware.github.io/packer-plugin-vsphere/latest/builders/vsphere-supervisor/
+[docs-vsphere-plugin]: https://vmware.github.io/packer-plugin-vsphere/latest/
 [golang-install]: https://golang.org/doc/install
 [packer]: https://www.packer.io
 [releases-vsphere-plugin]: https://github.com/vmware/packer-plugin-vsphere/releases

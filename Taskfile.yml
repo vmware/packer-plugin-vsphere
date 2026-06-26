@@ -59,3 +59,114 @@ tasks:
         packer-sdc renderdocs -src "docs" -partials docs-partials/ -dst ".docs/"
         ./.web-docs/scripts/compile-to-webdocs.sh "." ".docs" ".web-docs" "hashicorp"
         rm -r ".docs"
+
+  docs-deps:
+    desc: Install Zensical and mike into docs-site/.venv for local docs preview.
+    cmds:
+      - test -d docs-site/.venv || python3 -m venv docs-site/.venv
+      - docs-site/.venv/bin/pip install -r docs-site/requirements.txt
+
+  docs-prepare:
+    desc: Stage .web-docs into docs-site/.build/docs for Zensical.
+    cmds:
+      - ./docs-site/scripts/prepare-docs.sh
+
+  docs-test:
+    desc: Run all docs-site script unit tests.
+    cmds:
+      - ./docs-site/scripts/test/test-all.sh
+
+  docs-test-links:
+    desc: Run integration link rewrite tests for staged documentation.
+    cmds:
+      - ./docs-site/scripts/test/test-rewrite-integration-links.sh
+
+  docs-test-internal-links:
+    desc: Run internal link and anchor fix tests for staged documentation.
+    cmds:
+      - ./docs-site/scripts/test/test-fix-internal-links.sh
+
+  docs-test-admonitions:
+    desc: Run Material-to-Zensical admonition conversion tests.
+    cmds:
+      - ./docs-site/scripts/test/test-convert-admonitions.sh
+
+  docs-test-example-labels:
+    desc: Run HCL/JSON example label formatting tests.
+    cmds:
+      - ./docs-site/scripts/test/test-format-example-labels.sh
+
+  docs-test-group-example-tabs:
+    desc: Run HCL/JSON content tab grouping tests.
+    cmds:
+      - ./docs-site/scripts/test/test-group-example-tabs.sh
+
+  docs-test-normalize:
+    desc: Run staged markdown list spacing tests.
+    cmds:
+      - ./docs-site/scripts/test/test-normalize-list-spacing.sh
+
+  docs-test-strip-codegen:
+    desc: Run strip-codegen-comments tests.
+    cmds:
+      - ./docs-site/scripts/test/test-strip-codegen-comments.sh
+
+  docs-test-repair-fences:
+    desc: Run repair-code-fences tests.
+    cmds:
+      - ./docs-site/scripts/test/test-repair-code-fences.sh
+
+  docs-test-stage-markdown:
+    desc: Run staged markdown pipeline integration tests.
+    cmds:
+      - ./docs-site/scripts/test/test-stage-markdown.sh
+
+  docs-test-github-alerts:
+    desc: Run GitHub alert to admonition conversion tests.
+    cmds:
+      - ./docs-site/scripts/test/test-convert-github-alerts.sh
+
+  docs-build:
+    desc: Preview what documentation will look like at the next release (build).
+    deps: [generate, docs-deps, docs-prepare]
+    cmds:
+      - cd docs-site && ../docs-site/.venv/bin/zensical build --config-file zensical.build.toml
+
+  docs-serve:
+    desc: Preview what documentation will look like at the next release (live).
+    deps: [generate, docs-deps, docs-prepare]
+    cmds:
+      - cd docs-site && ../docs-site/.venv/bin/zensical serve --config-file zensical.build.toml
+
+  docs-serve-version:
+    desc: "Preview documentation from a released version."
+    deps: [docs-deps]
+    cmds:
+      - |
+        test -n "{{.VERSION}}" || (echo "VERSION is required" && exit 1)
+        rm -rf .web-docs
+        git checkout "v{{.VERSION}}" -- .web-docs
+        INCLUDE_EXTRA=true ./docs-site/scripts/prepare-docs.sh
+        cd docs-site && ../docs-site/.venv/bin/zensical serve --config-file zensical.build.toml
+
+  docs-serve-mike:
+    desc: Preview versioned documentation locally with mike (latest=last tag, development=branch name).
+    deps: [generate, docs-deps]
+    env:
+      MIKE_PREVIEW_VERSIONS: "{{.VERSIONS}}"
+    cmds:
+      - ./docs-site/scripts/mike-preview.sh
+
+  docs-serve-mike-only:
+    desc: Serve an existing local mike preview without redeploying.
+    deps: [docs-deps]
+    cmds:
+      - ./docs-site/scripts/mike-preview.sh --serve-only
+
+  docs-backfill:
+    desc: Backfill versioned documentation to GitHub Pages.
+    deps: [docs-deps]
+    env:
+      MIKE_BACKFILL_VERSIONS: "{{.VERSIONS}}"
+    cmds:
+      - ./docs-site/scripts/mike-backfill.sh {{.CLI_ARGS}}

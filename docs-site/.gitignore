@@ -1,0 +1,4 @@
+.build/
+site/
+.venv/
+zensical.build.toml

@@ -1,0 +1,36 @@
+{#-
+  Show a version warning on non-default mike versions (see Zensical versioning docs).
+  Version selector lives in the content meta bar (see version-slot.js).
+-#}
+{% extends "base.html" %}
+
+{% block container %}
+  <div class="md-content" data-md-component="content">
+    {% if "navigation.path" in features %}
+      {% include "partials/path.html" %}
+    {% endif %}
+    {% if config.extra.version %}
+      <div class="md-version-meta">
+        <div id="md-version-slot" class="md-version-meta__slot"></div>
+      </div>
+    {% endif %}
+    <article class="md-content__inner md-typeset">
+      {% block content %}
+        {% include "partials/content.html" %}
+      {% endblock %}
+    </article>
+  </div>
+{% endblock %}
+
+{% block outdated %}
+  <div class="md-version-banner">
+    <span class="md-version-banner__icon" aria-hidden="true">
+      {% include ".icons/lucide/info.svg" %}
+    </span>
+    <p class="md-version-banner__text">
+      You are viewing documentation for version
+      <strong class="md-version-banner__version"></strong>.
+      <a href="{{ '../' ~ base_url }}">View latest version.</a>
+    </p>
+  </div>
+{% endblock %}

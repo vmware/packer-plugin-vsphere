@@ -1,5 +1,5 @@
 ---
-# This workflow releases a new version of the plugin.
+# This workflow releases a new version of the plugin and publishes documentation.
 
 name: Release
 
@@ -13,7 +13,7 @@ permissions:
   packages: read
 
 jobs:
-  goreleaser:
+  release-plugin:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -45,3 +45,30 @@ jobs:
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           API_VERSION: ${{ steps.plugin_describe.outputs.api_version }}
+  release-docs:
+    needs: release-plugin
+    if: ${{ !contains(github.ref_name, '-rc') && !contains(github.ref_name, '-beta') && !contains(github.ref_name, '-alpha') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.x'
+      - name: Install Documentation Dependencies
+        run: make docs-deps
+      - name: Configure GitHub Actions Bot Author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Deploy Documentation with Mike
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          version="${VERSION#v}"
+          chmod +x docs-site/scripts/mike-deploy.sh
+          ./docs-site/scripts/mike-deploy.sh "$version" --update-latest
