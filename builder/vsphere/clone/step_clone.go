@@ -13,7 +13,6 @@ import (
 	"log"
 	"net/url"
 	"path"
-	"regexp"
 	"strings"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
@@ -24,7 +23,6 @@ import (
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
 
-// RemoteSourceConfig defines configuration for cloning from remote OVF/OVA sources.
 type RemoteSourceConfig struct {
 	// The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
 	URL string `mapstructure:"url"`
@@ -39,44 +37,28 @@ type RemoteSourceConfig struct {
 	//
 	// -> **Note:** This option is beneficial in scenarios where the certificate
 	// is self-signed or does not meet standard validation criteria.
-	//
-	// HCL Example:
-	//
-	// ```hcl
-	//   remote_source = {
-	//     url              = "https://packages.example.com/artifacts/example.ovf"
-	//     username         = "remote_source_username"
-	//     password         = "remote_source_password"
-	//     skip_tls_verify  = false
-	//   }
-	// ```
-	//
-	// JSON Example:
-	// ```json
-	//   "remote_source": {
-	//     "url": "https://packages.example.com/artifacts/example.ovf",
-	//     "username": "remote_source_username",
-	//     "password": "remote_source_password",
-	//     "skip_tls_verify": false
-	//   }
 	SkipTlsVerify bool `mapstructure:"skip_tls_verify"`
 }
 
 type CloneConfig struct {
 	// The name of the source virtual machine to clone.
 	Template string `mapstructure:"template"`
-	// Configuration for cloning from a remote OVF/OVA source.
-	// Cannot be used together with `template`.
-	//
-	// For more information, refer to the [Remote Source Configuration](/packer/integrations/hashicorp/vmware/latest/components/builder/vsphere-clone#remote-source-configuration)
-	// section.
+	// Configuration for deploying from a remote OVF/OVA source accessible using
+	// HTTP or HTTPS. Conflicts with `template`.
 	RemoteSource *RemoteSourceConfig `mapstructure:"remote_source"`
-	// The size of the primary disk in MiB. Cannot be used with `linked_clone`.
-	// -> **Note:** Only the primary disk size can be specified. Additional
-	// disks are not supported.
+	// The size of the primary disk in MiB. Conflicts with `linked_clone`.
+	//
+	// -> **Note:** Only the primary disk size can be specified. Additional disks
+	// are not supported.
+	//
+	// ~> **Note:** Applies only when cloning from a `template`; rejected when
+	// `remote_source` is set.
 	DiskSize int64 `mapstructure:"disk_size"`
 	// Create the virtual machine as a linked clone from the latest snapshot.
-	// Defaults to `false`. Cannot be used with `disk_size`.`
+	// Defaults to `false`. Conflicts with `disk_size`.
+	//
+	// ~> **Note:** Applies only when cloning from a `template`; rejected when
+	// `remote_source` is set.
 	LinkedClone bool `mapstructure:"linked_clone"`
 	// The network to which the virtual machine will connect.
 	//
@@ -94,6 +76,10 @@ type CloneConfig struct {
 	//
 	// ~> **Note:** If no network is specified, provide `host` to allow the
 	// plugin to search for an available network.
+	//
+	// ~> **Note:** When deploying from a remote OVF/OVA source, each network
+	// defined in the OVF descriptor is mapped to this vSphere network. If the
+	// OVF defines multiple networks, they all use this same mapping.
 	Network string `mapstructure:"network"`
 	// The network card MAC address. For example `00:50:56:00:00:00`.
 	// If set, the `network` must be also specified.
@@ -104,8 +90,7 @@ type CloneConfig struct {
 	// Defaults to `false`.
 	Destroy bool `mapstructure:"destroy"`
 	// The vApp Options for the virtual machine. For more information, refer to
-	// the [vApp Options Configuration](/packer/plugins/builders/vmware/vsphere-clone#vapp-options-configuration)
-	// section.
+	// the [vApp Options Configuration](#vapp-options-configuration) section.
 	VAppConfig    common.VAppConfig    `mapstructure:"vapp"`
 	StorageConfig common.StorageConfig `mapstructure:",squash"`
 }
@@ -113,9 +98,7 @@ type CloneConfig struct {
 // Prepare validates the CloneConfig and returns any validation errors.
 func (c *CloneConfig) Prepare() []error {
 	var errs []error
-	errs = append(errs, c.StorageConfig.Prepare()...)
 
-	// Validate source configuration for mutual exclusivity.
 	hasTemplate := c.Template != ""
 	hasRemoteSource := c.RemoteSource != nil
 
@@ -128,26 +111,10 @@ func (c *CloneConfig) Prepare() []error {
 	}
 
 	if hasRemoteSource {
-		if c.RemoteSource.URL == "" {
-			errs = append(errs, fmt.Errorf("'url' is required when using 'remote_source'"))
-		} else {
-			parsedURL, err := url.Parse(c.RemoteSource.URL)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("invalid 'remote_source' URL format: %s", err))
-			} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-				errs = append(errs, fmt.Errorf("'remote_source' URL must use HTTP or HTTPS protocol"))
-			}
-		}
-
-		hasUsername := c.RemoteSource.Username != ""
-		hasPassword := c.RemoteSource.Password != ""
-		if hasUsername && !hasPassword {
-			errs = append(errs, fmt.Errorf("'password' is required when 'username' is specified for remote source"))
-		}
-		if hasPassword && !hasUsername {
-			errs = append(errs, fmt.Errorf("'username' is required when 'password' is specified for remote source"))
-		}
+		errs = append(errs, c.prepareRemoteSource()...)
 	}
+
+	errs = append(errs, c.StorageConfig.Prepare()...)
 
 	if c.LinkedClone && c.DiskSize != 0 {
 		errs = append(errs, fmt.Errorf("'linked_clone' and 'disk_size' cannot be used together"))
@@ -155,6 +122,45 @@ func (c *CloneConfig) Prepare() []error {
 
 	if c.MacAddress != "" && c.Network == "" {
 		errs = append(errs, fmt.Errorf("'network' is required when 'mac_address' is specified"))
+	}
+
+	return errs
+}
+
+func (c *CloneConfig) prepareRemoteSource() []error {
+	var errs []error
+
+	if c.RemoteSource.URL == "" {
+		errs = append(errs, fmt.Errorf("'url' is required when using 'remote_source'"))
+	} else {
+		parsedURL, err := url.Parse(c.RemoteSource.URL)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("invalid 'remote_source' URL format: %s", err))
+		} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+			errs = append(errs, fmt.Errorf("'remote_source' URL must use HTTP or HTTPS protocol"))
+		}
+	}
+
+	hasUsername := c.RemoteSource.Username != ""
+	hasPassword := c.RemoteSource.Password != ""
+	if hasUsername && !hasPassword {
+		errs = append(errs, fmt.Errorf("'password' is required when 'username' is specified for remote source"))
+	}
+	if hasPassword && !hasUsername {
+		errs = append(errs, fmt.Errorf("'username' is required when 'password' is specified for remote source"))
+	}
+
+	if c.DiskSize != 0 {
+		errs = append(errs, fmt.Errorf("'disk_size' cannot be used with 'remote_source'"))
+	}
+	if c.LinkedClone {
+		errs = append(errs, fmt.Errorf("'linked_clone' cannot be used with 'remote_source'"))
+	}
+	if len(c.StorageConfig.DiskControllerType) > 0 {
+		errs = append(errs, fmt.Errorf("'disk_controller_type' cannot be used with 'remote_source'"))
+	}
+	if len(c.StorageConfig.Storage) > 0 {
+		errs = append(errs, fmt.Errorf("'storage' cannot be used with 'remote_source'"))
 	}
 
 	return errs
@@ -205,12 +211,7 @@ func (s *StepCloneVM) cloneFromTemplate(ctx context.Context, state multistep.Sta
 		})
 	}
 
-	datastoreName := s.Location.Datastore
-	var primaryDatastore driver.Datastore
-	if ds, ok := state.GetOk("datastore"); ok {
-		primaryDatastore = ds.(driver.Datastore)
-		datastoreName = primaryDatastore.Name()
-	}
+	datastoreName, primaryDatastore := s.resolveDatastore(state)
 
 	// If no datastore was resolved and no datastore was specified, return an error.
 	if datastoreName == "" && s.Location.DatastoreCluster == "" {
@@ -292,11 +293,17 @@ func (s *StepCloneVM) deployFromRemoteOvf(ctx context.Context, state multistep.S
 	d := state.Get("driver").(driver.Driver)
 	vmPath := path.Join(s.Location.Folder, s.Location.VMName)
 
-	ui.Say(fmt.Sprintf("Deploying virtual machine from remote OVF/OVA: %s", s.sanitizeURL(s.Config.RemoteSource.URL)))
+	ui.Sayf("Deploying virtual machine from remote OVF/OVA: %s", driver.SanitizeOvfURL(s.Config.RemoteSource.URL))
 
 	err := d.PreCleanVM(ui, vmPath, s.Force, s.Location.Cluster, s.Location.Host, s.Location.ResourcePool)
 	if err != nil {
 		state.Put("error", err)
+		return multistep.ActionHalt
+	}
+
+	datastoreName, _ := s.resolveDatastore(state)
+	if datastoreName == "" && s.Location.DatastoreCluster == "" {
+		state.Put("error", fmt.Errorf("no datastore specified and no datastore resolved from cluster"))
 		return multistep.ActionHalt
 	}
 
@@ -308,16 +315,6 @@ func (s *StepCloneVM) deployFromRemoteOvf(ctx context.Context, state multistep.S
 		}
 	}
 
-	var disks []driver.Disk
-	for _, disk := range s.Config.StorageConfig.Storage {
-		disks = append(disks, driver.Disk{
-			DiskSize:            disk.DiskSize,
-			DiskEagerlyScrub:    disk.DiskEagerlyScrub,
-			DiskThinProvisioned: disk.DiskThinProvisioned,
-			ControllerIndex:     disk.DiskControllerIndex,
-		})
-	}
-
 	ovfConfig := &driver.OvfDeployConfig{
 		URL:              s.Config.RemoteSource.URL,
 		Authentication:   auth,
@@ -326,27 +323,22 @@ func (s *StepCloneVM) deployFromRemoteOvf(ctx context.Context, state multistep.S
 		Cluster:          s.Location.Cluster,
 		Host:             s.Location.Host,
 		ResourcePool:     s.Location.ResourcePool,
-		Datastore:        s.Location.Datastore,
+		Datastore:        datastoreName,
 		Network:          s.Config.Network,
 		MacAddress:       strings.ToLower(s.Config.MacAddress),
 		Annotation:       s.Config.Notes,
 		VAppProperties:   s.Config.VAppConfig.Properties,
 		DeploymentOption: s.Config.VAppConfig.DeploymentOption,
-		StorageConfig: driver.StorageConfig{
-			DiskControllerType: s.Config.StorageConfig.DiskControllerType,
-			Storage:            disks,
-		},
-		Locale:        "US",
-		SkipTlsVerify: s.Config.RemoteSource.SkipTlsVerify,
+		Locale:           "US",
+		SkipTlsVerify:    s.Config.RemoteSource.SkipTlsVerify,
 	}
 
 	// Validate OVF deployment parameters with enhanced error handling
-	if err := s.validateOvfConfiguration(ctx, d, ovfConfig, ui); err != nil {
+	if err := s.validateOvfConfiguration(ctx, d, ovfConfig); err != nil {
 		state.Put("error", s.wrapStepError("OVF configuration validation failed", err, s.Config.RemoteSource.URL))
 		return multistep.ActionHalt
 	}
 
-	ui.Say("Deploying virtual machine from remote OVF/OVA source...")
 	vm, err := d.DeployOvf(ctx, ovfConfig, ui)
 	if err != nil {
 		state.Put("error", s.wrapStepError("OVF deployment failed", err, s.Config.RemoteSource.URL))
@@ -367,6 +359,20 @@ func (s *StepCloneVM) deployFromRemoteOvf(ctx context.Context, state multistep.S
 	return multistep.ActionContinue
 }
 
+// resolveDatastore returns the datastore name to use for clone or OVF deploy operations.
+// When StepResolveDatastore has run (for example after Storage DRS selection from
+// datastore_cluster), the resolved datastore in state takes precedence over the
+// location configuration.
+func (s *StepCloneVM) resolveDatastore(state multistep.StateBag) (string, driver.Datastore) {
+	datastoreName := s.Location.Datastore
+	var resolved driver.Datastore
+	if ds, ok := state.GetOk("datastore"); ok {
+		resolved = ds.(driver.Datastore)
+		datastoreName = resolved.Name()
+	}
+	return datastoreName, resolved
+}
+
 // validateOvfDeploymentOption validates that the specified deployment option exists in the OVF descriptor.
 func (s *StepCloneVM) validateOvfDeploymentOption(ctx context.Context, d driver.Driver, config *driver.OvfDeployConfig) error {
 	if config.DeploymentOption == "" {
@@ -377,7 +383,7 @@ func (s *StepCloneVM) validateOvfDeploymentOption(ctx context.Context, d driver.
 	if locale == "" {
 		locale = "US"
 	}
-	options, err := d.GetOvfOptions(ctx, config.URL, config.Authentication, locale)
+	options, err := d.GetOvfOptions(ctx, config.URL, config.Authentication, locale, config.SkipTlsVerify)
 	if err != nil {
 		return fmt.Errorf("error retrieving OVF deployment options: %s", err)
 	}
@@ -399,16 +405,16 @@ func (s *StepCloneVM) validateOvfDeploymentOption(ctx context.Context, d driver.
 }
 
 // validateOvfConfiguration validates OVF deployment parameters and vApp properties.
-func (s *StepCloneVM) validateOvfConfiguration(ctx context.Context, d driver.Driver, config *driver.OvfDeployConfig, ui packersdk.Ui) error {
+func (s *StepCloneVM) validateOvfConfiguration(ctx context.Context, d driver.Driver, config *driver.OvfDeployConfig) error {
 	if config.DeploymentOption != "" {
-		ui.Say(fmt.Sprintf("Validating OVF deployment option: %s", config.DeploymentOption))
+		log.Printf("[INFO] Validating OVF deployment option: %s", config.DeploymentOption)
 		if err := s.validateOvfDeploymentOption(ctx, d, config); err != nil {
 			return err
 		}
 	}
 
 	if len(config.VAppProperties) > 0 {
-		ui.Say("Validating vApp properties against OVF descriptor...")
+		log.Printf("[INFO] Validating vApp property key and value limits...")
 		if err := s.validateOvfVAppProperties(ctx, d, config); err != nil {
 			return err
 		}
@@ -441,100 +447,12 @@ func (s *StepCloneVM) validateOvfVAppProperties(_ context.Context, _ driver.Driv
 
 // wrapStepError wraps errors with context and sanitizes sensitive information for step operations.
 func (s *StepCloneVM) wrapStepError(context string, err error, url string) error {
-	sanitizedURL := s.sanitizeURL(url)
-	sanitizedErr := s.sanitizeErrorMessage(err.Error())
+	sanitizedURL := driver.SanitizeOvfURL(url)
+	sanitizedErr := driver.SanitizeOvfErrorMessage(err.Error())
 	return fmt.Errorf("%s for remote source '%s': %s", context, sanitizedURL, sanitizedErr)
 }
 
-// sanitizeURL removes credentials from URLs for safe logging in step operations.
-func (s *StepCloneVM) sanitizeURL(urlStr string) string {
-	u, err := url.Parse(urlStr)
-	if err != nil {
-		return "[invalid URL]"
-	}
-
-	if u.User != nil {
-		u.User = url.User(u.User.Username())
-	}
-	return u.String()
-}
-
-// sanitizeErrorMessage removes sensitive information from error messages in step operations.
-func (s *StepCloneVM) sanitizeErrorMessage(errMsg string) string {
-	sanitized := s.sanitizeURLsInString(errMsg)
-	return s.sanitizeCredentialPatterns(sanitized)
-}
-
-// sanitizeURLsInString removes credentials from URLs in the given string.
-func (s *StepCloneVM) sanitizeURLsInString(str string) string {
-	urlPattern := regexp.MustCompile(`https?://[^:]+:[^@]+@[^\s]+`)
-	return urlPattern.ReplaceAllStringFunc(str, func(match string) string {
-		if u, err := url.Parse(match); err == nil {
-			u.User = nil
-			return u.String()
-		}
-		return "[URL with credentials removed]"
-	})
-}
-
-// sanitizeCredentialPatterns removes credential patterns from the given string.
-func (s *StepCloneVM) sanitizeCredentialPatterns(str string) string {
-	patterns := []string{
-		`password[=:]\s*[^\s]+`,
-		`pwd[=:]\s*[^\s]+`,
-		`pass[=:]\s*[^\s]+`,
-		`secret[=:]\s*[^\s]+`,
-		`token[=:]\s*[^\s]+`,
-	}
-
-	sanitized := str
-	for _, pattern := range patterns {
-		re := regexp.MustCompile(`(?i)` + pattern)
-		sanitized = re.ReplaceAllString(sanitized, "[credentials removed]")
-	}
-	return sanitized
-}
-
-// Cleanup performs step cleanup, including OVF-specific resource cleanup for remote deployments.
+// Cleanup performs step cleanup.
 func (s *StepCloneVM) Cleanup(state multistep.StateBag) {
-	if s.Config.RemoteSource != nil {
-		s.cleanupOvfDeployment(state)
-	}
-
 	common.CleanupVM(state)
-}
-
-// cleanupOvfDeployment cleans up OVF deployment-specific resources from the state bag.
-func (s *StepCloneVM) cleanupOvfDeployment(state multistep.StateBag) {
-	ui := state.Get("ui").(packersdk.Ui)
-
-	if ovfTaskRef, ok := state.GetOk("ovf_task_ref"); ok {
-		ui.Say("Cleaning up OVF deployment task...")
-
-		if d, ok := state.Get("driver").(driver.Driver); ok {
-			if taskRef, ok := ovfTaskRef.(*types.ManagedObjectReference); ok {
-				s.cancelOvfTask(d, taskRef, ui)
-			}
-		}
-
-		state.Remove("ovf_task_ref")
-	}
-
-	if progressMonitor, ok := state.GetOk("ovf_progress_monitor"); ok {
-		ui.Say("Stopping OVF progress monitoring...")
-		if monitor, ok := progressMonitor.(*driver.OvfProgressMonitor); ok {
-			monitor.Cancel()
-		}
-		state.Remove("ovf_progress_monitor")
-	}
-
-	if _, ok := state.GetOk("ovf_lease"); ok {
-		ui.Say("Cleaning up NFC lease...")
-		state.Remove("ovf_lease")
-	}
-}
-
-// cancelOvfTask provides a consistent interface for OVF task cleanup operations.
-func (s *StepCloneVM) cancelOvfTask(_ driver.Driver, _ *types.ManagedObjectReference, ui packersdk.Ui) {
-	ui.Say("OVF deployment task cleanup initiated")
 }

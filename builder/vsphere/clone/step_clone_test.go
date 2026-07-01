@@ -46,6 +46,7 @@ func TestCreateConfig_Prepare(t *testing.T) {
 		{
 			name: "Storage validate disk_size",
 			config: &CloneConfig{
+				Template: "template name",
 				StorageConfig: common.StorageConfig{
 					Storage: []common.DiskConfig{
 						{
@@ -61,6 +62,7 @@ func TestCreateConfig_Prepare(t *testing.T) {
 		{
 			name: "Storage validate disk_controller_index",
 			config: &CloneConfig{
+				Template: "template name",
 				StorageConfig: common.StorageConfig{
 					Storage: []common.DiskConfig{
 						{
@@ -148,14 +150,6 @@ func TestCreateConfig_Prepare(t *testing.T) {
 				RemoteSource: &RemoteSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
-				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"test"},
-					Storage: []common.DiskConfig{
-						{
-							DiskSize: 32768,
-						},
-					},
-				},
 			},
 			fail: false,
 		},
@@ -163,14 +157,6 @@ func TestCreateConfig_Prepare(t *testing.T) {
 			name: "Validate remote_source URL is required",
 			config: &CloneConfig{
 				RemoteSource: &RemoteSourceConfig{},
-				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"test"},
-					Storage: []common.DiskConfig{
-						{
-							DiskSize: 32768,
-						},
-					},
-				},
 			},
 			fail:           true,
 			expectedErrMsg: "'url' is required when using 'remote_source'",
@@ -180,14 +166,6 @@ func TestCreateConfig_Prepare(t *testing.T) {
 			config: &CloneConfig{
 				RemoteSource: &RemoteSourceConfig{
 					URL: "ftp://packages.example.com/artifacts/example.ovf",
-				},
-				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"test"},
-					Storage: []common.DiskConfig{
-						{
-							DiskSize: 32768,
-						},
-					},
 				},
 			},
 			fail:           true,
@@ -200,14 +178,6 @@ func TestCreateConfig_Prepare(t *testing.T) {
 					URL:      "https://packages.example.com/artifacts/example.ovf",
 					Username: "testuser",
 				},
-				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"test"},
-					Storage: []common.DiskConfig{
-						{
-							DiskSize: 32768,
-						},
-					},
-				},
 			},
 			fail:           true,
 			expectedErrMsg: "'password' is required when 'username' is specified for remote source",
@@ -218,14 +188,6 @@ func TestCreateConfig_Prepare(t *testing.T) {
 				RemoteSource: &RemoteSourceConfig{
 					URL:      "https://packages.example.com/artifacts/example.ovf",
 					Password: "testpass",
-				},
-				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"test"},
-					Storage: []common.DiskConfig{
-						{
-							DiskSize: 32768,
-						},
-					},
 				},
 			},
 			fail:           true,
@@ -238,16 +200,58 @@ func TestCreateConfig_Prepare(t *testing.T) {
 					URL:           "https://packages.example.com/artifacts/example.ovf",
 					SkipTlsVerify: true,
 				},
+			},
+			fail: false,
+		},
+		{
+			name: "Validate disk_size cannot be used with remote_source",
+			config: &CloneConfig{
+				RemoteSource: &RemoteSourceConfig{
+					URL: "https://packages.example.com/artifacts/example.ovf",
+				},
+				DiskSize: 32768,
+			},
+			fail:           true,
+			expectedErrMsg: "'disk_size' cannot be used with 'remote_source'",
+		},
+		{
+			name: "Validate linked_clone cannot be used with remote_source",
+			config: &CloneConfig{
+				RemoteSource: &RemoteSourceConfig{
+					URL: "https://packages.example.com/artifacts/example.ovf",
+				},
+				LinkedClone: true,
+			},
+			fail:           true,
+			expectedErrMsg: "'linked_clone' cannot be used with 'remote_source'",
+		},
+		{
+			name: "Validate storage cannot be used with remote_source",
+			config: &CloneConfig{
+				RemoteSource: &RemoteSourceConfig{
+					URL: "https://packages.example.com/artifacts/example.ovf",
+				},
 				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"test"},
 					Storage: []common.DiskConfig{
-						{
-							DiskSize: 32768,
-						},
+						{DiskSize: 32768},
 					},
 				},
 			},
-			fail: false,
+			fail:           true,
+			expectedErrMsg: "'storage' cannot be used with 'remote_source'",
+		},
+		{
+			name: "Validate disk_controller_type cannot be used with remote_source",
+			config: &CloneConfig{
+				RemoteSource: &RemoteSourceConfig{
+					URL: "https://packages.example.com/artifacts/example.ovf",
+				},
+				StorageConfig: common.StorageConfig{
+					DiskControllerType: []string{"pvscsi"},
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "'disk_controller_type' cannot be used with 'remote_source'",
 		},
 	}
 
@@ -456,6 +460,46 @@ func TestStepCloneVM_RemoteSourceDetection(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestStepCloneVM_OvfDeploymentUsesResolvedDatastore verifies that remote OVF deploy
+// uses the datastore resolved by StepResolveDatastore (for example from datastore_cluster).
+func TestStepCloneVM_OvfDeploymentUsesResolvedDatastore(t *testing.T) {
+	state := new(multistep.BasicStateBag)
+	state.Put("ui", &packersdk.BasicUi{
+		Reader: new(bytes.Buffer),
+		Writer: new(bytes.Buffer),
+	})
+	driverMock := driver.NewDriverMock()
+	driverMock.DeployOvfVM = new(driver.VirtualMachineMock)
+	state.Put("driver", driverMock)
+	state.Put("datastore", &driver.DatastoreMock{NameReturn: "drs-selected-datastore"})
+
+	location := basicLocationConfig()
+	location.Datastore = ""
+	location.DatastoreCluster = "test-datastore-cluster"
+
+	step := &StepCloneVM{
+		Config: &CloneConfig{
+			RemoteSource: &RemoteSourceConfig{
+				URL: "https://packages.example.com/artifacts/example.ovf",
+			},
+		},
+		Location: location,
+		Force:    true,
+	}
+
+	action := step.Run(context.Background(), state)
+	if action != multistep.ActionContinue {
+		t.Fatalf("expected ActionContinue, got %v; error: %v", action, state.Get("error"))
+	}
+
+	if !driverMock.DeployOvfCalled {
+		t.Fatal("expected DeployOvf to be called")
+	}
+	if driverMock.DeployOvfConfig.Datastore != "drs-selected-datastore" {
+		t.Errorf("expected datastore 'drs-selected-datastore', got '%s'", driverMock.DeployOvfConfig.Datastore)
 	}
 }
 
@@ -788,6 +832,39 @@ func TestStepCloneVM_OvfValidationIntegration(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name: "Valid deployment option with skip TLS verify",
+			config: &CloneConfig{
+				RemoteSource: &RemoteSourceConfig{
+					URL:           "https://packages.example.com/artifacts/example.ovf",
+					SkipTlsVerify: true,
+				},
+				VAppConfig: common.VAppConfig{
+					DeploymentOption: "small",
+				},
+				StorageConfig: common.StorageConfig{
+					DiskControllerType: []string{"pvscsi"},
+					Storage: []common.DiskConfig{
+						{
+							DiskSize:            32768,
+							DiskThinProvisioned: true,
+						},
+					},
+				},
+			},
+			mockSetup: func(mock *driver.DriverMock) {
+				mock.DeployOvfVM = new(driver.VirtualMachineMock)
+				mock.GetOvfOptionsResult = []types.OvfOptionInfo{
+					{
+						Option: "small",
+						Description: types.LocalizableMessage{
+							Message: "Small configuration",
+						},
+					},
+				}
+			},
+			expectError: false,
+		},
+		{
 			name: "Invalid deployment option",
 			config: &CloneConfig{
 				RemoteSource: &RemoteSourceConfig{
@@ -867,54 +944,16 @@ func TestStepCloneVM_OvfValidationIntegration(t *testing.T) {
 					if !driverMock.GetOvfOptionsCalled {
 						t.Error("expected GetOvfOptions to be called for deployment option validation")
 					}
+					if tt.config.RemoteSource != nil && driverMock.GetOvfOptionsSkipTlsVerify != tt.config.RemoteSource.SkipTlsVerify {
+						t.Errorf("expected GetOvfOptionsSkipTlsVerify %v, got %v", tt.config.RemoteSource.SkipTlsVerify, driverMock.GetOvfOptionsSkipTlsVerify)
+					}
 				}
 			}
 		})
 	}
 }
 
-// TestStepCloneVM_CleanupRemoteSource tests that OVF-specific cleanup is performed for remote source deployments.
-func TestStepCloneVM_CleanupRemoteSource(t *testing.T) {
-	// Setup
-	step := &StepCloneVM{
-		Config: &CloneConfig{
-			RemoteSource: &RemoteSourceConfig{
-				URL: "https://packages.example.com/artifacts/example.ovf",
-			},
-		},
-		Location: &common.LocationConfig{
-			VMName: "test-vm",
-			Folder: "test-folder",
-		},
-	}
-
-	ui := &packersdk.BasicUi{
-		Reader: new(bytes.Buffer),
-		Writer: new(bytes.Buffer),
-	}
-	driverMock := driver.NewDriverMock()
-	state := &multistep.BasicStateBag{}
-	state.Put("ui", ui)
-	state.Put("driver", driverMock)
-
-	// Add some OVF-specific state to test cleanup
-	taskRef := &types.ManagedObjectReference{Type: "Task", Value: "task-123"}
-	state.Put("ovf_task_ref", taskRef)
-	state.Put("ovf_lease", "lease-ref")
-
-	// Execute cleanup
-	step.Cleanup(state)
-
-	// Verify OVF-specific cleanup was performed
-	if _, ok := state.GetOk("ovf_task_ref"); ok {
-		t.Error("expected ovf_task_ref to be removed from state")
-	}
-	if _, ok := state.GetOk("ovf_lease"); ok {
-		t.Error("expected ovf_lease to be removed from state")
-	}
-}
-
-// TestStepCloneVM_CleanupTemplateSource tests that OVF-specific cleanup is NOT performed for template-based cloning.
+// TestStepCloneVM_CleanupTemplateSource tests that template-based cleanup does not depend on remote OVF state keys.
 func TestStepCloneVM_CleanupTemplateSource(t *testing.T) {
 	// Setup for template-based cloning (should not perform OVF cleanup)
 	step := &StepCloneVM{
@@ -943,9 +982,9 @@ func TestStepCloneVM_CleanupTemplateSource(t *testing.T) {
 	// Execute cleanup
 	step.Cleanup(state)
 
-	// Verify OVF-specific cleanup was NOT performed for template sources
+	// Verify cleanup does not remove unrelated state keys.
 	if _, ok := state.GetOk("ovf_task_ref"); !ok {
-		t.Error("expected ovf_task_ref to remain in state for template-based cloning")
+		t.Error("expected ovf_task_ref to remain in state")
 	}
 }
 
@@ -1202,310 +1241,6 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 			} else {
 				if action != multistep.ActionContinue {
 					t.Fatalf("expected ActionContinue, got %v", action)
-				}
-			}
-		})
-	}
-}
-
-// TestStepCloneVM_ProgressMonitoringWithMockedTasks tests progress monitoring with mocked vSphere tasks.
-func TestStepCloneVM_ProgressMonitoringWithMockedTasks(t *testing.T) {
-	tests := []struct {
-		name           string
-		config         *CloneConfig
-		mockSetup      func(*driver.DriverMock)
-		expectProgress bool
-		expectSuccess  bool
-	}{
-		{
-			name: "Successful deployment with progress monitoring",
-			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
-					URL: "https://packages.example.com/artifacts/example.ovf",
-				},
-				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"pvscsi"},
-					Storage: []common.DiskConfig{
-						{
-							DiskSize:            32768,
-							DiskThinProvisioned: true,
-						},
-					},
-				},
-			},
-			mockSetup: func(mock *driver.DriverMock) {
-				mock.DeployOvfVM = new(driver.VirtualMachineMock)
-			},
-			expectProgress: true,
-			expectSuccess:  true,
-		},
-		{
-			name: "Large OVA deployment with extended progress monitoring",
-			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
-					URL: "https://packages.example.com/artifacts/example-large.ovf",
-				},
-				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"pvscsi"},
-					Storage: []common.DiskConfig{
-						{
-							DiskSize:            65536,
-							DiskThinProvisioned: true,
-						},
-					},
-				},
-			},
-			mockSetup: func(mock *driver.DriverMock) {
-				mock.DeployOvfVM = new(driver.VirtualMachineMock)
-			},
-			expectProgress: true,
-			expectSuccess:  true,
-		},
-		{
-			name: "Deployment with authentication and progress monitoring",
-			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
-					URL:      "https://packages.example.com/artifacts/example.ovf",
-					Username: "testuser",
-					Password: "testpass",
-				},
-				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"pvscsi"},
-					Storage: []common.DiskConfig{
-						{
-							DiskSize:            32768,
-							DiskThinProvisioned: true,
-						},
-					},
-				},
-			},
-			mockSetup: func(mock *driver.DriverMock) {
-				mock.DeployOvfVM = new(driver.VirtualMachineMock)
-			},
-			expectProgress: true,
-			expectSuccess:  true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Capture UI output to verify progress messages
-			var uiOutput bytes.Buffer
-			state := new(multistep.BasicStateBag)
-			state.Put("ui", &packersdk.BasicUi{
-				Reader: new(bytes.Buffer),
-				Writer: &uiOutput,
-			})
-			driverMock := driver.NewDriverMock()
-			state.Put("driver", driverMock)
-
-			step := &StepCloneVM{
-				Config:   tt.config,
-				Location: basicLocationConfig(),
-				Force:    true,
-			}
-
-			tt.mockSetup(driverMock)
-
-			action := step.Run(context.Background(), state)
-
-			if tt.expectSuccess {
-				if action != multistep.ActionContinue {
-					t.Fatalf("expected ActionContinue, got %v", action)
-				}
-
-				if !driverMock.DeployOvfCalled {
-					t.Error("expected DeployOvf to be called")
-				}
-
-				// Verify progress monitoring messages
-				if tt.expectProgress {
-					output := uiOutput.String()
-					expectedMessages := []string{
-						"Deploying virtual machine from remote OVF/OVA",
-						"Successfully deployed virtual machine from remote OVF/OVA source",
-					}
-
-					for _, msg := range expectedMessages {
-						if !strings.Contains(output, msg) {
-							t.Errorf("expected UI output to contain '%s', got: %s", msg, output)
-						}
-					}
-				}
-
-				// Verify VM is set in state
-				if vm, ok := state.GetOk("vm"); !ok {
-					t.Error("expected vm to be set in state")
-				} else if vm != driverMock.DeployOvfVM {
-					t.Error("expected vm in state to match mock VM")
-				}
-			}
-		})
-	}
-}
-
-// TestStepCloneVM_ResourceCleanupOnFailure tests resource cleanup on failure scenarios.
-func TestStepCloneVM_ResourceCleanupOnFailure(t *testing.T) {
-	tests := []struct {
-		name          string
-		config        *CloneConfig
-		mockSetup     func(*driver.DriverMock)
-		setupState    func(*multistep.BasicStateBag)
-		expectCleanup bool
-		cleanupItems  []string
-	}{
-		{
-			name: "OVF deployment failure with task cleanup",
-			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
-					URL: "https://packages.example.com/artifacts/example.ovf",
-				},
-				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"pvscsi"},
-					Storage: []common.DiskConfig{
-						{
-							DiskSize:            32768,
-							DiskThinProvisioned: true,
-						},
-					},
-				},
-			},
-			mockSetup: func(mock *driver.DriverMock) {
-				mock.DeployOvfShouldFail = true
-				mock.DeployOvfError = fmt.Errorf("deployment failed")
-			},
-			setupState: func(state *multistep.BasicStateBag) {
-				taskRef := &types.ManagedObjectReference{Type: "Task", Value: "task-123"}
-				state.Put("ovf_task_ref", taskRef)
-				state.Put("ovf_lease", "lease-ref")
-			},
-			expectCleanup: true,
-			cleanupItems:  []string{"ovf_task_ref", "ovf_lease"},
-		},
-		{
-			name: "OVF deployment failure with progress monitor cleanup",
-			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
-					URL: "https://packages.example.com/artifacts/example.ovf",
-				},
-				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"pvscsi"},
-					Storage: []common.DiskConfig{
-						{
-							DiskSize:            32768,
-							DiskThinProvisioned: true,
-						},
-					},
-				},
-			},
-			mockSetup: func(mock *driver.DriverMock) {
-				mock.DeployOvfShouldFail = true
-				mock.DeployOvfError = fmt.Errorf("network timeout")
-			},
-			setupState: func(state *multistep.BasicStateBag) {
-				monitor := &driver.OvfProgressMonitor{}
-				state.Put("ovf_progress_monitor", monitor)
-				state.Put("ovf_task_ref", &types.ManagedObjectReference{Type: "Task", Value: "task-456"})
-			},
-			expectCleanup: true,
-			cleanupItems:  []string{"ovf_progress_monitor", "ovf_task_ref"},
-		},
-		{
-			name: "Multiple resource cleanup on authentication failure",
-			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
-					URL:      "https://packages.example.com/artifacts/example.ovf",
-					Username: "testuser",
-					Password: "wrongpass",
-				},
-				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"pvscsi"},
-					Storage: []common.DiskConfig{
-						{
-							DiskSize:            32768,
-							DiskThinProvisioned: true,
-						},
-					},
-				},
-			},
-			mockSetup: func(mock *driver.DriverMock) {
-				mock.DeployOvfShouldFail = true
-				mock.DeployOvfError = fmt.Errorf("HTTP 401 Unauthorized")
-			},
-			setupState: func(state *multistep.BasicStateBag) {
-				taskRef := &types.ManagedObjectReference{Type: "Task", Value: "task-789"}
-				monitor := &driver.OvfProgressMonitor{}
-				state.Put("ovf_task_ref", taskRef)
-				state.Put("ovf_progress_monitor", monitor)
-				state.Put("ovf_lease", "lease-ref-auth")
-			},
-			expectCleanup: true,
-			cleanupItems:  []string{"ovf_task_ref", "ovf_progress_monitor", "ovf_lease"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var uiOutput bytes.Buffer
-			state := new(multistep.BasicStateBag)
-			state.Put("ui", &packersdk.BasicUi{
-				Reader: new(bytes.Buffer),
-				Writer: &uiOutput,
-			})
-			driverMock := driver.NewDriverMock()
-			state.Put("driver", driverMock)
-
-			step := &StepCloneVM{
-				Config:   tt.config,
-				Location: basicLocationConfig(),
-				Force:    true,
-			}
-
-			tt.mockSetup(driverMock)
-			if tt.setupState != nil {
-				tt.setupState(state)
-			}
-
-			// Run the step (should fail)
-			action := step.Run(context.Background(), state)
-			if action != multistep.ActionHalt {
-				t.Fatalf("expected ActionHalt for failure case, got %v", action)
-			}
-
-			// Verify error is set
-			if _, ok := state.GetOk("error"); !ok {
-				t.Error("expected error to be set in state")
-			}
-
-			// Perform cleanup
-			step.Cleanup(state)
-
-			if tt.expectCleanup {
-				// Verify cleanup messages in UI output
-				output := uiOutput.String()
-				cleanupMessages := []string{
-					"Cleaning up OVF deployment task",
-					"Stopping OVF progress monitoring",
-					"Cleaning up NFC lease",
-				}
-
-				foundCleanupMessage := false
-				for _, msg := range cleanupMessages {
-					if strings.Contains(output, msg) {
-						foundCleanupMessage = true
-						break
-					}
-				}
-
-				if !foundCleanupMessage {
-					t.Errorf("expected to find cleanup messages in UI output, got: %s", output)
-				}
-
-				// Verify cleanup items are removed from state
-				for _, item := range tt.cleanupItems {
-					if _, ok := state.GetOk(item); ok {
-						t.Errorf("expected '%s' to be removed from state during cleanup", item)
-					}
 				}
 			}
 		})
@@ -1782,11 +1517,10 @@ func TestRemoteSourceConfig_CredentialSanitization(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			step := &StepCloneVM{}
-			sanitized := step.sanitizeURL(tt.url)
+			sanitized := driver.SanitizeOvfURL(tt.url)
 
 			if sanitized != tt.expected {
-				t.Errorf("sanitizeURL() = %v, want %v", sanitized, tt.expected)
+				t.Errorf("SanitizeOvfURL() = %v, want %v", sanitized, tt.expected)
 			}
 		})
 	}
@@ -1819,11 +1553,10 @@ func TestRemoteSourceConfig_ErrorMessageSanitization(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			step := &StepCloneVM{}
-			sanitized := step.sanitizeErrorMessage(tt.errMsg)
+			sanitized := driver.SanitizeOvfErrorMessage(tt.errMsg)
 
 			if sanitized != tt.expected {
-				t.Errorf("sanitizeErrorMessage() = %v, want %v", sanitized, tt.expected)
+				t.Errorf("SanitizeOvfErrorMessage() = %v, want %v", sanitized, tt.expected)
 			}
 		})
 	}

@@ -8,8 +8,8 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"log"
 	"net/url"
-	"regexp"
 	"strings"
 	"time"
 
@@ -23,6 +23,7 @@ import (
 	"github.com/vmware/govmomi/vapi/library"
 	"github.com/vmware/govmomi/vapi/rest"
 	"github.com/vmware/govmomi/vim25"
+	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
 )
@@ -57,7 +58,7 @@ type Driver interface {
 	GetRestClient() *rest.Client
 	DeleteContentLibraryItem(itemID string) error
 	DeployOvf(ctx context.Context, config *OvfDeployConfig, ui packersdk.Ui) (VirtualMachine, error)
-	GetOvfOptions(ctx context.Context, url string, auth *OvfAuthConfig, locale string) ([]types.OvfOptionInfo, error)
+	GetOvfOptions(ctx context.Context, url string, auth *OvfAuthConfig, locale string, skipTlsVerify bool) ([]types.OvfOptionInfo, error)
 	Cleanup() (error, error)
 }
 
@@ -115,10 +116,11 @@ type OvfDeployConfig struct {
 	Annotation       string
 	VAppProperties   map[string]string
 	DeploymentOption string // OVF deployment option such as "small", "medium", or "large".
-	StorageConfig    StorageConfig
 	Locale           string // Locale for OVF deployment messages and descriptions (defaults to "US" if empty).
 	SkipTlsVerify    bool   // Skip TLS certificate verification for HTTPS URLs (for testing environments only).
 }
+
+const ovfProgressStallThreshold = 30 * time.Second
 
 // OvfProgressMonitor provides progress monitoring capabilities for OVF deployment operations.
 type OvfProgressMonitor struct {
@@ -126,8 +128,11 @@ type OvfProgressMonitor struct {
 	ctx               context.Context
 	cancelFunc        context.CancelFunc
 	progressInterval  time.Duration
+	startedAt         time.Time
 	lastProgressTime  time.Time
 	lastProgressValue int32
+	lastLeaseState    types.HttpNfcLeaseState
+	loggedStallNotice bool
 }
 
 // NewOvfProgressMonitor creates a new progress monitor for OVF deployment operations.
@@ -138,235 +143,84 @@ func NewOvfProgressMonitor(ui packersdk.Ui, ctx context.Context) *OvfProgressMon
 		ctx:              ctx,
 		cancelFunc:       cancel,
 		progressInterval: 5 * time.Second,
+		startedAt:        time.Now(),
 	}
 }
 
-// MonitorTaskProgress monitors vSphere task progress and provides user feedback.
-func (m *OvfProgressMonitor) MonitorTaskProgress(taskRef *types.ManagedObjectReference, vimClient *vim25.Client) error {
-	if taskRef == nil {
-		return fmt.Errorf("task reference cannot be nil")
+// maybeLogProgressStall logs once when transfer progress has not started after a delay.
+func (m *OvfProgressMonitor) maybeLogProgressStall(progress int32, now time.Time) {
+	if progress > 0 || m.loggedStallNotice {
+		return
 	}
 
-	taskObj := object.NewTask(vimClient, *taskRef)
-	progressChan := make(chan types.TaskInfo, 1)
-	errorChan := make(chan error, 1)
-	doneChan := make(chan struct{}, 1)
-
-	go func() {
-		defer close(progressChan)
-		defer close(errorChan)
-		defer close(doneChan)
-
-		ticker := time.NewTicker(m.progressInterval)
-		defer ticker.Stop()
-
-		var lastTaskInfo *types.TaskInfo
-
-		for {
-			select {
-			case <-m.ctx.Done():
-				m.ui.Say("Cancelling OVF deployment task...")
-
-				cancelCtx, cancelFunc := context.WithTimeout(context.Background(), 30*time.Second)
-
-				if cancelErr := taskObj.Cancel(cancelCtx); cancelErr != nil {
-					m.ui.Error(fmt.Sprintf("Failed to cancel OVF deployment task: %s", cancelErr))
-				} else {
-					m.ui.Say("OVF deployment task cancellation requested.")
-				}
-
-				cancelFunc()
-				errorChan <- fmt.Errorf("OVF deployment cancelled by user")
-				return
-
-			case <-ticker.C:
-				taskInfo, err := taskObj.WaitForResult(context.Background(), nil)
-				if err != nil {
-					continue
-				}
-
-				if lastTaskInfo == nil || m.hasTaskInfoChanged(lastTaskInfo, taskInfo) {
-					progressChan <- *taskInfo
-					lastTaskInfo = taskInfo
-				}
-
-				switch taskInfo.State {
-				case types.TaskInfoStateSuccess:
-					m.ui.Say("OVF deployment task completed successfully.")
-					doneChan <- struct{}{}
-					return
-				case types.TaskInfoStateError:
-					errorMsg := "OVF deployment task failed"
-					if taskInfo.Error != nil {
-						errorMsg = fmt.Sprintf("OVF deployment task failed: %s", taskInfo.Error.LocalizedMessage)
-					}
-					errorChan <- fmt.Errorf("%s", errorMsg)
-					return
-				}
-			}
-		}
-	}()
-
-	for {
-		select {
-		case taskInfo, ok := <-progressChan:
-			if !ok {
-				continue
-			}
-			m.reportProgress(taskInfo)
-
-		case err := <-errorChan:
-			return err
-
-		case <-doneChan:
-			return nil
-
-		case <-m.ctx.Done():
-			return fmt.Errorf("OVF deployment monitoring cancelled")
-		}
+	if now.Sub(m.startedAt) >= ovfProgressStallThreshold {
+		log.Printf("[INFO] OVF deployment is still waiting for transfer progress from the remote source...")
+		m.loggedStallNotice = true
 	}
 }
 
-// hasTaskInfoChanged checks if task info has meaningfully changed to avoid spam.
-func (m *OvfProgressMonitor) hasTaskInfoChanged(old, new *types.TaskInfo) bool {
-	if old.State != new.State || old.Progress != new.Progress {
-		return true
-	}
-	if old.Description != nil && new.Description != nil {
-		return old.Description.Message != new.Description.Message
-	}
-	return false
-}
-
-// reportProgress reports task progress to the user interface with enhanced feedback.
-func (m *OvfProgressMonitor) reportProgress(taskInfo types.TaskInfo) {
-	now := time.Now()
-
-	switch taskInfo.State {
-	case types.TaskInfoStateRunning:
-		m.reportRunningTaskProgress(taskInfo, now)
-
-	case types.TaskInfoStateQueued:
-		if now.Sub(m.lastProgressTime) >= m.progressInterval {
-			m.ui.Say("OVF deployment queued, waiting to start...")
-			m.lastProgressTime = now
-		}
-
-	case types.TaskInfoStateSuccess:
-		m.ui.Say("OVF deployment task completed successfully")
-
-	case types.TaskInfoStateError:
-		errorMsg := "OVF deployment task failed"
-		if taskInfo.Error != nil {
-			errorMsg = fmt.Sprintf("OVF deployment task failed: %s", taskInfo.Error.LocalizedMessage)
-		}
-		m.ui.Error(errorMsg)
-	}
-}
-
-// reportRunningTaskProgress provides detailed progress reporting for running tasks.
-func (m *OvfProgressMonitor) reportRunningTaskProgress(taskInfo types.TaskInfo, now time.Time) {
-	if taskInfo.Progress != 0 {
-		progress := taskInfo.Progress
-		progressChanged := progress != m.lastProgressValue
-		timeElapsed := now.Sub(m.lastProgressTime) >= m.progressInterval
-
-		if progressChanged || timeElapsed {
-			if progress >= 0 && progress <= 100 {
-				if progress > m.lastProgressValue {
-					progressDelta := progress - m.lastProgressValue
-					timeDelta := now.Sub(m.lastProgressTime)
-
-					if timeDelta > 0 && progressDelta > 0 {
-						remainingProgress := 100 - progress
-						estimatedTimeRemaining := time.Duration(float64(timeDelta) * float64(remainingProgress) / float64(progressDelta))
-
-						if estimatedTimeRemaining > time.Minute {
-							m.ui.Say(fmt.Sprintf("OVF deployment progress: %d%% (estimated time remaining: %v)",
-								progress, estimatedTimeRemaining.Truncate(time.Minute)))
-						} else {
-							m.ui.Say(fmt.Sprintf("OVF deployment progress: %d%%", progress))
-						}
-					} else {
-						m.ui.Say(fmt.Sprintf("OVF deployment progress: %d%%", progress))
-					}
-				} else {
-					m.ui.Say(fmt.Sprintf("OVF deployment progress: %d%%", progress))
-				}
-			} else {
-				m.ui.Say("OVF deployment in progress...")
-			}
-			m.lastProgressValue = progress
-			m.lastProgressTime = now
-		}
-	} else {
-		if now.Sub(m.lastProgressTime) >= m.progressInterval {
-			elapsed := now.Sub(m.lastProgressTime)
-			if elapsed > time.Minute {
-				m.ui.Say(fmt.Sprintf("OVF deployment in progress... (running for %v)", elapsed.Truncate(time.Minute)))
-			} else {
-				m.ui.Say("OVF deployment in progress...")
-			}
-			m.lastProgressTime = now
-		}
-	}
-
-	if taskInfo.Description != nil && taskInfo.Description.Message != "" {
-		if now.Sub(m.lastProgressTime) >= m.progressInterval*2 {
-			m.ui.Say(fmt.Sprintf("Status: %s", taskInfo.Description.Message))
-		}
-	}
-
-	if taskInfo.StartTime != nil && now.Sub(m.lastProgressTime) >= m.progressInterval*3 {
-		elapsed := now.Sub(*taskInfo.StartTime)
-		if elapsed > 2*time.Minute {
-			m.ui.Say(fmt.Sprintf("OVF deployment has been running for %v", elapsed.Truncate(time.Minute)))
-		}
-	}
-}
-
-// Cancel stops the progress monitoring and cancels the associated task.
+// Cancel stops progress monitoring.
 func (m *OvfProgressMonitor) Cancel() {
 	if m.cancelFunc != nil {
-		m.ui.Say("Cancelling OVF deployment progress monitoring...")
 		m.cancelFunc()
 	}
 }
 
-// MonitorOvfDeploymentTask monitors a specific OVF deployment task with enhanced progress reporting.
-func (d *VCenterDriver) MonitorOvfDeploymentTask(ctx context.Context, taskRef *types.ManagedObjectReference, ui packersdk.Ui) error {
-	if taskRef == nil {
-		return nil
+// reportLeaseProgress reports NFC lease state and transfer progress to the user interface.
+func (m *OvfProgressMonitor) reportLeaseProgress(leaseProps mo.HttpNfcLease) {
+	now := time.Now()
+
+	progress := leaseProps.TransferProgress
+	if progress == 0 {
+		progress = leaseProps.InitializeProgress
 	}
 
-	progressMonitor := NewOvfProgressMonitor(ui, ctx)
-	defer progressMonitor.Cancel()
+	m.maybeLogProgressStall(progress, now)
 
-	ui.Say("Monitoring OVF deployment task progress...")
-
-	if err := progressMonitor.MonitorTaskProgress(taskRef, d.VimClient); err != nil {
-		return fmt.Errorf("error monitoring OVF deployment task: %s", err)
+	if now.Sub(m.lastProgressTime) < m.progressInterval {
+		return
 	}
 
-	return nil
+	switch leaseProps.State {
+	case types.HttpNfcLeaseStateError:
+		if leaseProps.Error != nil {
+			m.ui.Errorf("OVF deployment lease error: %s", leaseProps.Error.LocalizedMessage)
+		}
+		m.lastProgressTime = now
+		return
+
+	case types.HttpNfcLeaseStateDone:
+		log.Printf("[INFO] OVF deployment transfer completed")
+		m.lastProgressTime = now
+		return
+	}
+
+	if progress > 0 && progress != m.lastProgressValue {
+		switch leaseProps.State {
+		case types.HttpNfcLeaseStateInitializing:
+			m.ui.Sayf("OVF deployment initializing... %d%%", progress)
+		case types.HttpNfcLeaseStateReady:
+			m.ui.Sayf("OVF deployment in progress... %d%%", progress)
+		}
+		m.lastProgressValue = progress
+		m.lastProgressTime = now
+		return
+	}
+
+	if progress == 0 && m.lastLeaseState != leaseProps.State {
+		m.lastLeaseState = leaseProps.State
+		switch leaseProps.State {
+		case types.HttpNfcLeaseStateInitializing:
+			log.Printf("[INFO] OVF deployment initializing...")
+		case types.HttpNfcLeaseStateReady:
+			log.Printf("[INFO] OVF deployment in progress...")
+		}
+	}
+
+	m.lastProgressTime = now
 }
 
-// GetTaskReference extracts task reference from various vSphere operations.
-func (d *VCenterDriver) GetTaskReference(result any) *types.ManagedObjectReference {
-	switch v := result.(type) {
-	case *types.ManagedObjectReference:
-		if v.Type == "Task" {
-			return v
-		}
-	case types.ManagedObjectReference:
-		if v.Type == "Task" {
-			return &v
-		}
-	}
-	return nil
-}
-
-// monitorLeaseProgress monitors the lease progress with detailed task monitoring.
+// monitorLeaseProgress monitors NFC lease state and transfer progress until import completes.
 func (d *VCenterDriver) monitorLeaseProgress(ctx context.Context, lease *nfc.Lease, progressMonitor *OvfProgressMonitor) (*nfc.LeaseInfo, error) {
 	resultChan := make(chan *nfc.LeaseInfo, 1)
 	errorChan := make(chan error, 1)
@@ -386,9 +240,6 @@ func (d *VCenterDriver) monitorLeaseProgress(ctx context.Context, lease *nfc.Lea
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
-	startTime := time.Now()
-	lastProgressReport := time.Now()
-
 	for {
 		select {
 		case info := <-resultChan:
@@ -398,13 +249,12 @@ func (d *VCenterDriver) monitorLeaseProgress(ctx context.Context, lease *nfc.Lea
 			return nil, err
 
 		case <-ticker.C:
-			elapsed := time.Since(startTime)
-			if time.Since(lastProgressReport) >= 10*time.Second {
-				progressMonitor.ui.Say(fmt.Sprintf("OVF deployment in progress... (elapsed: %v)", elapsed.Truncate(time.Second)))
-				lastProgressReport = time.Now()
+			if leaseProps, err := lease.Properties(ctx, "state", "initializeProgress", "transferProgress", "error"); err == nil {
+				progressMonitor.reportLeaseProgress(leaseProps)
 			}
 
 		case <-ctx.Done():
+			log.Printf("[INFO] OVF deployment context cancelled")
 			return nil, fmt.Errorf("OVF deployment context cancelled")
 		}
 	}
@@ -479,8 +329,9 @@ func (d *VCenterDriver) DeployOvf(ctx context.Context, config *OvfDeployConfig, 
 		return nil, d.wrapOvfError("failed to initialize OVF manager", err, config.URL)
 	}
 
-	// Validate remote OVF accessibility before proceeding with vSphere resource lookup
-	if err := d.validateRemoteOvfAccessibility(ctx, config, ovfWrapper); err != nil {
+	// Validate remote OVF accessibility before proceeding with vSphere resource lookup.
+	parseResult, err := d.validateRemoteOvfAccessibility(ctx, config, ovfWrapper)
+	if err != nil {
 		return nil, d.wrapOvfError("remote OVF/OVA source validation failed", err, config.URL)
 	}
 
@@ -499,12 +350,12 @@ func (d *VCenterDriver) DeployOvf(ctx context.Context, config *OvfDeployConfig, 
 		return nil, d.wrapOvfError("failed to find datastore", err, config.URL)
 	}
 
-	importParams, err := d.createOvfImportParams(config)
+	importParams, err := d.createOvfImportParams(config, parseResult)
 	if err != nil {
 		return nil, d.wrapOvfError("failed to create import parameters", err, config.URL)
 	}
 
-	ui.Say("Creating OVF import specification from remote source...")
+	log.Printf("[INFO] Creating OVF import specification from remote source...")
 
 	// Use vSphere's native URL-based OVF deployment with authentication.
 	importSpecResult, err := ovfWrapper.CreateImportSpecFromURL(ctx, config.URL, resourcePool.pool, datastore.Reference(), importParams)
@@ -522,7 +373,7 @@ func (d *VCenterDriver) DeployOvf(ctx context.Context, config *OvfDeployConfig, 
 		d.reportOvfWarnings(importSpecResult.Warning, ui)
 	}
 
-	ui.Say("Starting OVF import operation...")
+	log.Printf("[INFO] Starting OVF import operation...")
 
 	// Import the vApp using the generated spec with progress monitoring.
 	lease, err := resourcePool.pool.ImportVApp(ctx, importSpecResult.ImportSpec, folder.folder, nil)
@@ -543,16 +394,56 @@ func (d *VCenterDriver) DeployOvf(ctx context.Context, config *OvfDeployConfig, 
 
 	// Get the imported VM reference from the lease info.
 	vmRef := info.Entity
-	return d.NewVM(&vmRef), nil
+	vm := d.NewVM(&vmRef)
+	if err := d.applyOvfPostImportConfig(vm, config); err != nil {
+		return nil, d.wrapOvfError("failed to apply post-import virtual machine configuration", err, config.URL)
+	}
+	return vm, nil
+}
+
+// applyOvfPostImportConfig applies settings that are not part of the OVF import spec.
+func (d *VCenterDriver) applyOvfPostImportConfig(vm VirtualMachine, config *OvfDeployConfig) error {
+	if config.Annotation == "" && config.MacAddress == "" {
+		return nil
+	}
+
+	var configSpec types.VirtualMachineConfigSpec
+
+	if config.Annotation != "" {
+		configSpec.Annotation = config.Annotation
+	}
+
+	if config.MacAddress != "" {
+		devices, err := vm.Devices()
+		if err != nil {
+			return fmt.Errorf("error finding virtual machine devices: %s", err)
+		}
+
+		adapter, err := findNetworkAdapter(devices)
+		if err != nil {
+			return fmt.Errorf("error finding network adapter: %s", err)
+		}
+
+		current := adapter.GetVirtualEthernetCard()
+		current.AddressType = string(types.VirtualEthernetCardMacTypeManual)
+		current.MacAddress = config.MacAddress
+
+		configSpec.DeviceChange = append(configSpec.DeviceChange, &types.VirtualDeviceConfigSpec{
+			Device:    adapter.(types.BaseVirtualDevice),
+			Operation: types.VirtualDeviceConfigSpecOperationEdit,
+		})
+	}
+
+	return vm.Reconfigure(configSpec)
 }
 
 // GetOvfOptions retrieves OVF deployment options from a remote OVF/OVA source using vSphere's native pull method.
-func (d *VCenterDriver) GetOvfOptions(ctx context.Context, url string, auth *OvfAuthConfig, locale string) ([]types.OvfOptionInfo, error) {
+func (d *VCenterDriver) GetOvfOptions(ctx context.Context, url string, auth *OvfAuthConfig, locale string, skipTlsVerify bool) ([]types.OvfOptionInfo, error) {
 	if err := d.validateOvfURL(url); err != nil {
 		return nil, d.wrapOvfError("URL validation failed", err, url)
 	}
 
-	ovfWrapper, err := d.createOvfManagerWrapper(auth, false)
+	ovfWrapper, err := d.createOvfManagerWrapper(auth, skipTlsVerify)
 	if err != nil {
 		return nil, d.wrapOvfError("failed to initialize OVF manager", err, url)
 	}
@@ -695,7 +586,7 @@ func (d *VCenterDriver) validateOvfDeploymentConfig(config *OvfDeployConfig) err
 }
 
 // createOvfImportParams creates import parameters with authentication and configuration support.
-func (d *VCenterDriver) createOvfImportParams(config *OvfDeployConfig) (*types.OvfCreateImportSpecParams, error) {
+func (d *VCenterDriver) createOvfImportParams(config *OvfDeployConfig, parseResult *types.OvfParseDescriptorResult) (*types.OvfCreateImportSpecParams, error) {
 	locale := config.Locale
 	if locale == "" {
 		locale = "US"
@@ -709,17 +600,17 @@ func (d *VCenterDriver) createOvfImportParams(config *OvfDeployConfig) (*types.O
 		},
 	}
 
-	if config.Network != "" {
-		network, err := d.FindNetwork(config.Network)
-		if err != nil {
-			return nil, fmt.Errorf("error finding network: %s", err)
-		}
-		importParams.NetworkMapping = []types.OvfNetworkMapping{
-			{
-				Name:    "VM Network",
-				Network: network.network.Reference(),
-			},
-		}
+	var ovfNetworks []types.OvfNetworkInfo
+	if parseResult != nil {
+		ovfNetworks = parseResult.Network
+	}
+
+	networkMappings, err := d.buildOvfNetworkMappings(ovfNetworks, config.Network)
+	if err != nil {
+		return nil, err
+	}
+	if len(networkMappings) > 0 {
+		importParams.NetworkMapping = networkMappings
 	}
 
 	if len(config.VAppProperties) > 0 {
@@ -865,8 +756,6 @@ func (d *VCenterDriver) waitForOvfImportWithProgress(ctx context.Context, lease 
 	progressMonitor := NewOvfProgressMonitor(ui, importCtx)
 	defer progressMonitor.Cancel()
 
-	ui.Say("Starting OVF/OVA deployment from remote source...")
-
 	resultChan := make(chan *nfc.LeaseInfo, 1)
 	errorChan := make(chan error, 1)
 
@@ -885,7 +774,7 @@ func (d *VCenterDriver) waitForOvfImportWithProgress(ctx context.Context, lease 
 
 	select {
 	case info := <-resultChan:
-		ui.Say("OVF/OVA deployment completed successfully")
+		log.Printf("[INFO] OVF/OVA deployment completed successfully")
 		return info, nil
 
 	case err := <-errorChan:
@@ -903,7 +792,7 @@ func (d *VCenterDriver) waitForOvfImportWithProgress(ctx context.Context, lease 
 
 // cleanupOvfDeploymentResources performs comprehensive cleanup of vSphere resources during OVF deployment failures.
 func (d *VCenterDriver) cleanupOvfDeploymentResources(ctx context.Context, lease *nfc.Lease, ui packersdk.Ui, reason string) {
-	ui.Say(fmt.Sprintf("Cleaning up vSphere resources due to %s...", reason))
+	log.Printf("[INFO] Cleaning up vSphere resources due to %s...", reason)
 
 	cleanupCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
@@ -911,33 +800,33 @@ func (d *VCenterDriver) cleanupOvfDeploymentResources(ctx context.Context, lease
 	var cleanupErrors []string
 
 	if lease != nil {
-		ui.Say("Aborting vSphere NFC lease...")
+		log.Printf("[INFO] Aborting vSphere NFC lease...")
 		if abortErr := lease.Abort(cleanupCtx, nil); abortErr != nil {
 			errorMsg := fmt.Sprintf("Failed to abort NFC lease: %s", abortErr)
-			ui.Error(errorMsg)
+			ui.Errorf("Failed to abort NFC lease: %s", abortErr)
 			cleanupErrors = append(cleanupErrors, errorMsg)
 		} else {
-			ui.Say("Successfully aborted NFC lease")
+			log.Printf("[INFO] Successfully aborted NFC lease")
 		}
 
-		ui.Say("Waiting for lease state to stabilize...")
+		log.Printf("[INFO] Waiting for lease state to stabilize...")
 		time.Sleep(2 * time.Second)
 	}
 
 	if len(cleanupErrors) > 0 {
-		ui.Error(fmt.Sprintf("Resource cleanup completed with %d error(s):", len(cleanupErrors)))
+		ui.Errorf("Resource cleanup completed with %d error(s):", len(cleanupErrors))
 		for i, err := range cleanupErrors {
-			ui.Error(fmt.Sprintf("  %d. %s", i+1, err))
+			ui.Errorf("  %d. %s", i+1, err)
 		}
 	} else {
-		ui.Say("Resource cleanup completed successfully")
+		log.Printf("[INFO] Resource cleanup completed successfully")
 	}
 }
 
 // categorizeOvfImportError categorizes OVF import errors and provides actionable error messages.
 func (d *VCenterDriver) categorizeOvfImportError(err error) error {
 	errStr := strings.ToLower(err.Error())
-	sanitizedErr := d.sanitizeErrorMessage(err.Error())
+	sanitizedErr := SanitizeOvfErrorMessage(err.Error())
 
 	errorChecks := []struct {
 		patterns []string
@@ -1009,80 +898,36 @@ func (d *VCenterDriver) containsAny(s string, patterns []string) bool {
 	return false
 }
 
-// sanitizeErrorMessage removes sensitive information from error messages.
-func (d *VCenterDriver) sanitizeErrorMessage(errMsg string) string {
-	sanitized := d.sanitizeURLsInString(errMsg)
-	return d.sanitizeCredentialPatterns(sanitized)
-}
-
-// sanitizeURLsInString removes credentials from URLs in the given string.
-func (d *VCenterDriver) sanitizeURLsInString(str string) string {
-	urlPattern := regexp.MustCompile(`https?://[^:]+:[^@]+@[^\s]+`)
-	return urlPattern.ReplaceAllStringFunc(str, func(match string) string {
-		if u, err := url.Parse(match); err == nil {
-			u.User = nil
-			return u.String()
-		}
-		return "[URL with credentials removed]"
-	})
-}
-
-// sanitizeCredentialPatterns removes credential patterns from the given string.
-func (d *VCenterDriver) sanitizeCredentialPatterns(str string) string {
-	patterns := []string{
-		`password[=:]\s*[^\s]+`,
-		`pwd[=:]\s*[^\s]+`,
-		`pass[=:]\s*[^\s]+`,
-		`secret[=:]\s*[^\s]+`,
-		`token[=:]\s*[^\s]+`,
-	}
-
-	sanitized := str
-	for _, pattern := range patterns {
-		re := regexp.MustCompile(`(?i)` + pattern)
-		sanitized = re.ReplaceAllString(sanitized, "[credentials removed]")
-	}
-	return sanitized
-}
-
 // wrapOvfError wraps errors with context and sanitizes sensitive information.
 func (d *VCenterDriver) wrapOvfError(context string, err error, url string) error {
-	sanitizedURL := d.sanitizeURL(url)
-	sanitizedErr := d.sanitizeErrorMessage(err.Error())
+	sanitizedURL := SanitizeOvfURL(url)
+	sanitizedErr := SanitizeOvfErrorMessage(err.Error())
 	return fmt.Errorf("%s for OVF source '%s': %s", context, sanitizedURL, sanitizedErr)
 }
 
-// sanitizeURL removes credentials from URLs for safe logging.
-func (d *VCenterDriver) sanitizeURL(urlStr string) string {
-	u, err := url.Parse(urlStr)
-	if err != nil {
-		return "[invalid URL]"
-	}
-
-	if u.User != nil {
-		u.User = url.User(u.User.Username())
-	}
-	return u.String()
-}
-
 // validateRemoteOvfAccessibility performs early validation of remote OVF accessibility.
-func (d *VCenterDriver) validateRemoteOvfAccessibility(ctx context.Context, config *OvfDeployConfig, wrapper *OvfManagerWrapper) error {
+func (d *VCenterDriver) validateRemoteOvfAccessibility(ctx context.Context, config *OvfDeployConfig, wrapper *OvfManagerWrapper) (*types.OvfParseDescriptorResult, error) {
 	locale := config.Locale
 	if locale == "" {
 		locale = "US"
 	}
 
 	parseParams := d.createOvfParseParams(locale)
-	_, err := wrapper.ParseDescriptorFromURL(ctx, config.URL, parseParams)
+	parseResult, err := wrapper.ParseDescriptorFromURL(ctx, config.URL, parseParams)
 	if err != nil {
-		return fmt.Errorf("failed to access or parse remote OVF descriptor: %s", err)
+		return nil, fmt.Errorf("failed to access or parse remote OVF descriptor: %s", err)
 	}
-	return nil
+
+	if len(parseResult.Error) > 0 {
+		return nil, d.handleOvfValidationErrors(parseResult.Error, config.URL)
+	}
+
+	return parseResult, nil
 }
 
 // handleOvfValidationErrors processes OVF validation errors and provides detailed error messages.
 func (d *VCenterDriver) handleOvfValidationErrors(errors []types.LocalizedMethodFault, url string) error {
-	sanitizedURL := d.sanitizeURL(url)
+	sanitizedURL := SanitizeOvfURL(url)
 
 	if len(errors) == 1 {
 		return fmt.Errorf("OVF validation failed for '%s': %s", sanitizedURL, errors[0].LocalizedMessage)
@@ -1118,14 +963,14 @@ func (d *VCenterDriver) reportOvfWarnings(warnings []types.LocalizedMethodFault,
 	}
 
 	const maxWarnings = 3
-	ui.Say(fmt.Sprintf("OVF deployment has %d warning(s):", len(warnings)))
+	ui.Sayf("OVF deployment has %d warning(s):", len(warnings))
 
 	for i, warning := range warnings {
 		if i >= maxWarnings {
-			ui.Say(fmt.Sprintf("  ... and %d more warnings", len(warnings)-i))
+			ui.Sayf("  ... and %d more warnings", len(warnings)-i)
 			break
 		}
-		ui.Say(fmt.Sprintf("  - %s", warning.LocalizedMessage))
+		ui.Sayf("  - %s", warning.LocalizedMessage)
 	}
 }
 

@@ -13,25 +13,5 @@
   
   -> **Note:** This option is beneficial in scenarios where the certificate
   is self-signed or does not meet standard validation criteria.
-  
-  HCL Example:
-  
-  ```hcl
-    remote_source = {
-      url              = "https://packages.example.com/artifacts/example.ovf"
-      username         = "remote_source_username"
-      password         = "remote_source_password"
-      skip_tls_verify  = false
-    }
-  ```
-  
-  JSON Example:
-  ```json
-    "remote_source": {
-      "url": "https://packages.example.com/artifacts/example.ovf",
-      "username": "remote_source_username",
-      "password": "remote_source_password",
-      "skip_tls_verify": false
-    }
 
 <!-- End of code generated from the comments of the RemoteSourceConfig struct in builder/vsphere/clone/step_clone.go; -->

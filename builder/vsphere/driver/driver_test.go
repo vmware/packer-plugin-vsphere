@@ -22,6 +22,7 @@ import (
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/govmomi/vapi/rest"
 	"github.com/vmware/govmomi/vim25"
+	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common/utils"
@@ -873,7 +874,7 @@ func TestGetOvfOptions_ValidConfiguration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := driver.GetOvfOptions(ctx, tt.url, tt.auth, tt.locale)
+			_, err := driver.GetOvfOptions(ctx, tt.url, tt.auth, tt.locale, false)
 
 			// Expected panic due to simulator limitations for OVF parsing,
 			// but the error should not be a configuration validation error.
@@ -962,7 +963,7 @@ func TestGetOvfOptions_InvalidConfiguration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := driver.GetOvfOptions(ctx, tt.url, tt.auth, tt.locale)
+			_, err := driver.GetOvfOptions(ctx, tt.url, tt.auth, tt.locale, false)
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("expected error but got none")
@@ -1194,7 +1195,7 @@ func TestOvfManagerWrapper_VAppPropertiesHandling(t *testing.T) {
 
 			// Test that vApp properties are properly handled in import params
 			// creation.
-			importParams, err := driver.createOvfImportParams(config)
+			importParams, err := driver.createOvfImportParams(config, nil)
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("expected error but got none")
@@ -1230,29 +1231,64 @@ func TestOvfManagerWrapper_NetworkMappingHandling(t *testing.T) {
 	driver := sim.driver
 
 	tests := []struct {
-		name        string
-		network     string
-		expectError bool
+		name         string
+		ovfNetworks  []types.OvfNetworkInfo
+		network      string
+		expectError  bool
+		errorMsg     string
+		expectMapped int
+		expectNames  []string
 	}{
 		{
-			name:        "No network specified",
+			name:         "No OVF networks",
+			ovfNetworks:  nil,
+			network:      "VM Network",
+			expectMapped: 0,
+		},
+		{
+			name: "Single OVF network mapped",
+			ovfNetworks: []types.OvfNetworkInfo{
+				{Name: "Management Network"},
+			},
+			network:      "VM Network",
+			expectMapped: 1,
+			expectNames:  []string{"Management Network"},
+		},
+		{
+			name: "Multiple OVF networks mapped to same vSphere network",
+			ovfNetworks: []types.OvfNetworkInfo{
+				{Name: "Management Network"},
+				{Name: "VM Network"},
+			},
+			network:      "VM Network",
+			expectMapped: 2,
+			expectNames:  []string{"Management Network", "VM Network"},
+		},
+		{
+			name: "OVF networks require configured network",
+			ovfNetworks: []types.OvfNetworkInfo{
+				{Name: "Guest Network"},
+			},
 			network:     "",
-			expectError: false,
+			expectError: true,
+			errorMsg:    "OVF requires network mapping",
 		},
 		{
-			name:        "Valid network",
-			network:     "VM Network",
-			expectError: false,
-		},
-		{
-			name:        "Invalid network",
+			name: "Invalid vSphere network",
+			ovfNetworks: []types.OvfNetworkInfo{
+				{Name: "Guest Network"},
+			},
 			network:     "nonexistent-network",
 			expectError: true,
+			errorMsg:    "error finding network",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			parseResult := &types.OvfParseDescriptorResult{
+				Network: tt.ovfNetworks,
+			}
 			config := &OvfDeployConfig{
 				URL:          "https://packages.example.com/artifacts/example.ovf",
 				Name:         "test-vm",
@@ -1262,27 +1298,31 @@ func TestOvfManagerWrapper_NetworkMappingHandling(t *testing.T) {
 				Network:      tt.network,
 			}
 
-			// Test that network mapping is properly handled in import params
-			// creation.
-			importParams, err := driver.createOvfImportParams(config)
+			importParams, err := driver.createOvfImportParams(config, parseResult)
 			if tt.expectError {
 				if err == nil {
-					t.Errorf("expected error but got none")
+					t.Fatal("expected error but got none")
 				}
-			} else {
-				if err != nil {
-					t.Errorf("unexpected error: %s", err)
+				if tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
+					t.Fatalf("expected error containing %q, got %q", tt.errorMsg, err.Error())
 				}
-				if importParams == nil {
-					t.Errorf("expected import params to be created but got nil")
-				}
+				return
+			}
 
-				// Verify network mapping is correctly set when network is
-				// specified.
-				if tt.network != "" {
-					if len(importParams.NetworkMapping) == 0 {
-						t.Errorf("expected network mapping to be set but got none")
-					}
+			if err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
+			if importParams == nil {
+				t.Fatal("expected import params to be created but got nil")
+			}
+
+			if len(importParams.NetworkMapping) != tt.expectMapped {
+				t.Fatalf("expected %d network mappings, got %d", tt.expectMapped, len(importParams.NetworkMapping))
+			}
+
+			for i, expectedName := range tt.expectNames {
+				if importParams.NetworkMapping[i].Name != expectedName {
+					t.Errorf("mapping[%d].Name = %q, want %q", i, importParams.NetworkMapping[i].Name, expectedName)
 				}
 			}
 		})
@@ -1369,7 +1409,7 @@ func TestDriverMock_GetOvfOptions(t *testing.T) {
 
 	// Test successful options retrieval.
 	t.Run("Successful options retrieval", func(t *testing.T) {
-		options, err := mock.GetOvfOptions(ctx, url, auth, locale)
+		options, err := mock.GetOvfOptions(ctx, url, auth, locale, false)
 		if err != nil {
 			t.Errorf("unexpected error: %s", err)
 		}
@@ -1406,7 +1446,7 @@ func TestDriverMock_GetOvfOptions(t *testing.T) {
 		mock.GetOvfOptionsShouldFail = true
 		mock.GetOvfOptionsError = fmt.Errorf("custom options error")
 
-		options, err := mock.GetOvfOptions(ctx, url, auth, locale)
+		options, err := mock.GetOvfOptions(ctx, url, auth, locale, false)
 		if err == nil {
 			t.Errorf("expected error but got none")
 		}
@@ -1423,7 +1463,7 @@ func TestDriverMock_GetOvfOptions(t *testing.T) {
 		mock.GetOvfOptionsShouldFail = true
 		mock.GetOvfOptionsError = nil // Use default error.
 
-		options, err := mock.GetOvfOptions(ctx, url, auth, locale)
+		options, err := mock.GetOvfOptions(ctx, url, auth, locale, false)
 		if err == nil {
 			t.Errorf("expected error but got none")
 		}
@@ -1449,7 +1489,7 @@ func TestDriverMock_GetOvfOptions(t *testing.T) {
 		}
 		mock.GetOvfOptionsResult = customOptions
 
-		options, err := mock.GetOvfOptions(ctx, url, auth, locale)
+		options, err := mock.GetOvfOptions(ctx, url, auth, locale, false)
 		if err != nil {
 			t.Errorf("unexpected error: %s", err)
 		}
@@ -1680,7 +1720,7 @@ func TestOvfManagerWrapper_ConcurrentAccess(t *testing.T) {
 		for i := 0; i < numGoroutines; i++ {
 			go func(id int) {
 				url := fmt.Sprintf("https://packages%d.example.com/artifacts/example.ovf", id)
-				_, err := driver.GetOvfOptions(ctx, url, nil, "US")
+				_, err := driver.GetOvfOptions(ctx, url, nil, "US", false)
 				results <- err
 			}(i)
 		}
@@ -1749,182 +1789,236 @@ func TestOvfProgressMonitor_Creation(t *testing.T) {
 	monitor.Cancel()
 }
 
-// TestOvfProgressMonitor_ReportProgress tests progress reporting functionality.
-func TestOvfProgressMonitor_ReportProgress(t *testing.T) {
-	ui := &testUI{}
-	ctx := context.Background()
-
-	monitor := NewOvfProgressMonitor(ui, ctx)
-	defer monitor.Cancel()
-
-	taskInfo := types.TaskInfo{
-		State:    types.TaskInfoStateRunning,
-		Progress: 50,
-	}
-
-	monitor.reportProgress(taskInfo)
-}
-
-// TestOvfProgressMonitor_ReportErrorState tests error state reporting.
-func TestOvfProgressMonitor_ReportErrorState(t *testing.T) {
-	ui := &testUI{}
-	ctx := context.Background()
-
-	monitor := NewOvfProgressMonitor(ui, ctx)
-	defer monitor.Cancel()
-
-	taskInfo := types.TaskInfo{
-		State: types.TaskInfoStateError,
-		Error: &types.LocalizedMethodFault{
-			LocalizedMessage: "Test error message",
-		},
-	}
-
-	monitor.reportProgress(taskInfo)
-}
-
-// TestOvfProgressMonitor_HasTaskInfoChanged tests task info change detection.
-func TestOvfProgressMonitor_HasTaskInfoChanged(t *testing.T) {
-	ui := &testUI{}
-	ctx := context.Background()
-
-	monitor := NewOvfProgressMonitor(ui, ctx)
-	defer monitor.Cancel()
-
-	oldTask := &types.TaskInfo{
-		State:    types.TaskInfoStateRunning,
-		Progress: 25,
-	}
-
-	newTask := &types.TaskInfo{
-		State:    types.TaskInfoStateRunning,
-		Progress: 25,
-	}
-
-	if monitor.hasTaskInfoChanged(oldTask, newTask) {
-		t.Error("expected task info to be unchanged")
-	}
-
-	newTask.Progress = 50
-	if !monitor.hasTaskInfoChanged(oldTask, newTask) {
-		t.Error("expected task info to be changed due to progress")
-	}
-
-	newTask.Progress = 25
-	newTask.State = types.TaskInfoStateSuccess
-	if !monitor.hasTaskInfoChanged(oldTask, newTask) {
-		t.Error("expected task info to be changed due to state")
-	}
-}
-
-// TestOvfProgressMonitor_Integration demonstrates the complete progress
-// monitoring workflow.
-func TestOvfProgressMonitor_Integration(t *testing.T) {
-	ui := &testUI{}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	monitor := NewOvfProgressMonitor(ui, ctx)
-	defer monitor.Cancel()
-
-	progressStates := []types.TaskInfo{
-		{State: types.TaskInfoStateQueued, Progress: 0},
-		{State: types.TaskInfoStateRunning, Progress: 10},
-		{State: types.TaskInfoStateRunning, Progress: 25},
-		{State: types.TaskInfoStateRunning, Progress: 50},
-		{State: types.TaskInfoStateRunning, Progress: 75},
-		{State: types.TaskInfoStateRunning, Progress: 90},
-		{State: types.TaskInfoStateSuccess, Progress: 100},
-	}
-
-	for i, taskInfo := range progressStates {
-		if i > 0 {
-			monitor.lastProgressTime = time.Now().Add(-6 * time.Second)
-		}
-
-		monitor.reportProgress(taskInfo)
-		time.Sleep(10 * time.Millisecond)
-	}
-
-	t.Log("Progress monitoring integration test completed successfully")
-}
-
-// TestOvfProgressMonitor_Cancellation tests the cancellation functionality.
+// TestOvfProgressMonitor_Cancellation tests that Cancel stops the monitor context.
 func TestOvfProgressMonitor_Cancellation(t *testing.T) {
 	ui := &testUI{}
 	ctx, cancel := context.WithCancel(context.Background())
 
 	monitor := NewOvfProgressMonitor(ui, ctx)
 
-	done := make(chan bool, 1)
+	done := make(chan struct{})
 	go func() {
-		defer func() { done <- true }()
-
-		ticker := time.NewTicker(100 * time.Millisecond)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-monitor.ctx.Done():
-				return
-			case <-ticker.C:
-				taskInfo := types.TaskInfo{
-					State:    types.TaskInfoStateRunning,
-					Progress: 50,
-				}
-				monitor.reportProgress(taskInfo)
-			}
-		}
+		<-monitor.ctx.Done()
+		close(done)
 	}()
-
-	time.Sleep(200 * time.Millisecond)
 
 	cancel()
 	monitor.Cancel()
 
 	select {
 	case <-done:
-		t.Log("Progress monitoring cancelled successfully")
 	case <-time.After(2 * time.Second):
-		t.Error("Progress monitoring did not cancel within timeout")
+		t.Error("progress monitor context was not cancelled")
 	}
 }
 
-// TestOvfProgressMonitor_ErrorHandling tests error state reporting with various
-// scenarios.
-func TestOvfProgressMonitor_ErrorHandling(t *testing.T) {
-	ui := &testUI{}
-	ctx := context.Background()
-
-	monitor := NewOvfProgressMonitor(ui, ctx)
-	defer monitor.Cancel()
-
-	errorScenarios := []struct {
+// TestSanitizeOvfErrorMessage tests the sanitization of sensitive information in error messages.
+func TestSanitizeOvfErrorMessage(t *testing.T) {
+	testCases := []struct {
 		name     string
-		taskInfo types.TaskInfo
+		input    string
+		expected string
 	}{
 		{
-			name: "Task with error message",
-			taskInfo: types.TaskInfo{
-				State: types.TaskInfoStateError,
-				Error: &types.LocalizedMethodFault{
-					LocalizedMessage: "Network connection failed",
-				},
-			},
+			name:     "URL with credentials",
+			input:    "error accessing https://user:password@packages.example.com/artifacts/example.ovf",
+			expected: "error accessing https://packages.example.com/artifacts/example.ovf",
 		},
 		{
-			name: "Task with error but no message",
-			taskInfo: types.TaskInfo{
-				State: types.TaskInfoStateError,
-				Error: nil,
-			},
+			name:     "Password in error message",
+			input:    "authentication failed: password=testpass",
+			expected: "authentication failed: [credentials removed]",
+		},
+		{
+			name:     "Multiple credential patterns",
+			input:    "failed with password=secret and token=abc123",
+			expected: "failed with [credentials removed] and [credentials removed]",
+		},
+		{
+			name:     "No credentials to sanitize",
+			input:    "network timeout error",
+			expected: "network timeout error",
 		},
 	}
 
-	for _, scenario := range errorScenarios {
-		t.Run(scenario.name, func(t *testing.T) {
-			monitor.reportProgress(scenario.taskInfo)
-			t.Logf("Error handling test completed for scenario: %s", scenario.name)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := SanitizeOvfErrorMessage(tc.input)
+			if result != tc.expected {
+				t.Errorf("expected %q, got %q", tc.expected, result)
+			}
 		})
+	}
+}
+
+// TestSanitizeOvfURL tests the sanitization of credentials from URLs.
+func TestSanitizeOvfURL(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "URL with username and password",
+			input:    "https://testuser:testpass@packages.example.com/artifacts/example.ovf",
+			expected: "https://testuser@packages.example.com/artifacts/example.ovf",
+		},
+		{
+			name:     "URL without credentials",
+			input:    "https://packages.example.com/artifacts/example.ovf",
+			expected: "https://packages.example.com/artifacts/example.ovf",
+		},
+		{
+			name:     "Relative URL without credentials",
+			input:    "not-a-url",
+			expected: "not-a-url",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := SanitizeOvfURL(tc.input)
+			if result != tc.expected {
+				t.Errorf("expected %q, got %q", tc.expected, result)
+			}
+		})
+	}
+}
+
+// TestCategorizeOvfImportError tests the categorization of OVF import errors.
+func TestCategorizeOvfImportError(t *testing.T) {
+	driver := &VCenterDriver{}
+
+	testCases := []struct {
+		name           string
+		inputError     error
+		expectedPrefix string
+	}{
+		{
+			name:           "Authentication error",
+			inputError:     fmt.Errorf("HTTP 401 Unauthorized"),
+			expectedPrefix: "authentication failed when accessing remote OVF/OVA source",
+		},
+		{
+			name:           "File not found error",
+			inputError:     fmt.Errorf("HTTP 404 Not Found"),
+			expectedPrefix: "remote OVF/OVA file not found",
+		},
+		{
+			name:           "Network timeout error",
+			inputError:     fmt.Errorf("connection timeout"),
+			expectedPrefix: "network connectivity error accessing remote OVF/OVA source",
+		},
+		{
+			name:           "TLS certificate error",
+			inputError:     fmt.Errorf("x509: certificate verify failed"),
+			expectedPrefix: "TLS/SSL certificate error accessing remote OVF/OVA source",
+		},
+		{
+			name:           "OVF validation error",
+			inputError:     fmt.Errorf("invalid OVF descriptor"),
+			expectedPrefix: "OVF/OVA file validation error",
+		},
+		{
+			name:           "Resource error",
+			inputError:     fmt.Errorf("insufficient disk space"),
+			expectedPrefix: "insufficient vSphere resources for OVF deployment",
+		},
+		{
+			name:           "Generic error",
+			inputError:     fmt.Errorf("unknown error"),
+			expectedPrefix: "OVF deployment failed",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := driver.categorizeOvfImportError(tc.inputError)
+			if !strings.HasPrefix(result.Error(), tc.expectedPrefix) {
+				t.Errorf("expected error to start with %q, got %q", tc.expectedPrefix, result.Error())
+			}
+		})
+	}
+}
+
+// TestWrapOvfError tests the wrapping of OVF errors with context and sanitization.
+func TestWrapOvfError(t *testing.T) {
+	driver := &VCenterDriver{}
+
+	context := "test operation failed"
+	err := fmt.Errorf("original error")
+	url := "https://testuser:testpass@packages.example.com/artifacts/example.ovf"
+
+	result := driver.wrapOvfError(context, err, url)
+
+	if !strings.Contains(result.Error(), context) {
+		t.Errorf("expected error to contain context %q", context)
+	}
+
+	if strings.Contains(result.Error(), "password") {
+		t.Errorf("expected error to not contain password, got %q", result.Error())
+	}
+
+	if !strings.Contains(result.Error(), "testuser@packages.example.com") {
+		t.Errorf("expected error to contain sanitized URL with username")
+	}
+}
+
+// TestOvfProgressMonitor_ReportLeaseProgress tests lease state and progress reporting.
+func TestOvfProgressMonitor_ReportLeaseProgress(t *testing.T) {
+	ui := &testUI{}
+	monitor := NewOvfProgressMonitor(ui, context.Background())
+	defer monitor.Cancel()
+
+	monitor.reportLeaseProgress(mo.HttpNfcLease{
+		State:              types.HttpNfcLeaseStateReady,
+		TransferProgress:   42,
+		InitializeProgress: 0,
+	})
+}
+
+// TestOvfProgressMonitor_ReportProgressStall logs when transfer progress is slow to start.
+func TestOvfProgressMonitor_ReportProgressStall(t *testing.T) {
+	ui := &testUI{}
+	monitor := NewOvfProgressMonitor(ui, context.Background())
+	defer monitor.Cancel()
+
+	monitor.startedAt = time.Now().Add(-ovfProgressStallThreshold)
+	monitor.reportLeaseProgress(mo.HttpNfcLease{
+		State:            types.HttpNfcLeaseStateReady,
+		TransferProgress: 0,
+	})
+
+	if !monitor.loggedStallNotice {
+		t.Fatal("expected stall notice to be logged")
+	}
+
+	monitor.reportLeaseProgress(mo.HttpNfcLease{
+		State:              types.HttpNfcLeaseStateReady,
+		TransferProgress:   10,
+		InitializeProgress: 0,
+	})
+}
+
+// TestApplyOvfPostImportConfig applies notes and MAC settings after OVF import.
+func TestApplyOvfPostImportConfig(t *testing.T) {
+	d := &VCenterDriver{}
+	vm := &VirtualMachineMock{}
+
+	if err := d.applyOvfPostImportConfig(vm, &OvfDeployConfig{}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if vm.ReconfigureCalled {
+		t.Fatal("expected no reconfigure when annotation and MAC are unset")
+	}
+
+	if err := d.applyOvfPostImportConfig(vm, &OvfDeployConfig{Annotation: "test notes"}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !vm.ReconfigureCalled {
+		t.Fatal("expected reconfigure when annotation is set")
+	}
+	if vm.ReconfigureSpec.Annotation != "test notes" {
+		t.Fatalf("expected annotation %q, got %q", "test notes", vm.ReconfigureSpec.Annotation)
 	}
 }

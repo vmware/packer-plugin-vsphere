@@ -2,18 +2,22 @@
 
 - `template` (string) - The name of the source virtual machine to clone.
 
-- `remote_source` (\*RemoteSourceConfig) - Configuration for cloning from a remote OVF/OVA source.
-  Cannot be used together with `template`.
-  
-  For more information, refer to the [Remote Source Configuration](/packer/integrations/hashicorp/vmware/latest/components/builder/vsphere-clone#remote-source-configuration)
-  section.
+- `remote_source` (\*RemoteSourceConfig) - Configuration for deploying from a remote OVF/OVA source accessible using
+  HTTP or HTTPS. Conflicts with `template`.
 
-- `disk_size` (int64) - The size of the primary disk in MiB. Cannot be used with `linked_clone`.
-  -> **Note:** Only the primary disk size can be specified. Additional
-  disks are not supported.
+- `disk_size` (int64) - The size of the primary disk in MiB. Conflicts with `linked_clone`.
+  
+  -> **Note:** Only the primary disk size can be specified. Additional disks
+  are not supported.
+  
+  ~> **Note:** Applies only when cloning from a `template`; rejected when
+  `remote_source` is set.
 
 - `linked_clone` (bool) - Create the virtual machine as a linked clone from the latest snapshot.
-  Defaults to `false`. Cannot be used with `disk_size`.`
+  Defaults to `false`. Conflicts with `disk_size`.
+  
+  ~> **Note:** Applies only when cloning from a `template`; rejected when
+  `remote_source` is set.
 
 - `network` (string) - The network to which the virtual machine will connect.
   
@@ -31,6 +35,10 @@
   
   ~> **Note:** If no network is specified, provide `host` to allow the
   plugin to search for an available network.
+  
+  ~> **Note:** When deploying from a remote OVF/OVA source, each network
+  defined in the OVF descriptor is mapped to this vSphere network. If the
+  OVF defines multiple networks, they all use this same mapping.
 
 - `mac_address` (string) - The network card MAC address. For example `00:50:56:00:00:00`.
   If set, the `network` must be also specified.
@@ -41,7 +49,6 @@
   Defaults to `false`.
 
 - `vapp` (common.VAppConfig) - The vApp Options for the virtual machine. For more information, refer to
-  the [vApp Options Configuration](/packer/plugins/builders/vmware/vsphere-clone#vapp-options-configuration)
-  section.
+  the [vApp Options Configuration](#vapp-options-configuration) section.
 
 <!-- End of code generated from the comments of the CloneConfig struct in builder/vsphere/clone/step_clone.go; -->

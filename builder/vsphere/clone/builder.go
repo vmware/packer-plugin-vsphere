@@ -218,17 +218,22 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		return nil, nil
 	}
 	vm := state.Get("vm").(*driver.VirtualMachineDriver)
+	stateData := map[string]interface{}{
+		"generated_data": state.Get("generated_data"),
+		"metadata":       state.Get("metadata"),
+	}
+	if b.config.RemoteSource != nil {
+		stateData["source_remote_url"] = driver.SanitizeOvfURL(b.config.RemoteSource.URL)
+	} else {
+		stateData["source_template"] = b.config.Template
+	}
 	artifact := &common.Artifact{
 		Name:                 b.config.VMName,
 		Datacenter:           vm.Datacenter(),
 		Location:             b.config.LocationConfig,
 		ContentLibraryConfig: b.config.ContentLibraryDestinationConfig,
 		VM:                   vm,
-		StateData: map[string]interface{}{
-			"generated_data":  state.Get("generated_data"),
-			"metadata":        state.Get("metadata"),
-			"source_template": b.config.Template,
-		},
+		StateData:            stateData,
 	}
 	if b.config.Export != nil {
 		artifact.Outconfig = &b.config.Export.OutputDir

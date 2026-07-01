@@ -92,8 +92,14 @@ func (a *Artifact) stateHCPPackerRegistryMetadata() interface{} {
 
 	// If a clone, the source comes from a different place.
 	templatePath, ok := a.StateData["source_template"].(string)
-	if ok {
+	if ok && templatePath != "" {
 		sourceID = templatePath
+	}
+
+	remoteURL, ok := a.StateData["source_remote_url"].(string)
+	if ok && remoteURL != "" {
+		sourceID = remoteURL
+		labels["source_remote_url"] = remoteURL
 	}
 
 	img, _ := registryimage.FromArtifact(a,

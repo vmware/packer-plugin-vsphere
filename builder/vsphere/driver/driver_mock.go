@@ -42,13 +42,14 @@ type DriverMock struct {
 	DeployOvfError      error
 	DeployOvfVM         VirtualMachine
 
-	GetOvfOptionsCalled     bool
-	GetOvfOptionsURL        string
-	GetOvfOptionsAuth       *OvfAuthConfig
-	GetOvfOptionsLocale     string
-	GetOvfOptionsShouldFail bool
-	GetOvfOptionsError      error
-	GetOvfOptionsResult     []types.OvfOptionInfo
+	GetOvfOptionsCalled        bool
+	GetOvfOptionsURL           string
+	GetOvfOptionsAuth          *OvfAuthConfig
+	GetOvfOptionsLocale        string
+	GetOvfOptionsSkipTlsVerify bool
+	GetOvfOptionsShouldFail    bool
+	GetOvfOptionsError         error
+	GetOvfOptionsResult        []types.OvfOptionInfo
 }
 
 // NewDriverMock creates a new instance of DriverMock for testing.
@@ -172,11 +173,12 @@ func (d *DriverMock) DeployOvf(ctx context.Context, config *OvfDeployConfig, ui 
 }
 
 // GetOvfOptions mocks OVF options retrieval functionality for testing.
-func (d *DriverMock) GetOvfOptions(ctx context.Context, url string, auth *OvfAuthConfig, locale string) ([]types.OvfOptionInfo, error) {
+func (d *DriverMock) GetOvfOptions(ctx context.Context, url string, auth *OvfAuthConfig, locale string, skipTlsVerify bool) ([]types.OvfOptionInfo, error) {
 	d.GetOvfOptionsCalled = true
 	d.GetOvfOptionsURL = url
 	d.GetOvfOptionsAuth = auth
 	d.GetOvfOptionsLocale = locale
+	d.GetOvfOptionsSkipTlsVerify = skipTlsVerify
 
 	if d.GetOvfOptionsShouldFail {
 		if d.GetOvfOptionsError != nil {

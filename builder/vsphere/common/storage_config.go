@@ -110,6 +110,22 @@ type DiskConfig struct {
 	DiskControllerIndex int `mapstructure:"disk_controller_index"`
 }
 
+// When cloning from a `template`, the resulting virtual machine contains the
+// source template's disks plus any newly configured disks and controllers.
+// `storage {}`, `disk_controller_type`, and `disk_size` apply in this mode.
+//
+// When deploying from `remote_source`, vSphere downloads and imports the OVF/OVA
+// package from the URL. Virtual disks, how many, how large, and how they are
+// provisioned (for example, thin or thick) are provided by the OVF/OVA descriptor.
+// When the descriptor offers multiple deployment sizes, use `vapp.deployment_option`
+// to select one. For more information, refer to the [vApp Options Configuration](#vapp-options-configuration)
+// section.
+//
+// ~> **Note:** `storage {}`, `disk_controller_type`, and `disk_size` cannot be used with
+// `remote_source`.
+//
+// ~> **Note:** Use `datastore` or `datastore_cluster` in the builder location
+// configuration to choose where imported disks are stored.
 type StorageConfig struct {
 	// The disk controller type. One of `lsilogic`, `lsilogic-sas`, `pvscsi`,
 	// `nvme`, `scsi`, or `sata`. Defaults to `lsilogic`. Use a list to define
@@ -118,7 +134,6 @@ type StorageConfig struct {
 	// for additional information.
 	DiskControllerType []string `mapstructure:"disk_controller_type"`
 	// A collection of one or more disks to be provisioned.
-	// Refer to the [Storage Configuration](#storage-configuration) section for additional information.
 	Storage []DiskConfig `mapstructure:"storage"`
 }
 

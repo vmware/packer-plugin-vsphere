@@ -2,8 +2,8 @@ Type: `vsphere-clone`
 
 Artifact BuilderId: `vmware.vsphere`
 
-This builder clones an existing template, modifies the virtual machine image, and saves the result
-as a new template using the vSphere API.
+This builder creates a virtual machine from an existing template or a remote OVF/OVA source,
+modifies the image, and saves the result as a new template using the vSphere API.
 
 -> **Note:** This builder is developed to maintain compatibility with VMware vSphere versions until
 their respective End of General Support dates. For detailed information, refer to the
@@ -61,18 +61,22 @@ references, which are necessary for a build to succeed and can be found further 
 
 - `template` (string) - The name of the source virtual machine to clone.
 
-- `remote_source` (\*RemoteSourceConfig) - Configuration for cloning from a remote OVF/OVA source.
-  Cannot be used together with `template`.
-  
-  For more information, refer to the [Remote Source Configuration](/packer/integrations/hashicorp/vmware/latest/components/builder/vsphere-clone#remote-source-configuration)
-  section.
+- `remote_source` (\*RemoteSourceConfig) - Configuration for deploying from a remote OVF/OVA source accessible using
+  HTTP or HTTPS. Conflicts with `template`.
 
-- `disk_size` (int64) - The size of the primary disk in MiB. Cannot be used with `linked_clone`.
-  -> **Note:** Only the primary disk size can be specified. Additional
-  disks are not supported.
+- `disk_size` (int64) - The size of the primary disk in MiB. Conflicts with `linked_clone`.
+  
+  -> **Note:** Only the primary disk size can be specified. Additional disks
+  are not supported.
+  
+  ~> **Note:** Applies only when cloning from a `template`; rejected when
+  `remote_source` is set.
 
 - `linked_clone` (bool) - Create the virtual machine as a linked clone from the latest snapshot.
-  Defaults to `false`. Cannot be used with `disk_size`.`
+  Defaults to `false`. Conflicts with `disk_size`.
+  
+  ~> **Note:** Applies only when cloning from a `template`; rejected when
+  `remote_source` is set.
 
 - `network` (string) - The network to which the virtual machine will connect.
   
@@ -90,6 +94,10 @@ references, which are necessary for a build to succeed and can be found further 
   
   ~> **Note:** If no network is specified, provide `host` to allow the
   plugin to search for an available network.
+  
+  ~> **Note:** When deploying from a remote OVF/OVA source, each network
+  defined in the OVF descriptor is mapped to this vSphere network. If the
+  OVF defines multiple networks, they all use this same mapping.
 
 - `mac_address` (string) - The network card MAC address. For example `00:50:56:00:00:00`.
   If set, the `network` must be also specified.
@@ -100,29 +108,10 @@ references, which are necessary for a build to succeed and can be found further 
   Defaults to `false`.
 
 - `vapp` (common.VAppConfig) - The vApp Options for the virtual machine. For more information, refer to
-  the [vApp Options Configuration](/packer/integrations/hashicorp/vmware/latest/components/builder/vsphere-clone#vapp-options-configuration)
-  section.
+  the [vApp Options Configuration](#vapp-options-configuration) section.
 
 <!-- End of code generated from the comments of the CloneConfig struct in builder/vsphere/clone/step_clone.go; -->
 
-
-<!-- Code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
-
-- `disk_controller_type` ([]string) - The disk controller type. One of `lsilogic`, `lsilogic-sas`, `pvscsi`,
-  `nvme`, `scsi`, or `sata`. Defaults to `lsilogic`. Use a list to define
-  additional controllers. Refer to [SCSI, SATA, and NVMe Storage Controller
-  Conditions, Limitations, and Compatibility](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-virtual-machine-administration-guide-8-0/configuring-virtual-machine-hardwarevsphere-vm-admin/scsi-controller-configurationvsphere-vm-admin.html)
-  for additional information.
-
-- `storage` ([]DiskConfig) - A collection of one or more disks to be provisioned.
-  Refer to the [Storage Configuration](#storage-configuration) section for additional information.
-
-<!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->
-
-
-### Remote Source Configuration
-
-**Optional:**
 
 <!-- Code generated from the comments of the RemoteSourceConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
@@ -139,35 +128,46 @@ references, which are necessary for a build to succeed and can be found further 
   
   -> **Note:** This option is beneficial in scenarios where the certificate
   is self-signed or does not meet standard validation criteria.
-  
-  HCL Example:
-  
-  ```hcl
-    remote_source = {
-      url              = "https://packages.example.com/artifacts/example.ovf"
-      username         = "remote_source_username"
-      password         = "remote_source_password"
-      skip_tls_verify  = false
-    }
-  ```
-  
-  JSON Example:
-  ```json
-    "remote_source": {
-      "url": "https://packages.example.com/artifacts/example.ovf",
-      "username": "remote_source_username",
-      "password": "remote_source_password",
-      "skip_tls_verify": false
-    }
 
 <!-- End of code generated from the comments of the RemoteSourceConfig struct in builder/vsphere/clone/step_clone.go; -->
 
 
+<!-- Code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
+
+- `disk_controller_type` ([]string) - The disk controller type. One of `lsilogic`, `lsilogic-sas`, `pvscsi`,
+  `nvme`, `scsi`, or `sata`. Defaults to `lsilogic`. Use a list to define
+  additional controllers. Refer to [SCSI, SATA, and NVMe Storage Controller
+  Conditions, Limitations, and Compatibility](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-virtual-machine-administration-guide-8-0/configuring-virtual-machine-hardwarevsphere-vm-admin/scsi-controller-configurationvsphere-vm-admin.html)
+  for additional information.
+
+- `storage` ([]DiskConfig) - A collection of one or more disks to be provisioned.
+
+<!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->
+
+
 ### Storage Configuration
 
-When cloning a virtual machine, the storage configuration can be used to add additional storage and
-disk controllers. The resulting virtual machine will contain the origin virtual machine storage and
-disk controller plus the new configured ones.
+<!-- Code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
+
+When cloning from a `template`, the resulting virtual machine contains the
+source template's disks plus any newly configured disks and controllers.
+`storage {}`, `disk_controller_type`, and `disk_size` apply in this mode.
+
+When deploying from `remote_source`, vSphere downloads and imports the OVF/OVA
+package from the URL. Virtual disks, how many, how large, and how they are
+provisioned (for example, thin or thick) are provided by the OVF/OVA descriptor.
+When the descriptor offers multiple deployment sizes, use `vapp.deployment_option`
+to select one. For more information, refer to the [vApp Options Configuration](#vapp-options-configuration)
+section.
+
+~> **Note:** `storage {}`, `disk_controller_type`, and `disk_size` cannot be used with
+`remote_source`.
+
+~> **Note:** Use `datastore` or `datastore_cluster` in the builder location
+configuration to choose where imported disks are stored.
+
+<!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->
+
 
 <!-- Code generated from the comments of the DiskConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
 
