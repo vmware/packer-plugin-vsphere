@@ -30,8 +30,26 @@ EOF
   assert_not_contains "$output" $'\n  * `mac`' "no two-space asterisk sublists"
 }
 
+test_deepen_dash_sublists() {
+  local input
+  input="$(cat <<'EOF'
+- `network` (string) - The network to which the virtual machine will connect.
+
+  For example:
+
+  - Name: `<NetworkName>`
+  - Inventory Path: `/<DatacenterName>/<FolderName>/<NetworkName>`
+EOF
+)"
+  local output
+  output="$(deepen_asterisk_sublists "$input")"
+  assert_contains "$output" "    - Name:" "dash sublists indented"
+  assert_not_contains "$output" $'\n  - Name:' "no two-space dash sublists"
+}
+
 main() {
   test_deepen_asterisk_sublists
+  test_deepen_dash_sublists
   echo "All deepen-asterisk-sublists tests passed."
 }
 

@@ -57,6 +57,35 @@ format_example_labels() {
       return "**${label}:**";
     }
 
+    sub example_section_heading_on_line {
+      my ($line) = @_;
+      if ($line =~ /^(\s{2,})(?:\*\*)?(HTTP|HTTPS(?: and Basic Authentication)?)(?:\*\*)?\s*$/) {
+        return ($1, $2);
+      }
+      return;
+    }
+
+    sub has_example_section_heading {
+      my ($line) = @_;
+      return defined((example_section_heading_on_line($line))[1]);
+    }
+
+    sub bold_section_heading {
+      my ($heading) = @_;
+      return "**${heading}**";
+    }
+
+    sub push_list_section_heading {
+      my ($out, $lines, $idx, $heading) = @_;
+      while (@$out && $out->[-1] =~ /^\s*$/) {
+        pop @$out;
+      }
+      if (@$out && $out->[-1] =~ /\S/ && $out->[-1] !~ /^```/) {
+        push @$out, "";
+      }
+      push @$out, "    " . bold_section_heading($heading);
+    }
+
     sub in_admonition_body_context {
       my ($lines, $idx) = @_;
       for (my $j = $idx - 1; $j >= 0; $j--) {
@@ -213,7 +242,7 @@ format_example_labels() {
           }
         }
 
-        if (($line =~ /^    !!!/ || example_label_on_line($line) || $line =~ /^\s{4}\*\*.*Example:\*\*/)
+        if (($line =~ /^    !!!/ || example_label_on_line($line) || $line =~ /^\s{4}\*\*.*Example:\*\*/ || has_example_section_heading($line))
             && @out && $out[-1] =~ /^(- |  \S)/) {
           push @out, "" unless $out[-1] =~ /^\s*$/;
         }
@@ -244,6 +273,15 @@ format_example_labels() {
         }
 
         $line = normalize_example_alias_line($line);
+
+        if (my ($indent, $heading) = example_section_heading_on_line($line)) {
+          if (in_list_context(\@lines, $i)) {
+            push_list_section_heading(\@out, \@lines, $i, $heading);
+          } else {
+            push @out, bold_section_heading($heading);
+          }
+          next;
+        }
 
         my $label = is_example_label_line($line);
         if ($label) {
