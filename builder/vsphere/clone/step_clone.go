@@ -41,10 +41,74 @@ type RemoteSourceConfig struct {
 }
 
 type CloneConfig struct {
-	// The name of the source virtual machine to clone.
+	// The name of the source virtual machine template to clone. Specify either
+	// `template` or `remote_source`, but not both.
 	Template string `mapstructure:"template"`
 	// Configuration for deploying from a remote OVF/OVA source accessible using
 	// HTTP or HTTPS. Conflicts with `template`.
+	//
+	// HTTP
+	//
+	// HCL Example:
+	//
+	// ```hcl
+	// remote_source {
+	//   url = "http://packages.example.com/templates/example.ovf"
+	// }
+	// ```
+	//
+	// JSON Example:
+	//
+	// ```json
+	// "remote_source": {
+	//   "url": "http://packages.example.com/templates/example.ovf"
+	// }
+	// ```
+	//
+	// HTTPS
+	//
+	// HCL Example:
+	//
+	// ```hcl
+	// remote_source {
+	//   url = "https://packages.example.com/templates/example.ovf"
+	// }
+	// ```
+	//
+	// JSON Example:
+	//
+	// ```json
+	// "remote_source": {
+	//   "url": "https://packages.example.com/templates/example.ovf"
+	// }
+	// ```
+	//
+	// HTTPS and Basic Authentication
+	//
+	// HCL Example:
+	//
+	// ```hcl
+	// remote_source {
+	//   url             = "https://packages.example.com/artifacts/example.ovf"
+	//   username        = "remote_source_username"
+	//   password        = "remote_source_password"
+	//   skip_tls_verify = false
+	// }
+	// ```
+	//
+	// JSON Example:
+	//
+	// ```json
+	// "remote_source": {
+	//   "url": "https://packages.example.com/artifacts/example.ovf",
+	//   "username": "remote_source_username",
+	//   "password": "remote_source_password",
+	//   "skip_tls_verify": false
+	// }
+	// ```
+	//
+	// -> **Note:** For credentials, use variables marked `sensitive = true` for
+	// `username` and `password`.
 	RemoteSource *RemoteSourceConfig `mapstructure:"remote_source"`
 	// The size of the primary disk in MiB. Conflicts with `linked_clone`.
 	//
@@ -78,8 +142,8 @@ type CloneConfig struct {
 	// plugin to search for an available network.
 	//
 	// ~> **Note:** When deploying from a remote OVF/OVA source, each network
-	// defined in the OVF descriptor is mapped to this vSphere network. If the
-	// OVF defines multiple networks, they all use this same mapping.
+	// defined in the OVF descriptor is mapped to this network. If the OVF
+	// defines multiple networks, they all use this same mapping.
 	Network string `mapstructure:"network"`
 	// The network card MAC address. For example `00:50:56:00:00:00`.
 	// If set, the `network` must be also specified.
@@ -287,13 +351,16 @@ func (s *StepCloneVM) cloneFromTemplate(ctx context.Context, state multistep.Sta
 	return multistep.ActionContinue
 }
 
-// deployFromRemoteOvf handles deployment from remote OVF/OVA sources using vSphere's native pull method.
+// deployFromRemoteOvf handles deployment from remote OVF/OVA sources. The
+// plugin downloads the descriptor and archive files on the Packer host and
+// uploads disk content to vSphere over an NFC lease; vSphere does not fetch
+// the remote URL directly.
 func (s *StepCloneVM) deployFromRemoteOvf(ctx context.Context, state multistep.StateBag) multistep.StepAction {
 	ui := state.Get("ui").(packersdk.Ui)
 	d := state.Get("driver").(driver.Driver)
 	vmPath := path.Join(s.Location.Folder, s.Location.VMName)
 
-	ui.Sayf("Deploying virtual machine from remote OVF/OVA: %s", driver.SanitizeOvfURL(s.Config.RemoteSource.URL))
+	ui.Say("Deploying virtual machine from remote OVF/OVA...")
 
 	err := d.PreCleanVM(ui, vmPath, s.Force, s.Location.Cluster, s.Location.Host, s.Location.ResourcePool)
 	if err != nil {
@@ -346,7 +413,7 @@ func (s *StepCloneVM) deployFromRemoteOvf(ctx context.Context, state multistep.S
 	}
 
 	if vm == nil {
-		state.Put("error", fmt.Errorf("OVF deployment completed but returned no virtual machine reference. This may indicate a vSphere configuration issue"))
+		state.Put("error", fmt.Errorf("OVF deployment completed but returned no virtual machine reference"))
 		return multistep.ActionHalt
 	}
 

@@ -59,10 +59,74 @@ references, which are necessary for a build to succeed and can be found further 
 
 <!-- Code generated from the comments of the CloneConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
-- `template` (string) - The name of the source virtual machine to clone.
+- `template` (string) - The name of the source virtual machine template to clone. Specify either
+  `template` or `remote_source`, but not both.
 
 - `remote_source` (\*RemoteSourceConfig) - Configuration for deploying from a remote OVF/OVA source accessible using
   HTTP or HTTPS. Conflicts with `template`.
+  
+  HTTP
+  
+  HCL Example:
+  
+  ```hcl
+  remote_source {
+    url = "http://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "remote_source": {
+    "url": "http://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  HTTPS
+  
+  HCL Example:
+  
+  ```hcl
+  remote_source {
+    url = "https://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "remote_source": {
+    "url": "https://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  HTTPS and Basic Authentication
+  
+  HCL Example:
+  
+  ```hcl
+  remote_source {
+    url             = "https://packages.example.com/artifacts/example.ovf"
+    username        = "remote_source_username"
+    password        = "remote_source_password"
+    skip_tls_verify = false
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "remote_source": {
+    "url": "https://packages.example.com/artifacts/example.ovf",
+    "username": "remote_source_username",
+    "password": "remote_source_password",
+    "skip_tls_verify": false
+  }
+  ```
+  
+  -> **Note:** For credentials, use variables marked `sensitive = true` for
+  `username` and `password`.
 
 - `disk_size` (int64) - The size of the primary disk in MiB. Conflicts with `linked_clone`.
   
@@ -96,8 +160,8 @@ references, which are necessary for a build to succeed and can be found further 
   plugin to search for an available network.
   
   ~> **Note:** When deploying from a remote OVF/OVA source, each network
-  defined in the OVF descriptor is mapped to this vSphere network. If the
-  OVF defines multiple networks, they all use this same mapping.
+  defined in the OVF descriptor is mapped to this network. If the OVF
+  defines multiple networks, they all use this same mapping.
 
 - `mac_address` (string) - The network card MAC address. For example `00:50:56:00:00:00`.
   If set, the `network` must be also specified.
@@ -153,8 +217,9 @@ When cloning from a `template`, the resulting virtual machine contains the
 source template's disks plus any newly configured disks and controllers.
 `storage {}`, `disk_controller_type`, and `disk_size` apply in this mode.
 
-When deploying from `remote_source`, vSphere downloads and imports the OVF/OVA
-package from the URL. Virtual disks, how many, how large, and how they are
+When deploying from `remote_source`, the plugin downloads the OVF/OVA package
+on the Packer host and imports it into vSphere using the OVF Manager and an
+NFC lease upload. Virtual disks, how many, how large, and how they are
 provisioned (for example, thin or thick) are provided by the OVF/OVA descriptor.
 When the descriptor offers multiple deployment sizes, use `vapp.deployment_option`
 to select one. For more information, refer to the [vApp Options Configuration](#vapp-options-configuration)

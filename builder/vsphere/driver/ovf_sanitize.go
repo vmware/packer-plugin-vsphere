@@ -17,7 +17,7 @@ func SanitizeOvfURL(urlStr string) string {
 	}
 
 	if u.User != nil {
-		u.User = url.User(u.User.Username())
+		u.User = nil
 	}
 	return u.String()
 }

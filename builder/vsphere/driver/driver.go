@@ -6,8 +6,8 @@ package driver
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
+	"io"
 	"log"
 	"net/url"
 	"strings"
@@ -23,12 +23,11 @@ import (
 	"github.com/vmware/govmomi/vapi/library"
 	"github.com/vmware/govmomi/vapi/rest"
 	"github.com/vmware/govmomi/vim25"
-	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
 )
 
-// Driver defines the interface for vSphere operations including VM management and OVF deployment.
+// Driver defines the interface for vSphere operations.
 type Driver interface {
 	NewVM(ref *types.ManagedObjectReference) VirtualMachine
 	FindVM(name string) (VirtualMachine, error)
@@ -62,7 +61,7 @@ type Driver interface {
 	Cleanup() (error, error)
 }
 
-// VCenterDriver implements the Driver interface for vCenter Server operations.
+// VCenterDriver implements the Driver interface for vCenter operations.
 type VCenterDriver struct {
 	Ctx        context.Context
 	Client     *govmomi.Client
@@ -101,7 +100,8 @@ type OvfAuthConfig struct {
 	Password string
 }
 
-// OvfDeployConfig contains configuration for deploying VMs from remote OVF/OVA sources.
+// OvfDeployConfig contains configuration for deploying virtual machines from
+// remote OVF/OVA sources.
 type OvfDeployConfig struct {
 	URL              string
 	Authentication   *OvfAuthConfig
@@ -118,146 +118,6 @@ type OvfDeployConfig struct {
 	DeploymentOption string // OVF deployment option such as "small", "medium", or "large".
 	Locale           string // Locale for OVF deployment messages and descriptions (defaults to "US" if empty).
 	SkipTlsVerify    bool   // Skip TLS certificate verification for HTTPS URLs (for testing environments only).
-}
-
-const ovfProgressStallThreshold = 30 * time.Second
-
-// OvfProgressMonitor provides progress monitoring capabilities for OVF deployment operations.
-type OvfProgressMonitor struct {
-	ui                packersdk.Ui
-	ctx               context.Context
-	cancelFunc        context.CancelFunc
-	progressInterval  time.Duration
-	startedAt         time.Time
-	lastProgressTime  time.Time
-	lastProgressValue int32
-	lastLeaseState    types.HttpNfcLeaseState
-	loggedStallNotice bool
-}
-
-// NewOvfProgressMonitor creates a new progress monitor for OVF deployment operations.
-func NewOvfProgressMonitor(ui packersdk.Ui, ctx context.Context) *OvfProgressMonitor {
-	ctx, cancel := context.WithCancel(ctx)
-	return &OvfProgressMonitor{
-		ui:               ui,
-		ctx:              ctx,
-		cancelFunc:       cancel,
-		progressInterval: 5 * time.Second,
-		startedAt:        time.Now(),
-	}
-}
-
-// maybeLogProgressStall logs once when transfer progress has not started after a delay.
-func (m *OvfProgressMonitor) maybeLogProgressStall(progress int32, now time.Time) {
-	if progress > 0 || m.loggedStallNotice {
-		return
-	}
-
-	if now.Sub(m.startedAt) >= ovfProgressStallThreshold {
-		log.Printf("[INFO] OVF deployment is still waiting for transfer progress from the remote source...")
-		m.loggedStallNotice = true
-	}
-}
-
-// Cancel stops progress monitoring.
-func (m *OvfProgressMonitor) Cancel() {
-	if m.cancelFunc != nil {
-		m.cancelFunc()
-	}
-}
-
-// reportLeaseProgress reports NFC lease state and transfer progress to the user interface.
-func (m *OvfProgressMonitor) reportLeaseProgress(leaseProps mo.HttpNfcLease) {
-	now := time.Now()
-
-	progress := leaseProps.TransferProgress
-	if progress == 0 {
-		progress = leaseProps.InitializeProgress
-	}
-
-	m.maybeLogProgressStall(progress, now)
-
-	if now.Sub(m.lastProgressTime) < m.progressInterval {
-		return
-	}
-
-	switch leaseProps.State {
-	case types.HttpNfcLeaseStateError:
-		if leaseProps.Error != nil {
-			m.ui.Errorf("OVF deployment lease error: %s", leaseProps.Error.LocalizedMessage)
-		}
-		m.lastProgressTime = now
-		return
-
-	case types.HttpNfcLeaseStateDone:
-		log.Printf("[INFO] OVF deployment transfer completed")
-		m.lastProgressTime = now
-		return
-	}
-
-	if progress > 0 && progress != m.lastProgressValue {
-		switch leaseProps.State {
-		case types.HttpNfcLeaseStateInitializing:
-			m.ui.Sayf("OVF deployment initializing... %d%%", progress)
-		case types.HttpNfcLeaseStateReady:
-			m.ui.Sayf("OVF deployment in progress... %d%%", progress)
-		}
-		m.lastProgressValue = progress
-		m.lastProgressTime = now
-		return
-	}
-
-	if progress == 0 && m.lastLeaseState != leaseProps.State {
-		m.lastLeaseState = leaseProps.State
-		switch leaseProps.State {
-		case types.HttpNfcLeaseStateInitializing:
-			log.Printf("[INFO] OVF deployment initializing...")
-		case types.HttpNfcLeaseStateReady:
-			log.Printf("[INFO] OVF deployment in progress...")
-		}
-	}
-
-	m.lastProgressTime = now
-}
-
-// monitorLeaseProgress monitors NFC lease state and transfer progress until import completes.
-func (d *VCenterDriver) monitorLeaseProgress(ctx context.Context, lease *nfc.Lease, progressMonitor *OvfProgressMonitor) (*nfc.LeaseInfo, error) {
-	resultChan := make(chan *nfc.LeaseInfo, 1)
-	errorChan := make(chan error, 1)
-
-	go func() {
-		defer close(resultChan)
-		defer close(errorChan)
-
-		info, err := lease.Wait(ctx, []types.OvfFileItem{})
-		if err != nil {
-			errorChan <- err
-			return
-		}
-		resultChan <- info
-	}()
-
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case info := <-resultChan:
-			return info, nil
-
-		case err := <-errorChan:
-			return nil, err
-
-		case <-ticker.C:
-			if leaseProps, err := lease.Properties(ctx, "state", "initializeProgress", "transferProgress", "error"); err == nil {
-				progressMonitor.reportLeaseProgress(leaseProps)
-			}
-
-		case <-ctx.Done():
-			log.Printf("[INFO] OVF deployment context cancelled")
-			return nil, fmt.Errorf("OVF deployment context cancelled")
-		}
-	}
 }
 
 func NewDriver(config *ConnectConfig) (Driver, error) {
@@ -318,7 +178,12 @@ func (d *VCenterDriver) GetRestClient() *rest.Client {
 	return d.RestClient.client
 }
 
-// DeployOvf deploys a virtual machine from a remote OVF/OVA source using vSphere's native pull method.
+// DeployOvf deploys a virtual machine from a remote OVF/OVA source.
+//
+// The plugin downloads the OVF descriptor and archive files over HTTP(S) on
+// the Packer host, passes the descriptor XML to vSphere's OVF Manager, and
+// uploads disk files through an NFC lease. vSphere does not fetch the remote
+// URL directly.
 func (d *VCenterDriver) DeployOvf(ctx context.Context, config *OvfDeployConfig, ui packersdk.Ui) (VirtualMachine, error) {
 	if err := d.validateOvfDeploymentConfig(config); err != nil {
 		return nil, d.wrapOvfError("configuration validation failed", err, config.URL)
@@ -357,7 +222,6 @@ func (d *VCenterDriver) DeployOvf(ctx context.Context, config *OvfDeployConfig, 
 
 	log.Printf("[INFO] Creating OVF import specification from remote source...")
 
-	// Use vSphere's native URL-based OVF deployment with authentication.
 	importSpecResult, err := ovfWrapper.CreateImportSpecFromURL(ctx, config.URL, resourcePool.pool, datastore.Reference(), importParams)
 	if err != nil {
 		return nil, d.wrapOvfError("failed to create import specification", err, config.URL)
@@ -375,24 +239,24 @@ func (d *VCenterDriver) DeployOvf(ctx context.Context, config *OvfDeployConfig, 
 
 	log.Printf("[INFO] Starting OVF import operation...")
 
-	// Import the vApp using the generated spec with progress monitoring.
+	// Start the vApp import: vSphere returns an NFC lease through which disk files are uploaded.
 	lease, err := resourcePool.pool.ImportVApp(ctx, importSpecResult.ImportSpec, folder.folder, nil)
 	if err != nil {
 		return nil, d.wrapOvfError("failed to start vApp import", err, config.URL)
 	}
 
-	// Wait for the lease to be ready with enhanced progress monitoring.
-	info, err := d.waitForOvfImportWithProgress(ctx, lease, ui)
+	// Upload disk files from the remote source and complete the import.
+	info, err := d.uploadAndCompleteOvfImport(ctx, lease, config, importSpecResult.FileItem)
 	if err != nil {
 		return nil, d.wrapOvfError("OVF import operation failed", err, config.URL)
 	}
 
-	// Validate that we received a valid VM reference
+	// Validate that we received a valid virtual machine reference.
 	if info == nil || info.Entity.Type != "VirtualMachine" {
 		return nil, fmt.Errorf("OVF deployment completed but did not return a valid virtual machine reference")
 	}
 
-	// Get the imported VM reference from the lease info.
+	// Get the imported virtual machine reference from the lease info.
 	vmRef := info.Entity
 	vm := d.NewVM(&vmRef)
 	if err := d.applyOvfPostImportConfig(vm, config); err != nil {
@@ -401,7 +265,61 @@ func (d *VCenterDriver) DeployOvf(ctx context.Context, config *OvfDeployConfig, 
 	return vm, nil
 }
 
-// applyOvfPostImportConfig applies settings that are not part of the OVF import spec.
+// uploadAndCompleteOvfImport waits for the NFC lease to be ready, uploads all
+// disk files from the remote source through the Packer host, and signals
+// vSphere to complete the import.
+func (d *VCenterDriver) uploadAndCompleteOvfImport(ctx context.Context, lease *nfc.Lease, config *OvfDeployConfig, fileItems []types.OvfFileItem) (*nfc.LeaseInfo, error) {
+	// Wait for the lease to initialise and return the list of upload targets.
+	info, err := lease.Wait(ctx, fileItems)
+	if err != nil {
+		_ = lease.Abort(ctx, nil)
+		return nil, err
+	}
+
+	// StartUpdater sends periodic keepalive progress ticks to prevent lease timeout.
+	updater := lease.StartUpdater(ctx, info)
+	defer updater.Done()
+
+	archive, err := newRemoteOvfArchive(config.URL, config.Authentication, config.SkipTlsVerify)
+	if err != nil {
+		_ = lease.Abort(ctx, nil)
+		return nil, fmt.Errorf("failed to initialise OVF archive for upload: %s", err)
+	}
+
+	for _, item := range info.Items {
+		if err := d.uploadOvfFile(ctx, lease, archive, item); err != nil {
+			_ = lease.Abort(ctx, &types.LocalizedMethodFault{
+				Fault: &types.FileFault{File: item.Path},
+			})
+			return nil, d.categorizeOvfImportError(fmt.Errorf("upload of '%s' failed: %s", item.Path, err))
+		}
+		log.Printf("[INFO] Uploaded %s", item.Path)
+	}
+
+	if err := lease.Complete(ctx); err != nil {
+		return nil, fmt.Errorf("failed to complete OVF import lease: %s", err)
+	}
+
+	return info, nil
+}
+
+// uploadOvfFile opens the named file from the remote archive and uploads it to
+// vSphere via the NFC lease.
+func (d *VCenterDriver) uploadOvfFile(ctx context.Context, lease *nfc.Lease, archive *remoteOvfArchive, item nfc.FileItem) error {
+	rc, size, err := archive.Open(item.Path)
+	if err != nil {
+		return fmt.Errorf("failed to open '%s' from remote source: %s", item.Path, err)
+	}
+	defer rc.Close()
+
+	opts := soap.Upload{
+		ContentLength: size,
+	}
+	return lease.Upload(ctx, item, rc, opts)
+}
+
+// applyOvfPostImportConfig applies settings that are not part of the OVF import
+// spec.
 func (d *VCenterDriver) applyOvfPostImportConfig(vm VirtualMachine, config *OvfDeployConfig) error {
 	if config.Annotation == "" && config.MacAddress == "" {
 		return nil
@@ -437,7 +355,9 @@ func (d *VCenterDriver) applyOvfPostImportConfig(vm VirtualMachine, config *OvfD
 	return vm.Reconfigure(configSpec)
 }
 
-// GetOvfOptions retrieves OVF deployment options from a remote OVF/OVA source using vSphere's native pull method.
+// GetOvfOptions retrieves OVF deployment options from a remote OVF/OVA source.
+// The descriptor is downloaded over HTTP(S) on the Packer host before being
+// parsed via vSphere's OVF Manager.
 func (d *VCenterDriver) GetOvfOptions(ctx context.Context, url string, auth *OvfAuthConfig, locale string, skipTlsVerify bool) ([]types.OvfOptionInfo, error) {
 	if err := d.validateOvfURL(url); err != nil {
 		return nil, d.wrapOvfError("URL validation failed", err, url)
@@ -477,14 +397,16 @@ func (d *VCenterDriver) GetOvfOptions(ctx context.Context, url string, auth *Ovf
 	return optionInfos, nil
 }
 
-// OvfManagerWrapper wraps the govmomi OVF Manager with authentication and TLS support.
+// OvfManagerWrapper wraps the govmomi OVF Manager with authentication and TLS
+// support.
 type OvfManagerWrapper struct {
 	manager               *ovf.Manager
 	auth                  *OvfAuthConfig
 	insecureSkipTLSVerify bool
 }
 
-// createOvfManagerWrapper creates a new OVF Manager wrapper with authentication and TLS support.
+// createOvfManagerWrapper creates a new OVF Manager wrapper with authentication
+// and TLS support.
 func (d *VCenterDriver) createOvfManagerWrapper(auth *OvfAuthConfig, insecureSkipTLSVerify bool) (*OvfManagerWrapper, error) {
 	ovfManager := ovf.NewManager(d.VimClient)
 
@@ -538,7 +460,8 @@ func (d *VCenterDriver) validateOvfURL(urlStr string) error {
 	}
 }
 
-// isOvfFileURL checks if the URL points to an OVF or OVA file based on file extension.
+// isOvfFileURL checks if the URL points to an OVF or OVA file based on file
+// extension.
 func (d *VCenterDriver) isOvfFileURL(urlStr string) bool {
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
@@ -549,17 +472,19 @@ func (d *VCenterDriver) isOvfFileURL(urlStr string) bool {
 	return strings.HasSuffix(strings.ToLower(path), ".ovf") || strings.HasSuffix(strings.ToLower(path), ".ova")
 }
 
-// validateOvfDeploymentConfig validates the complete OVF deployment configuration.
+// validateOvfDeploymentConfig validates the complete OVF deployment
+// configuration.
 func (d *VCenterDriver) validateOvfDeploymentConfig(config *OvfDeployConfig) error {
 	if config == nil {
 		return fmt.Errorf("OVF deployment configuration cannot be nil")
 	}
 
 	if config.URL == "" {
-		return fmt.Errorf("OVF URL is required")
+		return fmt.Errorf("OVF/OVA URL is required")
 	}
+
 	if config.Name == "" {
-		return fmt.Errorf("VM name is required")
+		return fmt.Errorf("virtual machine name is required")
 	}
 
 	if err := d.validateOvfURL(config.URL); err != nil {
@@ -585,7 +510,8 @@ func (d *VCenterDriver) validateOvfDeploymentConfig(config *OvfDeployConfig) err
 	return nil
 }
 
-// createOvfImportParams creates import parameters with authentication and configuration support.
+// createOvfImportParams creates import parameters with authentication and
+// configuration support.
 func (d *VCenterDriver) createOvfImportParams(config *OvfDeployConfig, parseResult *types.OvfParseDescriptorResult) (*types.OvfCreateImportSpecParams, error) {
 	locale := config.Locale
 	if locale == "" {
@@ -645,47 +571,65 @@ func (d *VCenterDriver) createOvfParseParams(locale string) types.OvfParseDescri
 	}
 }
 
-// CreateImportSpecFromURL creates an import spec from a remote URL with authentication and TLS support.
-func (w *OvfManagerWrapper) CreateImportSpecFromURL(ctx context.Context, url string, rp *object.ResourcePool, ds types.ManagedObjectReference, params *types.OvfCreateImportSpecParams) (*types.OvfCreateImportSpecResult, error) {
-	authenticatedURL, err := w.prepareAuthenticatedURL(url)
+// fetchOvfXML downloads and returns the OVF descriptor XML bytes from the
+// remote URL on the Packer host. For OVA archives the descriptor is extracted
+// from the TAR; for OVF URLs it is fetched directly.
+func (w *OvfManagerWrapper) fetchOvfXML(urlStr string) ([]byte, error) {
+	archive, err := newRemoteOvfArchive(urlStr, w.auth, w.insecureSkipTLSVerify)
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare authenticated URL: %s", err)
+		return nil, fmt.Errorf("failed to initialize OVF archive: %s", err)
 	}
 
-	// Configure TLS settings if needed
-	if w.insecureSkipTLSVerify {
-		ctx = w.configureTLSContext(ctx)
+	// OVA: glob inside the TAR for the first .ovf entry.
+	// OVF: open the descriptor URL directly (empty name).
+	name := ""
+	if archive.isOva {
+		name = "*.ovf"
 	}
 
-	result, err := w.manager.CreateImportSpec(ctx, authenticatedURL, rp, ds, params)
+	rc, _, err := archive.Open(name)
 	if err != nil {
-		return nil, w.categorizeOvfManagerError(err, url)
+		return nil, fmt.Errorf("failed to read OVF descriptor from '%s': %s", SanitizeOvfURL(urlStr), err)
+	}
+	defer rc.Close()
+
+	return io.ReadAll(rc)
+}
+
+// CreateImportSpecFromURL downloads the OVF descriptor on the Packer host and
+// creates an import spec from the XML via vSphere's OVF Manager.
+func (w *OvfManagerWrapper) CreateImportSpecFromURL(ctx context.Context, urlStr string, rp *object.ResourcePool, ds types.ManagedObjectReference, params *types.OvfCreateImportSpecParams) (*types.OvfCreateImportSpecResult, error) {
+	xmlBytes, err := w.fetchOvfXML(urlStr)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := w.manager.CreateImportSpec(ctx, string(xmlBytes), rp, ds, params)
+	if err != nil {
+		return nil, w.categorizeOvfManagerError(err, urlStr)
 	}
 
 	return result, nil
 }
 
-// ParseDescriptorFromURL parses an OVF descriptor from a remote URL with authentication and TLS support.
-func (w *OvfManagerWrapper) ParseDescriptorFromURL(ctx context.Context, url string, params types.OvfParseDescriptorParams) (*types.OvfParseDescriptorResult, error) {
-	authenticatedURL, err := w.prepareAuthenticatedURL(url)
+// ParseDescriptorFromURL downloads the OVF descriptor on the Packer host and
+// parses the XML via vSphere's OVF Manager.
+func (w *OvfManagerWrapper) ParseDescriptorFromURL(ctx context.Context, urlStr string, params types.OvfParseDescriptorParams) (*types.OvfParseDescriptorResult, error) {
+	xmlBytes, err := w.fetchOvfXML(urlStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare authenticated URL: %s", err)
+		return nil, err
 	}
 
-	// Configure TLS settings, if needed.
-	if w.insecureSkipTLSVerify {
-		ctx = w.configureTLSContext(ctx)
-	}
-
-	result, err := w.manager.ParseDescriptor(ctx, authenticatedURL, params)
+	result, err := w.manager.ParseDescriptor(ctx, string(xmlBytes), params)
 	if err != nil {
-		return nil, w.categorizeOvfManagerError(err, url)
+		return nil, w.categorizeOvfManagerError(err, urlStr)
 	}
 
 	return result, nil
 }
 
-// categorizeOvfManagerError provides specific error categorization for OVF Manager operations.
+// categorizeOvfManagerError provides specific error categorization for OVF
+// Manager operations.
 func (w *OvfManagerWrapper) categorizeOvfManagerError(err error, url string) error {
 	errStr := strings.ToLower(err.Error())
 
@@ -718,112 +662,8 @@ func (w *OvfManagerWrapper) categorizeOvfManagerError(err error, url string) err
 	return fmt.Errorf("OVF Manager operation failed: %s", err)
 }
 
-// prepareAuthenticatedURL prepares a URL with authentication credentials if provided.
-func (w *OvfManagerWrapper) prepareAuthenticatedURL(originalURL string) (string, error) {
-	if w.auth == nil || (w.auth.Username == "" && w.auth.Password == "") {
-		return originalURL, nil
-	}
-
-	parsedURL, err := url.Parse(originalURL)
-	if err != nil {
-		return "", fmt.Errorf("invalid URL format: %s", err)
-	}
-
-	if w.auth.Username != "" && w.auth.Password != "" {
-		parsedURL.User = url.UserPassword(w.auth.Username, w.auth.Password)
-	}
-
-	return parsedURL.String(), nil
-}
-
-// configureTLSContext adds TLS configuration to the context for OVF Manager operations.
-// The govmomi OVF Manager delegates HTTP requests to vSphere, so TLS configuration
-// is primarily handled by vSphere's internal HTTP client.
-func (w *OvfManagerWrapper) configureTLSContext(ctx context.Context) context.Context {
-	// Add TLS configuration to context for potential use by custom transports.
-	type tlsConfigKey struct{}
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: w.insecureSkipTLSVerify,
-	}
-	return context.WithValue(ctx, tlsConfigKey{}, tlsConfig)
-}
-
-// waitForOvfImportWithProgress waits for OVF import completion with enhanced progress monitoring.
-func (d *VCenterDriver) waitForOvfImportWithProgress(ctx context.Context, lease *nfc.Lease, ui packersdk.Ui) (*nfc.LeaseInfo, error) {
-	importCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	progressMonitor := NewOvfProgressMonitor(ui, importCtx)
-	defer progressMonitor.Cancel()
-
-	resultChan := make(chan *nfc.LeaseInfo, 1)
-	errorChan := make(chan error, 1)
-
-	go func() {
-		defer close(resultChan)
-		defer close(errorChan)
-
-		info, err := d.monitorLeaseProgress(importCtx, lease, progressMonitor)
-		if err != nil {
-			errorChan <- err
-			return
-		}
-
-		resultChan <- info
-	}()
-
-	select {
-	case info := <-resultChan:
-		log.Printf("[INFO] OVF/OVA deployment completed successfully")
-		return info, nil
-
-	case err := <-errorChan:
-		d.cleanupOvfDeploymentResources(importCtx, lease, ui, "deployment error")
-		return nil, d.categorizeOvfImportError(err)
-
-	case <-ctx.Done():
-		ui.Say("OVF deployment cancelled, cleaning up...")
-		cancel()
-
-		d.cleanupOvfDeploymentResources(context.Background(), lease, ui, "deployment cancellation")
-		return nil, fmt.Errorf("OVF deployment was cancelled")
-	}
-}
-
-// cleanupOvfDeploymentResources performs comprehensive cleanup of vSphere resources during OVF deployment failures.
-func (d *VCenterDriver) cleanupOvfDeploymentResources(ctx context.Context, lease *nfc.Lease, ui packersdk.Ui, reason string) {
-	log.Printf("[INFO] Cleaning up vSphere resources due to %s...", reason)
-
-	cleanupCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-	defer cancel()
-
-	var cleanupErrors []string
-
-	if lease != nil {
-		log.Printf("[INFO] Aborting vSphere NFC lease...")
-		if abortErr := lease.Abort(cleanupCtx, nil); abortErr != nil {
-			errorMsg := fmt.Sprintf("Failed to abort NFC lease: %s", abortErr)
-			ui.Errorf("Failed to abort NFC lease: %s", abortErr)
-			cleanupErrors = append(cleanupErrors, errorMsg)
-		} else {
-			log.Printf("[INFO] Successfully aborted NFC lease")
-		}
-
-		log.Printf("[INFO] Waiting for lease state to stabilize...")
-		time.Sleep(2 * time.Second)
-	}
-
-	if len(cleanupErrors) > 0 {
-		ui.Errorf("Resource cleanup completed with %d error(s):", len(cleanupErrors))
-		for i, err := range cleanupErrors {
-			ui.Errorf("  %d. %s", i+1, err)
-		}
-	} else {
-		log.Printf("[INFO] Resource cleanup completed successfully")
-	}
-}
-
-// categorizeOvfImportError categorizes OVF import errors and provides actionable error messages.
+// categorizeOvfImportError categorizes OVF import errors and provides
+// actionable error messages.
 func (d *VCenterDriver) categorizeOvfImportError(err error) error {
 	errStr := strings.ToLower(err.Error())
 	sanitizedErr := SanitizeOvfErrorMessage(err.Error())
@@ -902,10 +742,11 @@ func (d *VCenterDriver) containsAny(s string, patterns []string) bool {
 func (d *VCenterDriver) wrapOvfError(context string, err error, url string) error {
 	sanitizedURL := SanitizeOvfURL(url)
 	sanitizedErr := SanitizeOvfErrorMessage(err.Error())
-	return fmt.Errorf("%s for OVF source '%s': %s", context, sanitizedURL, sanitizedErr)
+	return fmt.Errorf("%s for OVF/OVA source '%s': %s", context, sanitizedURL, sanitizedErr)
 }
 
-// validateRemoteOvfAccessibility performs early validation of remote OVF accessibility.
+// validateRemoteOvfAccessibility downloads and parses the remote OVF
+// descriptor on the Packer host before deployment proceeds.
 func (d *VCenterDriver) validateRemoteOvfAccessibility(ctx context.Context, config *OvfDeployConfig, wrapper *OvfManagerWrapper) (*types.OvfParseDescriptorResult, error) {
 	locale := config.Locale
 	if locale == "" {
@@ -925,7 +766,8 @@ func (d *VCenterDriver) validateRemoteOvfAccessibility(ctx context.Context, conf
 	return parseResult, nil
 }
 
-// handleOvfValidationErrors processes OVF validation errors and provides detailed error messages.
+// handleOvfValidationErrors processes OVF validation errors and provides
+// detailed error messages.
 func (d *VCenterDriver) handleOvfValidationErrors(errors []types.LocalizedMethodFault, url string) error {
 	sanitizedURL := SanitizeOvfURL(url)
 

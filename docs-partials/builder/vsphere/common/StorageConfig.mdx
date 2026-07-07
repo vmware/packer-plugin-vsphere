@@ -4,8 +4,9 @@ When cloning from a `template`, the resulting virtual machine contains the
 source template's disks plus any newly configured disks and controllers.
 `storage {}`, `disk_controller_type`, and `disk_size` apply in this mode.
 
-When deploying from `remote_source`, vSphere downloads and imports the OVF/OVA
-package from the URL. Virtual disks, how many, how large, and how they are
+When deploying from `remote_source`, the plugin downloads the OVF/OVA package
+on the Packer host and imports it into vSphere using the OVF Manager and an
+NFC lease upload. Virtual disks, how many, how large, and how they are
 provisioned (for example, thin or thick) are provided by the OVF/OVA descriptor.
 When the descriptor offers multiple deployment sizes, use `vapp.deployment_option`
 to select one. For more information, refer to the [vApp Options Configuration](#vapp-options-configuration)

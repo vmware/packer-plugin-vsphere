@@ -22,7 +22,6 @@ import (
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/govmomi/vapi/rest"
 	"github.com/vmware/govmomi/vim25"
-	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common/utils"
@@ -398,36 +397,28 @@ func TestOvfManagerWrapper_IsOvfFileURL(t *testing.T) {
 	}
 }
 
-// TestOvfManagerWrapper_PrepareAuthenticatedURL tests URL preparation with
-// authentication credentials.
-func TestOvfManagerWrapper_PrepareAuthenticatedURL(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
-
-	_ = sim.driver // We don't need the driver for this test, just the wrapper.
-
+// TestRemoteOvfArchive_AuthURL tests that newRemoteOvfArchive embeds
+// authentication credentials into the raw URL correctly.
+func TestRemoteOvfArchive_AuthURL(t *testing.T) {
 	tests := []struct {
 		name        string
 		originalURL string
 		auth        *OvfAuthConfig
-		expected    string
+		expectedURL string
 		expectError bool
 	}{
 		{
 			name:        "No authentication",
 			originalURL: "https://packages.example.com/artifacts/example.ovf",
 			auth:        nil,
-			expected:    "https://packages.example.com/artifacts/example.ovf",
+			expectedURL: "https://packages.example.com/artifacts/example.ovf",
 			expectError: false,
 		},
 		{
 			name:        "Empty authentication",
 			originalURL: "https://packages.example.com/artifacts/example.ovf",
 			auth:        &OvfAuthConfig{},
-			expected:    "https://packages.example.com/artifacts/example.ovf",
+			expectedURL: "https://packages.example.com/artifacts/example.ovf",
 			expectError: false,
 		},
 		{
@@ -437,7 +428,7 @@ func TestOvfManagerWrapper_PrepareAuthenticatedURL(t *testing.T) {
 				Username: "testuser",
 				Password: "testpass",
 			},
-			expected:    "https://testuser:testpass@packages.example.com/artifacts/example.ovf",
+			expectedURL: "https://testuser:testpass@packages.example.com/artifacts/example.ovf",
 			expectError: false,
 		},
 		{
@@ -447,27 +438,27 @@ func TestOvfManagerWrapper_PrepareAuthenticatedURL(t *testing.T) {
 				Username: "testuser",
 				Password: "testpass",
 			},
-			expected:    "",
+			expectedURL: "",
 			expectError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrapper := &OvfManagerWrapper{auth: tt.auth}
-			result, err := wrapper.prepareAuthenticatedURL(tt.originalURL)
+			archive, err := newRemoteOvfArchive(tt.originalURL, tt.auth, false)
 
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("expected error but got none")
 				}
-			} else {
-				if err != nil {
-					t.Errorf("unexpected error: %s", err)
-				}
-				if result != tt.expected {
-					t.Errorf("expected '%s', got '%s'", tt.expected, result)
-				}
+				return
+			}
+			if err != nil {
+				t.Errorf("unexpected error: %s", err)
+				return
+			}
+			if archive.rawURL != tt.expectedURL {
+				t.Errorf("expected rawURL '%s', got '%s'", tt.expectedURL, archive.rawURL)
 			}
 		})
 	}
@@ -550,7 +541,7 @@ func TestDeployOvf_InvalidConfiguration(t *testing.T) {
 				Datastore:    "LocalDS_0",
 			},
 			expectError: true,
-			errorMsg:    "OVF URL is required",
+			errorMsg:    "OVF/OVA URL is required",
 		},
 		{
 			name: "Missing VM name",
@@ -561,7 +552,7 @@ func TestDeployOvf_InvalidConfiguration(t *testing.T) {
 				Datastore:    "LocalDS_0",
 			},
 			expectError: true,
-			errorMsg:    "VM name is required",
+			errorMsg:    "virtual machine name is required",
 		},
 		{
 			name: "Invalid URL protocol",
@@ -1770,48 +1761,6 @@ func TestOvfManagerWrapper_ConcurrentAccess(t *testing.T) {
 	})
 }
 
-// TestOvfProgressMonitor_Creation tests OvfProgressMonitor creation and basic
-// functionality.
-func TestOvfProgressMonitor_Creation(t *testing.T) {
-	ui := &testUI{}
-	ctx := context.Background()
-
-	monitor := NewOvfProgressMonitor(ui, ctx)
-	if monitor == nil {
-		t.Fatal("expected progress monitor to be created")
-		return
-	}
-
-	if monitor.progressInterval != 5*time.Second {
-		t.Errorf("expected progress interval to be 5 seconds, got %v", monitor.progressInterval)
-	}
-
-	monitor.Cancel()
-}
-
-// TestOvfProgressMonitor_Cancellation tests that Cancel stops the monitor context.
-func TestOvfProgressMonitor_Cancellation(t *testing.T) {
-	ui := &testUI{}
-	ctx, cancel := context.WithCancel(context.Background())
-
-	monitor := NewOvfProgressMonitor(ui, ctx)
-
-	done := make(chan struct{})
-	go func() {
-		<-monitor.ctx.Done()
-		close(done)
-	}()
-
-	cancel()
-	monitor.Cancel()
-
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Error("progress monitor context was not cancelled")
-	}
-}
-
 // TestSanitizeOvfErrorMessage tests the sanitization of sensitive information in error messages.
 func TestSanitizeOvfErrorMessage(t *testing.T) {
 	testCases := []struct {
@@ -1861,7 +1810,7 @@ func TestSanitizeOvfURL(t *testing.T) {
 		{
 			name:     "URL with username and password",
 			input:    "https://testuser:testpass@packages.example.com/artifacts/example.ovf",
-			expected: "https://testuser@packages.example.com/artifacts/example.ovf",
+			expected: "https://packages.example.com/artifacts/example.ovf",
 		},
 		{
 			name:     "URL without credentials",
@@ -1955,49 +1904,17 @@ func TestWrapOvfError(t *testing.T) {
 		t.Errorf("expected error to contain context %q", context)
 	}
 
-	if strings.Contains(result.Error(), "password") {
+	if strings.Contains(result.Error(), "password") || strings.Contains(result.Error(), "testpass") {
 		t.Errorf("expected error to not contain password, got %q", result.Error())
 	}
 
-	if !strings.Contains(result.Error(), "testuser@packages.example.com") {
-		t.Errorf("expected error to contain sanitized URL with username")
-	}
-}
-
-// TestOvfProgressMonitor_ReportLeaseProgress tests lease state and progress reporting.
-func TestOvfProgressMonitor_ReportLeaseProgress(t *testing.T) {
-	ui := &testUI{}
-	monitor := NewOvfProgressMonitor(ui, context.Background())
-	defer monitor.Cancel()
-
-	monitor.reportLeaseProgress(mo.HttpNfcLease{
-		State:              types.HttpNfcLeaseStateReady,
-		TransferProgress:   42,
-		InitializeProgress: 0,
-	})
-}
-
-// TestOvfProgressMonitor_ReportProgressStall logs when transfer progress is slow to start.
-func TestOvfProgressMonitor_ReportProgressStall(t *testing.T) {
-	ui := &testUI{}
-	monitor := NewOvfProgressMonitor(ui, context.Background())
-	defer monitor.Cancel()
-
-	monitor.startedAt = time.Now().Add(-ovfProgressStallThreshold)
-	monitor.reportLeaseProgress(mo.HttpNfcLease{
-		State:            types.HttpNfcLeaseStateReady,
-		TransferProgress: 0,
-	})
-
-	if !monitor.loggedStallNotice {
-		t.Fatal("expected stall notice to be logged")
+	if strings.Contains(result.Error(), "testuser@") || strings.Contains(result.Error(), "testuser:") {
+		t.Errorf("expected error to not contain username, got %q", result.Error())
 	}
 
-	monitor.reportLeaseProgress(mo.HttpNfcLease{
-		State:              types.HttpNfcLeaseStateReady,
-		TransferProgress:   10,
-		InitializeProgress: 0,
-	})
+	if !strings.Contains(result.Error(), "packages.example.com") {
+		t.Errorf("expected error to contain sanitized URL host, got %q", result.Error())
+	}
 }
 
 // TestApplyOvfPostImportConfig applies notes and MAC settings after OVF import.

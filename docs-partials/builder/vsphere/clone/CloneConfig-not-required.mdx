@@ -1,9 +1,73 @@
 <!-- Code generated from the comments of the CloneConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
-- `template` (string) - The name of the source virtual machine to clone.
+- `template` (string) - The name of the source virtual machine template to clone. Specify either
+  `template` or `remote_source`, but not both.
 
 - `remote_source` (\*RemoteSourceConfig) - Configuration for deploying from a remote OVF/OVA source accessible using
   HTTP or HTTPS. Conflicts with `template`.
+  
+  HTTP
+  
+  HCL Example:
+  
+  ```hcl
+  remote_source {
+    url = "http://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "remote_source": {
+    "url": "http://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  HTTPS
+  
+  HCL Example:
+  
+  ```hcl
+  remote_source {
+    url = "https://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "remote_source": {
+    "url": "https://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  HTTPS and Basic Authentication
+  
+  HCL Example:
+  
+  ```hcl
+  remote_source {
+    url             = "https://packages.example.com/artifacts/example.ovf"
+    username        = "remote_source_username"
+    password        = "remote_source_password"
+    skip_tls_verify = false
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "remote_source": {
+    "url": "https://packages.example.com/artifacts/example.ovf",
+    "username": "remote_source_username",
+    "password": "remote_source_password",
+    "skip_tls_verify": false
+  }
+  ```
+  
+  -> **Note:** For credentials, use variables marked `sensitive = true` for
+  `username` and `password`.
 
 - `disk_size` (int64) - The size of the primary disk in MiB. Conflicts with `linked_clone`.
   
@@ -37,8 +101,8 @@
   plugin to search for an available network.
   
   ~> **Note:** When deploying from a remote OVF/OVA source, each network
-  defined in the OVF descriptor is mapped to this vSphere network. If the
-  OVF defines multiple networks, they all use this same mapping.
+  defined in the OVF descriptor is mapped to this network. If the OVF
+  defines multiple networks, they all use this same mapping.
 
 - `mac_address` (string) - The network card MAC address. For example `00:50:56:00:00:00`.
   If set, the `network` must be also specified.

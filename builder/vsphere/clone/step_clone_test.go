@@ -1265,13 +1265,13 @@ func TestStepCloneVM_ErrorMessageFormatting(t *testing.T) {
 			username:    "testuser",
 			password:    "testpass",
 			mockError:   fmt.Errorf("connection failed"),
-			expectedURL: "https://testuser@packages.example.com/artifacts/example.ovf",
+			expectedURL: "https://packages.example.com/artifacts/example.ovf",
 			shouldContain: []string{
 				"OVF deployment failed for remote source",
-				"https://testuser@packages.example.com/artifacts/example.ovf",
+				"https://packages.example.com/artifacts/example.ovf",
 				"connection failed",
 			},
-			shouldNotContain: []string{"testpass"},
+			shouldNotContain: []string{"testpass", "secret", "testuser@", "testuser:secret"},
 		},
 		{
 			name:        "Error message with password pattern sanitized",
@@ -1501,7 +1501,7 @@ func TestRemoteSourceConfig_CredentialSanitization(t *testing.T) {
 		{
 			name:     "URL with credentials",
 			url:      "https://testuser:testpass@packages.example.com/artifacts/example.ovf",
-			expected: "https://testuser@packages.example.com/artifacts/example.ovf",
+			expected: "https://packages.example.com/artifacts/example.ovf",
 		},
 		{
 			name:     "URL without credentials",
@@ -1511,7 +1511,7 @@ func TestRemoteSourceConfig_CredentialSanitization(t *testing.T) {
 		{
 			name:     "HTTP URL with credentials",
 			url:      "http://admin:secret@internal.example.com/templates/vm.ova",
-			expected: "http://admin@internal.example.com/templates/vm.ova",
+			expected: "http://internal.example.com/templates/vm.ova",
 		},
 	}
 
