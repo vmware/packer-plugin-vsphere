@@ -223,7 +223,11 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		"metadata":       state.Get("metadata"),
 	}
 	if b.config.OvfSource != nil {
-		stateData["source_ovf_url"] = driver.SanitizeOvfURL(b.config.OvfSource.URL)
+		if b.config.OvfSource.Path != "" {
+			stateData["source_ovf_path"] = b.config.OvfSource.Path
+		} else {
+			stateData["source_ovf_url"] = driver.SanitizeOvfURL(b.config.OvfSource.URL)
+		}
 	} else {
 		stateData["source_template"] = b.config.Template
 	}

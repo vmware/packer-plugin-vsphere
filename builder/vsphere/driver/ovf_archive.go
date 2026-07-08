@@ -13,8 +13,50 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 )
+
+// ovfArchive opens named files from an OVF/OVA source on the Packer host.
+type ovfArchive interface {
+	Open(name string) (io.ReadCloser, int64, error)
+}
+
+// newOvfArchive selects a remote or local archive implementation based on
+// OvfDeployConfig. Exactly one of URL or Path must be set.
+func newOvfArchive(config *OvfDeployConfig) (ovfArchive, error) {
+	if config == nil {
+		return nil, fmt.Errorf("OVF deployment configuration cannot be nil")
+	}
+	if config.URL != "" && config.Path != "" {
+		return nil, fmt.Errorf("OVF source cannot specify both URL and Path")
+	}
+	if config.URL != "" {
+		return newRemoteOvfArchive(config.URL, config.Authentication, config.SkipTlsVerify)
+	}
+	if config.Path != "" {
+		return newLocalOvfArchive(config.Path)
+	}
+	return nil, fmt.Errorf("OVF source requires either URL or Path")
+}
+
+// isOvfSourceOVA reports whether the configured source is an OVA archive.
+func isOvfSourceOVA(config *OvfDeployConfig) bool {
+	if config == nil {
+		return false
+	}
+	if config.Path != "" {
+		return strings.HasSuffix(strings.ToLower(config.Path), ".ova")
+	}
+	if config.URL != "" {
+		u, err := url.Parse(config.URL)
+		if err != nil {
+			return false
+		}
+		return strings.HasSuffix(strings.ToLower(u.Path), ".ova")
+	}
+	return false
+}
 
 // remoteOvfArchive fetches remote OVF/OVA content over HTTP(S) on the Packer
 // host. It handles both OVA (TAR archive) and OVF (multi-file) layouts.
@@ -101,27 +143,7 @@ func (a *remoteOvfArchive) openFromTar(name string) (io.ReadCloser, int64, error
 		return nil, 0, httpOvfFetchError(resp.StatusCode, a.rawURL)
 	}
 
-	tr := tar.NewReader(resp.Body)
-	for {
-		hdr, err := tr.Next()
-		if err == io.EOF {
-			_ = resp.Body.Close()
-			return nil, 0, os.ErrNotExist
-		}
-		if err != nil {
-			_ = resp.Body.Close()
-			return nil, 0, fmt.Errorf("error reading OVA archive: %s", err)
-		}
-
-		matched, matchErr := path.Match(name, path.Base(hdr.Name))
-		if matchErr != nil {
-			_ = resp.Body.Close()
-			return nil, 0, fmt.Errorf("invalid glob pattern '%s': %s", name, matchErr)
-		}
-		if matched {
-			return &ovaEntry{Reader: tr, closer: resp.Body}, hdr.Size, nil
-		}
-	}
+	return openTarEntry(resp.Body, name)
 }
 
 // openFromHTTP fetches a file from the OVF HTTP source.
@@ -147,7 +169,85 @@ func (a *remoteOvfArchive) openFromHTTP(name string) (io.ReadCloser, int64, erro
 	return resp.Body, resp.ContentLength, nil
 }
 
-// ovaEntry wraps a TAR entry reader, closing the underlying HTTP response when done.
+// localOvfArchive opens OVF/OVA content from the local filesystem.
+type localOvfArchive struct {
+	path  string
+	isOva bool
+}
+
+func newLocalOvfArchive(localPath string) (*localOvfArchive, error) {
+	cleaned := filepath.Clean(localPath)
+	if cleaned == "" || cleaned == "." {
+		return nil, fmt.Errorf("local OVF/OVA path is required")
+	}
+	return &localOvfArchive{
+		path:  cleaned,
+		isOva: strings.HasSuffix(strings.ToLower(cleaned), ".ova"),
+	}, nil
+}
+
+// Open opens a named file from the local OVF/OVA source.
+func (a *localOvfArchive) Open(name string) (io.ReadCloser, int64, error) {
+	if a.isOva {
+		return a.openFromTar(name)
+	}
+	return a.openFromFile(name)
+}
+
+func (a *localOvfArchive) openFromTar(name string) (io.ReadCloser, int64, error) {
+	f, err := os.Open(a.path)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to open local OVA '%s': %s", a.path, err)
+	}
+	return openTarEntry(f, name)
+}
+
+func (a *localOvfArchive) openFromFile(name string) (io.ReadCloser, int64, error) {
+	filePath := a.path
+	if name != "" && name != a.path && !filepath.IsAbs(name) {
+		filePath = filepath.Join(filepath.Dir(a.path), name)
+	}
+
+	f, err := os.Open(filepath.Clean(filePath))
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to open local file '%s': %s", filePath, err)
+	}
+	info, err := f.Stat()
+	if err != nil {
+		_ = f.Close()
+		return nil, 0, fmt.Errorf("failed to stat local file '%s': %s", filePath, err)
+	}
+	return f, info.Size(), nil
+}
+
+// openTarEntry streams a TAR and returns the first entry whose base name
+// matches the glob pattern given by name. closer is closed when the entry is closed
+// or when no matching entry is found.
+func openTarEntry(closer io.ReadCloser, name string) (io.ReadCloser, int64, error) {
+	tr := tar.NewReader(closer)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			_ = closer.Close()
+			return nil, 0, os.ErrNotExist
+		}
+		if err != nil {
+			_ = closer.Close()
+			return nil, 0, fmt.Errorf("error reading OVA archive: %s", err)
+		}
+
+		matched, matchErr := path.Match(name, path.Base(hdr.Name))
+		if matchErr != nil {
+			_ = closer.Close()
+			return nil, 0, fmt.Errorf("invalid glob pattern '%s': %s", name, matchErr)
+		}
+		if matched {
+			return &ovaEntry{Reader: tr, closer: closer}, hdr.Size, nil
+		}
+	}
+}
+
+// ovaEntry wraps a TAR entry reader, closing the underlying source when done.
 type ovaEntry struct {
 	io.Reader
 	closer io.Closer

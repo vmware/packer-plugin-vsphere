@@ -102,6 +102,12 @@ func (a *Artifact) stateHCPPackerRegistryMetadata() interface{} {
 		labels["source_ovf_url"] = ovfURL
 	}
 
+	ovfPath, ok := a.StateData["source_ovf_path"].(string)
+	if ok && ovfPath != "" {
+		sourceID = ovfPath
+		labels["source_ovf_path"] = ovfPath
+	}
+
 	img, _ := registryimage.FromArtifact(a,
 		registryimage.WithID(a.Name),
 		registryimage.WithRegion(a.Datacenter.Name()),

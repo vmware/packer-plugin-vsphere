@@ -62,16 +62,16 @@ references, which are necessary for a build to succeed and can be found further 
 - `template` (string) - The name of the source virtual machine template to clone. Specify either
   `template` or `ovf_source`, but not both.
 
-- `ovf_source` (\*OvfSourceConfig) - Configuration for deploying from an OVF/OVA source accessible using
-  HTTP or HTTPS. Conflicts with `template`.
+- `ovf_source` (\*OvfSourceConfig) - Configuration for deploying from an OVF/OVA source. Specify either a
+  remote `url` or a local `path`. Conflicts with `template`.
   
-  HTTP
+  Local
   
   HCL Example:
   
   ```hcl
   ovf_source {
-    url = "http://packages.example.com/templates/example.ovf"
+    path = "./artifacts/example.ovf"
   }
   ```
   
@@ -79,17 +79,19 @@ references, which are necessary for a build to succeed and can be found further 
   
   ```json
   "ovf_source": {
-    "url": "http://packages.example.com/templates/example.ovf"
+    "path": "./artifacts/example.ovf"
   }
   ```
   
-  HTTPS
+  -> **Note:** The `path` must end in `.ovf` or `.ova`.
+  
+  Remote
   
   HCL Example:
   
   ```hcl
   ovf_source {
-    url = "https://packages.example.com/templates/example.ovf"
+    url = "https://packages.example.com/artifacts/example.ovf"
   }
   ```
   
@@ -97,17 +99,18 @@ references, which are necessary for a build to succeed and can be found further 
   
   ```json
   "ovf_source": {
-    "url": "https://packages.example.com/templates/example.ovf"
+    "url": "https://packages.example.com/artifacts/example.ovf"
   }
   ```
   
-  HTTPS and Basic Authentication
+  -> **Note:** Use `http://` or `https://`. The `url` must end in `.ovf`
+  or `.ova`.
   
   HCL Example:
   
   ```hcl
   ovf_source {
-    url             = "https://packages.example.com/artifacts/example.ovf"
+    url             = "https://packages.example.com/artifacts/example.ova"
     username        = "ovf_source_username"
     password        = "ovf_source_password"
     skip_tls_verify = false
@@ -118,7 +121,7 @@ references, which are necessary for a build to succeed and can be found further 
   
   ```json
   "ovf_source": {
-    "url": "https://packages.example.com/artifacts/example.ovf",
+    "url": "https://packages.example.com/artifacts/example.ova",
     "username": "ovf_source_username",
     "password": "ovf_source_password",
     "skip_tls_verify": false
@@ -127,6 +130,9 @@ references, which are necessary for a build to succeed and can be found further 
   
   -> **Note:** For credentials, use variables marked `sensitive = true` for
   `username` and `password`.
+  
+  -> **Note:** When using a multi-file OVF, keep the descriptor and its disk
+  files in the same directory on the local and remote sources.
 
 - `disk_size` (int64) - The size of the primary disk in MiB. Conflicts with `linked_clone`.
   
@@ -180,15 +186,19 @@ references, which are necessary for a build to succeed and can be found further 
 <!-- Code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
 - `url` (string) - The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
+  Conflicts with `path`.
+
+- `path` (string) - The path to a local OVF/OVA file on the host filesystem.
+  Conflicts with `url`.
 
 - `username` (string) - The username for basic authentication when accessing the remote OVF/OVA file.
-  Must be used together with `password`.
+  Must be used together with `password`. Only applicable when `url` is set.
 
 - `password` (string) - The password for basic authentication when accessing the remote OVF/OVA file.
-  Must be used together with `username`.
+  Must be used together with `username`. Only applicable when `url` is set.
 
 - `skip_tls_verify` (bool) - Do not validate the certificate when accessing HTTPS URLs.
-  Defaults to `false`.
+  Defaults to `false`. Only applicable when `url` is set.
   
   -> **Note:** This option is beneficial in scenarios where the certificate
   is self-signed or does not meet standard validation criteria.
@@ -217,10 +227,11 @@ When cloning from a `template`, the resulting virtual machine contains the
 source template's disks plus any newly configured disks and controllers.
 `storage {}`, `disk_controller_type`, and `disk_size` apply in this mode.
 
-When deploying from `ovf_source`, the plugin downloads the OVF/OVA package
-on the Packer host and imports it into vSphere using the OVF Manager and an
-NFC lease upload. Virtual disks, how many, how large, and how they are
-provisioned (for example, thin or thick) are provided by the OVF/OVA descriptor.
+When deploying from `ovf_source`, the plugin reads the OVF/OVA package on
+the Packer host (from an HTTP(S) URL or a local filesystem `path`) and
+imports it into vSphere using the OVF Manager and an NFC lease upload.
+Virtual disks, how many, how large, and how they are provisioned (for
+example, thin or thick) are provided by the OVF/OVA descriptor.
 When the descriptor offers multiple deployment sizes, use `vapp.deployment_option`
 to select one. For more information, refer to the [vApp Options Configuration](#vapp-options-configuration)
 section.

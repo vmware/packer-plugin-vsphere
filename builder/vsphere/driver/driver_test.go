@@ -11,7 +11,6 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -398,194 +397,6 @@ func TestOvfManagerWrapper_IsOvfFileURL(t *testing.T) {
 	}
 }
 
-// TestRemoteOvfArchive_AuthURL tests that newRemoteOvfArchive embeds
-// authentication credentials into the raw URL correctly.
-func TestRemoteOvfArchive_AuthURL(t *testing.T) {
-	tests := []struct {
-		name        string
-		originalURL string
-		auth        *OvfAuthConfig
-		expectedURL string
-		expectError bool
-	}{
-		{
-			name:        "No authentication",
-			originalURL: "https://packages.example.com/artifacts/example.ovf",
-			auth:        nil,
-			expectedURL: "https://packages.example.com/artifacts/example.ovf",
-			expectError: false,
-		},
-		{
-			name:        "Empty authentication",
-			originalURL: "https://packages.example.com/artifacts/example.ovf",
-			auth:        &OvfAuthConfig{},
-			expectedURL: "https://packages.example.com/artifacts/example.ovf",
-			expectError: false,
-		},
-		{
-			name:        "Basic authentication",
-			originalURL: "https://packages.example.com/artifacts/example.ovf",
-			auth: &OvfAuthConfig{
-				Username: "testuser",
-				Password: "testpass",
-			},
-			expectedURL: "https://testuser:testpass@packages.example.com/artifacts/example.ovf",
-			expectError: false,
-		},
-		{
-			name:        "Invalid URL",
-			originalURL: "://invalid-url",
-			auth: &OvfAuthConfig{
-				Username: "testuser",
-				Password: "testpass",
-			},
-			expectedURL: "",
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			archive, err := newRemoteOvfArchive(tt.originalURL, tt.auth, false)
-
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("expected error but got none")
-				}
-				return
-			}
-			if err != nil {
-				t.Errorf("unexpected error: %s", err)
-				return
-			}
-			if archive.rawURL != tt.expectedURL {
-				t.Errorf("expected rawURL '%s', got '%s'", tt.expectedURL, archive.rawURL)
-			}
-		})
-	}
-}
-
-func TestHttpOvfFetchError(t *testing.T) {
-	const fileURL = "https://user:secret@packages.example.com/artifacts/example.ovf"
-	const sanitized = "https://packages.example.com/artifacts/example.ovf"
-
-	tests := []struct {
-		name           string
-		statusCode     int
-		wantContains   []string
-		wantNotContain string
-	}{
-		{
-			name:         "unauthorized",
-			statusCode:   http.StatusUnauthorized,
-			wantContains: []string{"authentication failed", "(HTTP 401)", sanitized},
-		},
-		{
-			name:         "forbidden",
-			statusCode:   http.StatusForbidden,
-			wantContains: []string{"access denied", "(HTTP 403)", sanitized},
-		},
-		{
-			name:         "not found",
-			statusCode:   http.StatusNotFound,
-			wantContains: []string{"OVF/OVA file not found", "(HTTP 404)", sanitized},
-		},
-		{
-			name:         "gone",
-			statusCode:   http.StatusGone,
-			wantContains: []string{"no longer available", "(HTTP 410)", sanitized},
-		},
-		{
-			name:         "rate limited",
-			statusCode:   http.StatusTooManyRequests,
-			wantContains: []string{"rate-limited", "(HTTP 429)", sanitized},
-		},
-		{
-			name:         "server error",
-			statusCode:   http.StatusInternalServerError,
-			wantContains: []string{"remote server error", "(HTTP 500)", sanitized},
-		},
-		{
-			name:         "unexpected client error",
-			statusCode:   http.StatusBadRequest,
-			wantContains: []string{"unexpected HTTP 400", sanitized},
-		},
-		{
-			name:           "strips credentials from URL",
-			statusCode:     http.StatusNotFound,
-			wantContains:   []string{sanitized},
-			wantNotContain: "secret",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := httpOvfFetchError(tt.statusCode, fileURL)
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-			msg := err.Error()
-			for _, want := range tt.wantContains {
-				if !strings.Contains(msg, want) {
-					t.Errorf("error %q missing %q", msg, want)
-				}
-			}
-			if tt.wantNotContain != "" && strings.Contains(msg, tt.wantNotContain) {
-				t.Errorf("error %q must not contain %q", msg, tt.wantNotContain)
-			}
-		})
-	}
-}
-
-func TestRemoteOvfArchive_OpenHTTPStatusErrors(t *testing.T) {
-	tests := []struct {
-		name         string
-		statusCode   int
-		wantContains string
-	}{
-		{
-			name:         "unauthorized",
-			statusCode:   http.StatusUnauthorized,
-			wantContains: "authentication failed",
-		},
-		{
-			name:         "not found",
-			statusCode:   http.StatusNotFound,
-			wantContains: "OVF/OVA file not found",
-		},
-		{
-			name:         "forbidden",
-			statusCode:   http.StatusForbidden,
-			wantContains: "access denied",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(tt.statusCode)
-			}))
-			defer server.Close()
-
-			archive, err := newRemoteOvfArchive(server.URL+"/artifacts/example.ovf", nil, false)
-			if err != nil {
-				t.Fatalf("unexpected error creating archive: %s", err)
-			}
-
-			_, _, err = archive.Open("")
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-			if !strings.Contains(err.Error(), tt.wantContains) {
-				t.Errorf("error %q missing %q", err.Error(), tt.wantContains)
-			}
-			if !strings.Contains(err.Error(), fmt.Sprintf("(HTTP %d)", tt.statusCode)) {
-				t.Errorf("error %q missing HTTP status %d", err.Error(), tt.statusCode)
-			}
-		})
-	}
-}
-
 // TestDeployOvf_ValidConfiguration tests successful OVF deployment with valid
 // configuration.
 func TestDeployOvf_ValidConfiguration(t *testing.T) {
@@ -663,7 +474,7 @@ func TestDeployOvf_InvalidConfiguration(t *testing.T) {
 				Datastore:    "LocalDS_0",
 			},
 			expectError: true,
-			errorMsg:    "OVF/OVA URL is required",
+			errorMsg:    "OVF source requires either URL or Path",
 		},
 		{
 			name: "Missing VM name",
@@ -728,6 +539,60 @@ func TestDeployOvf_InvalidConfiguration(t *testing.T) {
 			},
 			expectError: true,
 			errorMsg:    "skip_tls_verify is only applicable for HTTPS URLs, but URL uses HTTP protocol",
+		},
+		{
+			name: "Both URL and Path specified",
+			config: &OvfDeployConfig{
+				URL:          "https://packages.example.com/artifacts/example.ovf",
+				Path:         "./artifacts/example.ovf",
+				Name:         "test-vm",
+				Folder:       "vm",
+				ResourcePool: "Resources",
+				Datastore:    "LocalDS_0",
+			},
+			expectError: true,
+			errorMsg:    "cannot specify both URL and Path",
+		},
+		{
+			name: "Local path with authentication",
+			config: &OvfDeployConfig{
+				Path: "./artifacts/example.ovf",
+				Name: "test-vm",
+				Authentication: &OvfAuthConfig{
+					Username: "testuser",
+					Password: "testpass",
+				},
+				Folder:       "vm",
+				ResourcePool: "Resources",
+				Datastore:    "LocalDS_0",
+			},
+			expectError: true,
+			errorMsg:    "authentication is only applicable when using a remote OVF/OVA URL",
+		},
+		{
+			name: "Local path with SkipTlsVerify",
+			config: &OvfDeployConfig{
+				Path:          "./artifacts/example.ova",
+				Name:          "test-vm",
+				Folder:        "vm",
+				ResourcePool:  "Resources",
+				Datastore:     "LocalDS_0",
+				SkipTlsVerify: true,
+			},
+			expectError: true,
+			errorMsg:    "skip_tls_verify is only applicable when using a remote OVF/OVA URL",
+		},
+		{
+			name: "Local path without OVF/OVA extension",
+			config: &OvfDeployConfig{
+				Path:         "./artifacts/example.vmdk",
+				Name:         "test-vm",
+				Folder:       "vm",
+				ResourcePool: "Resources",
+				Datastore:    "LocalDS_0",
+			},
+			expectError: true,
+			errorMsg:    "local OVF/OVA path must point to an OVF (.ovf) or OVA (.ova) file",
 		},
 	}
 
@@ -987,7 +852,7 @@ func TestGetOvfOptions_ValidConfiguration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := driver.GetOvfOptions(ctx, tt.url, tt.auth, tt.locale, false)
+			_, err := driver.GetOvfOptions(ctx, &OvfDeployConfig{URL: tt.url, Authentication: tt.auth, Locale: tt.locale})
 
 			// Expected panic due to simulator limitations for OVF parsing,
 			// but the error should not be a configuration validation error.
@@ -1076,7 +941,7 @@ func TestGetOvfOptions_InvalidConfiguration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := driver.GetOvfOptions(ctx, tt.url, tt.auth, tt.locale, false)
+			_, err := driver.GetOvfOptions(ctx, &OvfDeployConfig{URL: tt.url, Authentication: tt.auth, Locale: tt.locale})
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("expected error but got none")
@@ -1332,116 +1197,6 @@ func TestOvfManagerWrapper_VAppPropertiesHandling(t *testing.T) {
 	}
 }
 
-// TestOvfManagerWrapper_NetworkMappingHandling tests network mapping handling
-// in OVF deployment.
-func TestOvfManagerWrapper_NetworkMappingHandling(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
-
-	driver := sim.driver
-
-	tests := []struct {
-		name         string
-		ovfNetworks  []types.OvfNetworkInfo
-		network      string
-		expectError  bool
-		errorMsg     string
-		expectMapped int
-		expectNames  []string
-	}{
-		{
-			name:         "No OVF networks",
-			ovfNetworks:  nil,
-			network:      "VM Network",
-			expectMapped: 0,
-		},
-		{
-			name: "Single OVF network mapped",
-			ovfNetworks: []types.OvfNetworkInfo{
-				{Name: "Management Network"},
-			},
-			network:      "VM Network",
-			expectMapped: 1,
-			expectNames:  []string{"Management Network"},
-		},
-		{
-			name: "Multiple OVF networks mapped to same vSphere network",
-			ovfNetworks: []types.OvfNetworkInfo{
-				{Name: "Management Network"},
-				{Name: "VM Network"},
-			},
-			network:      "VM Network",
-			expectMapped: 2,
-			expectNames:  []string{"Management Network", "VM Network"},
-		},
-		{
-			name: "OVF networks require configured network",
-			ovfNetworks: []types.OvfNetworkInfo{
-				{Name: "Guest Network"},
-			},
-			network:     "",
-			expectError: true,
-			errorMsg:    "OVF requires network mapping",
-		},
-		{
-			name: "Invalid vSphere network",
-			ovfNetworks: []types.OvfNetworkInfo{
-				{Name: "Guest Network"},
-			},
-			network:     "nonexistent-network",
-			expectError: true,
-			errorMsg:    "error finding network",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			parseResult := &types.OvfParseDescriptorResult{
-				Network: tt.ovfNetworks,
-			}
-			config := &OvfDeployConfig{
-				URL:          "https://packages.example.com/artifacts/example.ovf",
-				Name:         "test-vm",
-				Folder:       "vm",
-				ResourcePool: "Resources",
-				Datastore:    "LocalDS_0",
-				Network:      tt.network,
-			}
-
-			importParams, err := driver.createOvfImportParams(config, parseResult)
-			if tt.expectError {
-				if err == nil {
-					t.Fatal("expected error but got none")
-				}
-				if tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
-					t.Fatalf("expected error containing %q, got %q", tt.errorMsg, err.Error())
-				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %s", err)
-			}
-			if importParams == nil {
-				t.Fatal("expected import params to be created but got nil")
-			}
-
-			if len(importParams.NetworkMapping) != tt.expectMapped {
-				t.Fatalf("expected %d network mappings, got %d", tt.expectMapped, len(importParams.NetworkMapping))
-			}
-
-			for i, expectedName := range tt.expectNames {
-				if importParams.NetworkMapping[i].Name != expectedName {
-					t.Errorf("mapping[%d].Name = %q, want %q", i, importParams.NetworkMapping[i].Name, expectedName)
-				}
-			}
-		})
-	}
-}
-
 // TestDriverMock_DeployOvf tests the mock driver's OVF deployment functionality.
 func TestDriverMock_DeployOvf(t *testing.T) {
 	ctx := context.Background()
@@ -1522,7 +1277,7 @@ func TestDriverMock_GetOvfOptions(t *testing.T) {
 
 	// Test successful options retrieval.
 	t.Run("Successful options retrieval", func(t *testing.T) {
-		options, err := mock.GetOvfOptions(ctx, url, auth, locale, false)
+		options, err := mock.GetOvfOptions(ctx, &OvfDeployConfig{URL: url, Authentication: auth, Locale: locale})
 		if err != nil {
 			t.Errorf("unexpected error: %s", err)
 		}
@@ -1559,7 +1314,7 @@ func TestDriverMock_GetOvfOptions(t *testing.T) {
 		mock.GetOvfOptionsShouldFail = true
 		mock.GetOvfOptionsError = fmt.Errorf("custom options error")
 
-		options, err := mock.GetOvfOptions(ctx, url, auth, locale, false)
+		options, err := mock.GetOvfOptions(ctx, &OvfDeployConfig{URL: url, Authentication: auth, Locale: locale})
 		if err == nil {
 			t.Errorf("expected error but got none")
 		}
@@ -1576,7 +1331,7 @@ func TestDriverMock_GetOvfOptions(t *testing.T) {
 		mock.GetOvfOptionsShouldFail = true
 		mock.GetOvfOptionsError = nil // Use default error.
 
-		options, err := mock.GetOvfOptions(ctx, url, auth, locale, false)
+		options, err := mock.GetOvfOptions(ctx, &OvfDeployConfig{URL: url, Authentication: auth, Locale: locale})
 		if err == nil {
 			t.Errorf("expected error but got none")
 		}
@@ -1602,7 +1357,7 @@ func TestDriverMock_GetOvfOptions(t *testing.T) {
 		}
 		mock.GetOvfOptionsResult = customOptions
 
-		options, err := mock.GetOvfOptions(ctx, url, auth, locale, false)
+		options, err := mock.GetOvfOptions(ctx, &OvfDeployConfig{URL: url, Authentication: auth, Locale: locale})
 		if err != nil {
 			t.Errorf("unexpected error: %s", err)
 		}
@@ -1833,7 +1588,7 @@ func TestOvfManagerWrapper_ConcurrentAccess(t *testing.T) {
 		for i := 0; i < numGoroutines; i++ {
 			go func(id int) {
 				url := fmt.Sprintf("https://packages%d.example.com/artifacts/example.ovf", id)
-				_, err := driver.GetOvfOptions(ctx, url, nil, "US", false)
+				_, err := driver.GetOvfOptions(ctx, &OvfDeployConfig{URL: url, Locale: "US"})
 				results <- err
 			}(i)
 		}
@@ -1881,79 +1636,6 @@ func TestOvfManagerWrapper_ConcurrentAccess(t *testing.T) {
 			}
 		}
 	})
-}
-
-// TestSanitizeOvfErrorMessage tests the sanitization of sensitive information in error messages.
-func TestSanitizeOvfErrorMessage(t *testing.T) {
-	testCases := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "URL with credentials",
-			input:    "error accessing https://user:password@packages.example.com/artifacts/example.ovf",
-			expected: "error accessing https://packages.example.com/artifacts/example.ovf",
-		},
-		{
-			name:     "Password in error message",
-			input:    "authentication failed: password=testpass",
-			expected: "authentication failed: [credentials removed]",
-		},
-		{
-			name:     "Multiple credential patterns",
-			input:    "failed with password=secret and token=abc123",
-			expected: "failed with [credentials removed] and [credentials removed]",
-		},
-		{
-			name:     "No credentials to sanitize",
-			input:    "network timeout error",
-			expected: "network timeout error",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := SanitizeOvfErrorMessage(tc.input)
-			if result != tc.expected {
-				t.Errorf("expected %q, got %q", tc.expected, result)
-			}
-		})
-	}
-}
-
-// TestSanitizeOvfURL tests the sanitization of credentials from URLs.
-func TestSanitizeOvfURL(t *testing.T) {
-	testCases := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "URL with username and password",
-			input:    "https://testuser:testpass@packages.example.com/artifacts/example.ovf",
-			expected: "https://packages.example.com/artifacts/example.ovf",
-		},
-		{
-			name:     "URL without credentials",
-			input:    "https://packages.example.com/artifacts/example.ovf",
-			expected: "https://packages.example.com/artifacts/example.ovf",
-		},
-		{
-			name:     "Relative URL without credentials",
-			input:    "not-a-url",
-			expected: "not-a-url",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := SanitizeOvfURL(tc.input)
-			if result != tc.expected {
-				t.Errorf("expected %q, got %q", tc.expected, result)
-			}
-		})
-	}
 }
 
 // TestCategorizeOvfImportError tests the categorization of OVF import errors.

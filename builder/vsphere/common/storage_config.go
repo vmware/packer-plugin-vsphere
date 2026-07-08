@@ -114,10 +114,11 @@ type DiskConfig struct {
 // source template's disks plus any newly configured disks and controllers.
 // `storage {}`, `disk_controller_type`, and `disk_size` apply in this mode.
 //
-// When deploying from `ovf_source`, the plugin downloads the OVF/OVA package
-// on the Packer host and imports it into vSphere using the OVF Manager and an
-// NFC lease upload. Virtual disks, how many, how large, and how they are
-// provisioned (for example, thin or thick) are provided by the OVF/OVA descriptor.
+// When deploying from `ovf_source`, the plugin reads the OVF/OVA package on
+// the Packer host (from an HTTP(S) URL or a local filesystem `path`) and
+// imports it into vSphere using the OVF Manager and an NFC lease upload.
+// Virtual disks, how many, how large, and how they are provisioned (for
+// example, thin or thick) are provided by the OVF/OVA descriptor.
 // When the descriptor offers multiple deployment sizes, use `vapp.deployment_option`
 // to select one. For more information, refer to the [vApp Options Configuration](#vapp-options-configuration)
 // section.

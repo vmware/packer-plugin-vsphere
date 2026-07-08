@@ -316,16 +316,16 @@ EOF
 test_ovf_source_section_headings() {
   local input
   input="$(cat <<'EOF'
-- `ovf_source` (*OvfSourceConfig) - Configuration for deploying from a remote OVF/OVA source accessible using
-  HTTP or HTTPS. Conflicts with `template`.
+- `ovf_source` (*OvfSourceConfig) - Configuration for deploying from an OVF/OVA source. Specify either a
+  remote `url` or a local `path`. Conflicts with `template`.
 
-  HTTP
+  Local
 
   HCL Example:
 
   ```hcl
   ovf_source {
-    url = "http://example.com/example.ovf"
+    path = "./artifacts/example.ovf"
   }
   ```
 
@@ -333,16 +333,35 @@ test_ovf_source_section_headings() {
 
   ```json
   "ovf_source": {
-    "url": "http://example.com/example.ovf"
+    "path": "./artifacts/example.ovf"
+  }
+  ```
+
+  Remote
+
+  HCL Example:
+
+  ```hcl
+  ovf_source {
+    url = "https://example.com/example.ovf"
+  }
+  ```
+
+  JSON Example:
+
+  ```json
+  "ovf_source": {
+    "url": "https://example.com/example.ovf"
   }
   ```
 EOF
 )"
   local output
   output="$(format_example_labels "$input")"
-  assert_contains "$output" $'template`.\n\n    **HTTP**' "section heading on its own line"
-  assert_not_contains "$output" $'template`. **HTTP**' "section heading not inline with description"
-  assert_contains "$output" $'    **HTTP**\n\n    **HCL Example:**' "blank before hcl example after section heading"
+  assert_contains "$output" $'template`.\n\n    **Local**' "section heading on its own line"
+  assert_not_contains "$output" $'template`. **Local**' "section heading not inline with description"
+  assert_contains "$output" $'    **Local**\n\n    **HCL Example:**' "blank before hcl example after local heading"
+  assert_contains "$output" $'    **Remote**\n\n    **HCL Example:**' "blank before hcl example after remote heading"
 }
 
 main() {

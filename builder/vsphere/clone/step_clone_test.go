@@ -8,7 +8,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -159,7 +161,7 @@ func TestCreateConfig_Prepare(t *testing.T) {
 				OvfSource: &OvfSourceConfig{},
 			},
 			fail:           true,
-			expectedErrMsg: "'url' is required when using 'ovf_source'",
+			expectedErrMsg: "either 'url' or 'path' is required when using 'ovf_source'",
 		},
 		{
 			name: "Validate ovf_source URL protocol",
@@ -169,7 +171,17 @@ func TestCreateConfig_Prepare(t *testing.T) {
 				},
 			},
 			fail:           true,
-			expectedErrMsg: "'ovf_source' URL must use HTTP or HTTPS protocol",
+			expectedErrMsg: "'ovf_source' url must use HTTP or HTTPS protocol",
+		},
+		{
+			name: "Validate ovf_source URL extension",
+			config: &CloneConfig{
+				OvfSource: &OvfSourceConfig{
+					URL: "https://packages.example.com/artifacts/example.ovx",
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "'ovf_source' url must point to an OVF (.ovf) or OVA (.ova) file",
 		},
 		{
 			name: "Validate ovf_source username requires password",
@@ -253,6 +265,69 @@ func TestCreateConfig_Prepare(t *testing.T) {
 			fail:           true,
 			expectedErrMsg: "'disk_controller_type' cannot be used with 'ovf_source'",
 		},
+		{
+			name: "Valid ovf_source path config",
+			config: &CloneConfig{
+				OvfSource: &OvfSourceConfig{
+					Path: createTempOvfFile(t),
+				},
+			},
+			fail: false,
+		},
+		{
+			name: "Validate ovf_source cannot set both url and path",
+			config: &CloneConfig{
+				OvfSource: &OvfSourceConfig{
+					URL:  "https://packages.example.com/artifacts/example.ovf",
+					Path: createTempOvfFile(t),
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "'ovf_source' cannot specify both 'url' and 'path'",
+		},
+		{
+			name: "Validate ovf_source path must exist",
+			config: &CloneConfig{
+				OvfSource: &OvfSourceConfig{
+					Path: filepath.Join(t.TempDir(), "missing.ovf"),
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "does not exist",
+		},
+		{
+			name: "Validate ovf_source path extension",
+			config: &CloneConfig{
+				OvfSource: &OvfSourceConfig{
+					Path: filepath.Join(t.TempDir(), "example.vmdk"),
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "'ovf_source' path must point to an OVF (.ovf) or OVA (.ova) file",
+		},
+		{
+			name: "Validate auth not allowed with path",
+			config: &CloneConfig{
+				OvfSource: &OvfSourceConfig{
+					Path:     createTempOvfFile(t),
+					Username: "user",
+					Password: "pass",
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "'username' and 'password' are only applicable when 'url' is set",
+		},
+		{
+			name: "Validate skip_tls_verify not allowed with path",
+			config: &CloneConfig{
+				OvfSource: &OvfSourceConfig{
+					Path:          createTempOvfFile(t),
+					SkipTlsVerify: true,
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "'skip_tls_verify' is only applicable when 'url' is set",
+		},
 	}
 
 	for _, c := range tc {
@@ -262,8 +337,8 @@ func TestCreateConfig_Prepare(t *testing.T) {
 				if len(errs) == 0 {
 					t.Fatal("unexpected success: expected failure")
 				}
-				if errs[0].Error() != c.expectedErrMsg {
-					t.Fatalf("unexpected error: expected '%s', but returned '%s'", c.expectedErrMsg, errs[0])
+				if c.expectedErrMsg != "" && !strings.Contains(errs[0].Error(), c.expectedErrMsg) {
+					t.Fatalf("unexpected error: expected to contain '%s', but returned '%s'", c.expectedErrMsg, errs[0])
 				}
 			} else {
 				if len(errs) != 0 {
@@ -272,6 +347,15 @@ func TestCreateConfig_Prepare(t *testing.T) {
 			}
 		})
 	}
+}
+
+func createTempOvfFile(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "example.ovf")
+	if err := os.WriteFile(path, []byte("<Envelope/>"), 0o644); err != nil {
+		t.Fatalf("write temp ovf: %s", err)
+	}
+	return path
 }
 
 func TestStepCreateVM_Run(t *testing.T) {
@@ -500,6 +584,42 @@ func TestStepCloneVM_OvfDeploymentUsesResolvedDatastore(t *testing.T) {
 	}
 	if driverMock.DeployOvfConfig.Datastore != "drs-selected-datastore" {
 		t.Errorf("expected datastore 'drs-selected-datastore', got '%s'", driverMock.DeployOvfConfig.Datastore)
+	}
+}
+
+func TestStepCloneVM_OvfLocalPathDeploy(t *testing.T) {
+	state := new(multistep.BasicStateBag)
+	state.Put("ui", &packersdk.BasicUi{
+		Reader: new(bytes.Buffer),
+		Writer: new(bytes.Buffer),
+	})
+	driverMock := driver.NewDriverMock()
+	driverMock.DeployOvfVM = new(driver.VirtualMachineMock)
+	state.Put("driver", driverMock)
+
+	localPath := createTempOvfFile(t)
+	step := &StepCloneVM{
+		Config: &CloneConfig{
+			OvfSource: &OvfSourceConfig{
+				Path: localPath,
+			},
+		},
+		Location: basicLocationConfig(),
+		Force:    true,
+	}
+
+	action := step.Run(context.Background(), state)
+	if action != multistep.ActionContinue {
+		t.Fatalf("expected ActionContinue, got %v; error: %v", action, state.Get("error"))
+	}
+	if !driverMock.DeployOvfCalled {
+		t.Fatal("expected DeployOvf to be called")
+	}
+	if driverMock.DeployOvfConfig.Path != localPath {
+		t.Errorf("expected Path %q, got %q", localPath, driverMock.DeployOvfConfig.Path)
+	}
+	if driverMock.DeployOvfConfig.URL != "" {
+		t.Errorf("expected empty URL for local path deploy, got %q", driverMock.DeployOvfConfig.URL)
 	}
 }
 

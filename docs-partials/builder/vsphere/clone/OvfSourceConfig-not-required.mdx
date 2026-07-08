@@ -1,15 +1,19 @@
 <!-- Code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
 - `url` (string) - The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
+  Conflicts with `path`.
+
+- `path` (string) - The path to a local OVF/OVA file on the host filesystem.
+  Conflicts with `url`.
 
 - `username` (string) - The username for basic authentication when accessing the remote OVF/OVA file.
-  Must be used together with `password`.
+  Must be used together with `password`. Only applicable when `url` is set.
 
 - `password` (string) - The password for basic authentication when accessing the remote OVF/OVA file.
-  Must be used together with `username`.
+  Must be used together with `username`. Only applicable when `url` is set.
 
 - `skip_tls_verify` (bool) - Do not validate the certificate when accessing HTTPS URLs.
-  Defaults to `false`.
+  Defaults to `false`. Only applicable when `url` is set.
   
   -> **Note:** This option is beneficial in scenarios where the certificate
   is self-signed or does not meet standard validation criteria.

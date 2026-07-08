@@ -12,7 +12,9 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
@@ -25,15 +27,19 @@ import (
 
 type OvfSourceConfig struct {
 	// The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
+	// Conflicts with `path`.
 	URL string `mapstructure:"url"`
+	// The path to a local OVF/OVA file on the host filesystem.
+	// Conflicts with `url`.
+	Path string `mapstructure:"path"`
 	// The username for basic authentication when accessing the remote OVF/OVA file.
-	// Must be used together with `password`.
+	// Must be used together with `password`. Only applicable when `url` is set.
 	Username string `mapstructure:"username"`
 	// The password for basic authentication when accessing the remote OVF/OVA file.
-	// Must be used together with `username`.
+	// Must be used together with `username`. Only applicable when `url` is set.
 	Password string `mapstructure:"password"`
 	// Do not validate the certificate when accessing HTTPS URLs.
-	// Defaults to `false`.
+	// Defaults to `false`. Only applicable when `url` is set.
 	//
 	// -> **Note:** This option is beneficial in scenarios where the certificate
 	// is self-signed or does not meet standard validation criteria.
@@ -44,16 +50,16 @@ type CloneConfig struct {
 	// The name of the source virtual machine template to clone. Specify either
 	// `template` or `ovf_source`, but not both.
 	Template string `mapstructure:"template"`
-	// Configuration for deploying from an OVF/OVA source accessible using
-	// HTTP or HTTPS. Conflicts with `template`.
+	// Configuration for deploying from an OVF/OVA source. Specify either a
+	// remote `url` or a local `path`. Conflicts with `template`.
 	//
-	// HTTP
+	// Local
 	//
 	// HCL Example:
 	//
 	// ```hcl
 	// ovf_source {
-	//   url = "http://packages.example.com/templates/example.ovf"
+	//   path = "./artifacts/example.ovf"
 	// }
 	// ```
 	//
@@ -61,17 +67,19 @@ type CloneConfig struct {
 	//
 	// ```json
 	// "ovf_source": {
-	//   "url": "http://packages.example.com/templates/example.ovf"
+	//   "path": "./artifacts/example.ovf"
 	// }
 	// ```
 	//
-	// HTTPS
+	// -> **Note:** The `path` must end in `.ovf` or `.ova`.
+	//
+	// Remote
 	//
 	// HCL Example:
 	//
 	// ```hcl
 	// ovf_source {
-	//   url = "https://packages.example.com/templates/example.ovf"
+	//   url = "https://packages.example.com/artifacts/example.ovf"
 	// }
 	// ```
 	//
@@ -79,17 +87,18 @@ type CloneConfig struct {
 	//
 	// ```json
 	// "ovf_source": {
-	//   "url": "https://packages.example.com/templates/example.ovf"
+	//   "url": "https://packages.example.com/artifacts/example.ovf"
 	// }
 	// ```
 	//
-	// HTTPS and Basic Authentication
+	// -> **Note:** Use `http://` or `https://`. The `url` must end in `.ovf`
+	// or `.ova`.
 	//
 	// HCL Example:
 	//
 	// ```hcl
 	// ovf_source {
-	//   url             = "https://packages.example.com/artifacts/example.ovf"
+	//   url             = "https://packages.example.com/artifacts/example.ova"
 	//   username        = "ovf_source_username"
 	//   password        = "ovf_source_password"
 	//   skip_tls_verify = false
@@ -100,7 +109,7 @@ type CloneConfig struct {
 	//
 	// ```json
 	// "ovf_source": {
-	//   "url": "https://packages.example.com/artifacts/example.ovf",
+	//   "url": "https://packages.example.com/artifacts/example.ova",
 	//   "username": "ovf_source_username",
 	//   "password": "ovf_source_password",
 	//   "skip_tls_verify": false
@@ -109,6 +118,9 @@ type CloneConfig struct {
 	//
 	// -> **Note:** For credentials, use variables marked `sensitive = true` for
 	// `username` and `password`.
+	//
+	// -> **Note:** When using a multi-file OVF, keep the descriptor and its disk
+	// files in the same directory on the local and remote sources.
 	OvfSource *OvfSourceConfig `mapstructure:"ovf_source"`
 	// The size of the primary disk in MiB. Conflicts with `linked_clone`.
 	//
@@ -194,14 +206,54 @@ func (c *CloneConfig) Prepare() []error {
 func (c *CloneConfig) prepareOvfSource() []error {
 	var errs []error
 
-	if c.OvfSource.URL == "" {
-		errs = append(errs, fmt.Errorf("'url' is required when using 'ovf_source'"))
-	} else {
+	hasURL := c.OvfSource.URL != ""
+	hasPath := c.OvfSource.Path != ""
+
+	if hasURL && hasPath {
+		errs = append(errs, fmt.Errorf("'ovf_source' cannot specify both 'url' and 'path'"))
+	}
+	if !hasURL && !hasPath {
+		errs = append(errs, fmt.Errorf("either 'url' or 'path' is required when using 'ovf_source'"))
+	}
+
+	if hasURL {
 		parsedURL, err := url.Parse(c.OvfSource.URL)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("invalid 'ovf_source' URL format: %s", err))
+			errs = append(errs, fmt.Errorf("invalid 'ovf_source' url format: %s", err))
 		} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-			errs = append(errs, fmt.Errorf("'ovf_source' URL must use HTTP or HTTPS protocol"))
+			errs = append(errs, fmt.Errorf("'ovf_source' url must use HTTP or HTTPS protocol"))
+		} else {
+			lower := strings.ToLower(parsedURL.Path)
+			if !strings.HasSuffix(lower, ".ovf") && !strings.HasSuffix(lower, ".ova") {
+				errs = append(errs, fmt.Errorf("'ovf_source' url must point to an OVF (.ovf) or OVA (.ova) file"))
+			}
+		}
+	}
+
+	if hasPath {
+		cleaned := filepath.Clean(c.OvfSource.Path)
+		c.OvfSource.Path = cleaned
+		lower := strings.ToLower(cleaned)
+		if !strings.HasSuffix(lower, ".ovf") && !strings.HasSuffix(lower, ".ova") {
+			errs = append(errs, fmt.Errorf("'ovf_source' path must point to an OVF (.ovf) or OVA (.ova) file"))
+		} else {
+			info, err := os.Stat(cleaned)
+			if err != nil {
+				if os.IsNotExist(err) {
+					errs = append(errs, fmt.Errorf("'ovf_source' path '%s' does not exist", cleaned))
+				} else {
+					errs = append(errs, fmt.Errorf("unable to access 'ovf_source' path '%s': %s", cleaned, err))
+				}
+			} else if info.IsDir() {
+				errs = append(errs, fmt.Errorf("'ovf_source' path '%s' is a directory; specify an OVF or OVA file", cleaned))
+			}
+		}
+
+		if c.OvfSource.Username != "" || c.OvfSource.Password != "" {
+			errs = append(errs, fmt.Errorf("'username' and 'password' are only applicable when 'url' is set"))
+		}
+		if c.OvfSource.SkipTlsVerify {
+			errs = append(errs, fmt.Errorf("'skip_tls_verify' is only applicable when 'url' is set"))
 		}
 	}
 
@@ -382,8 +434,11 @@ func (s *StepCloneVM) deployFromOvf(ctx context.Context, state multistep.StateBa
 		}
 	}
 
+	sourceLabel := driver.SanitizeOvfSource(s.Config.OvfSource.URL, s.Config.OvfSource.Path)
+
 	ovfConfig := &driver.OvfDeployConfig{
 		URL:              s.Config.OvfSource.URL,
+		Path:             s.Config.OvfSource.Path,
 		Authentication:   auth,
 		Name:             s.Location.VMName,
 		Folder:           s.Location.Folder,
@@ -402,13 +457,13 @@ func (s *StepCloneVM) deployFromOvf(ctx context.Context, state multistep.StateBa
 
 	// Validate OVF deployment parameters with enhanced error handling
 	if err := s.validateOvfConfiguration(ctx, d, ovfConfig); err != nil {
-		state.Put("error", s.wrapStepError("OVF configuration validation failed", err, s.Config.OvfSource.URL))
+		state.Put("error", s.wrapStepError("OVF configuration validation failed", err, sourceLabel))
 		return multistep.ActionHalt
 	}
 
 	vm, err := d.DeployOvf(ctx, ovfConfig, ui)
 	if err != nil {
-		state.Put("error", s.wrapStepError("OVF deployment failed", err, s.Config.OvfSource.URL))
+		state.Put("error", s.wrapStepError("OVF deployment failed", err, sourceLabel))
 		return multistep.ActionHalt
 	}
 
@@ -450,7 +505,9 @@ func (s *StepCloneVM) validateOvfDeploymentOption(ctx context.Context, d driver.
 	if locale == "" {
 		locale = "US"
 	}
-	options, err := d.GetOvfOptions(ctx, config.URL, config.Authentication, locale, config.SkipTlsVerify)
+	optionsConfig := *config
+	optionsConfig.Locale = locale
+	options, err := d.GetOvfOptions(ctx, &optionsConfig)
 	if err != nil {
 		return fmt.Errorf("error retrieving OVF deployment options: %s", err)
 	}
@@ -513,10 +570,9 @@ func (s *StepCloneVM) validateOvfVAppProperties(_ context.Context, _ driver.Driv
 }
 
 // wrapStepError wraps errors with context and sanitizes sensitive information for step operations.
-func (s *StepCloneVM) wrapStepError(context string, err error, url string) error {
-	sanitizedURL := driver.SanitizeOvfURL(url)
+func (s *StepCloneVM) wrapStepError(context string, err error, source string) error {
 	sanitizedErr := driver.SanitizeOvfErrorMessage(err.Error())
-	return fmt.Errorf("%s for OVF source '%s': %s", context, sanitizedURL, sanitizedErr)
+	return fmt.Errorf("%s for OVF source '%s': %s", context, source, sanitizedErr)
 }
 
 // Cleanup performs step cleanup.
