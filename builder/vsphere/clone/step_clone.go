@@ -23,7 +23,7 @@ import (
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
 
-type RemoteSourceConfig struct {
+type OvfSourceConfig struct {
 	// The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
 	URL string `mapstructure:"url"`
 	// The username for basic authentication when accessing the remote OVF/OVA file.
@@ -42,9 +42,9 @@ type RemoteSourceConfig struct {
 
 type CloneConfig struct {
 	// The name of the source virtual machine template to clone. Specify either
-	// `template` or `remote_source`, but not both.
+	// `template` or `ovf_source`, but not both.
 	Template string `mapstructure:"template"`
-	// Configuration for deploying from a remote OVF/OVA source accessible using
+	// Configuration for deploying from an OVF/OVA source accessible using
 	// HTTP or HTTPS. Conflicts with `template`.
 	//
 	// HTTP
@@ -52,7 +52,7 @@ type CloneConfig struct {
 	// HCL Example:
 	//
 	// ```hcl
-	// remote_source {
+	// ovf_source {
 	//   url = "http://packages.example.com/templates/example.ovf"
 	// }
 	// ```
@@ -60,7 +60,7 @@ type CloneConfig struct {
 	// JSON Example:
 	//
 	// ```json
-	// "remote_source": {
+	// "ovf_source": {
 	//   "url": "http://packages.example.com/templates/example.ovf"
 	// }
 	// ```
@@ -70,7 +70,7 @@ type CloneConfig struct {
 	// HCL Example:
 	//
 	// ```hcl
-	// remote_source {
+	// ovf_source {
 	//   url = "https://packages.example.com/templates/example.ovf"
 	// }
 	// ```
@@ -78,7 +78,7 @@ type CloneConfig struct {
 	// JSON Example:
 	//
 	// ```json
-	// "remote_source": {
+	// "ovf_source": {
 	//   "url": "https://packages.example.com/templates/example.ovf"
 	// }
 	// ```
@@ -88,10 +88,10 @@ type CloneConfig struct {
 	// HCL Example:
 	//
 	// ```hcl
-	// remote_source {
+	// ovf_source {
 	//   url             = "https://packages.example.com/artifacts/example.ovf"
-	//   username        = "remote_source_username"
-	//   password        = "remote_source_password"
+	//   username        = "ovf_source_username"
+	//   password        = "ovf_source_password"
 	//   skip_tls_verify = false
 	// }
 	// ```
@@ -99,30 +99,30 @@ type CloneConfig struct {
 	// JSON Example:
 	//
 	// ```json
-	// "remote_source": {
+	// "ovf_source": {
 	//   "url": "https://packages.example.com/artifacts/example.ovf",
-	//   "username": "remote_source_username",
-	//   "password": "remote_source_password",
+	//   "username": "ovf_source_username",
+	//   "password": "ovf_source_password",
 	//   "skip_tls_verify": false
 	// }
 	// ```
 	//
 	// -> **Note:** For credentials, use variables marked `sensitive = true` for
 	// `username` and `password`.
-	RemoteSource *RemoteSourceConfig `mapstructure:"remote_source"`
+	OvfSource *OvfSourceConfig `mapstructure:"ovf_source"`
 	// The size of the primary disk in MiB. Conflicts with `linked_clone`.
 	//
 	// -> **Note:** Only the primary disk size can be specified. Additional disks
 	// are not supported.
 	//
 	// ~> **Note:** Applies only when cloning from a `template`; rejected when
-	// `remote_source` is set.
+	// `ovf_source` is set.
 	DiskSize int64 `mapstructure:"disk_size"`
 	// Create the virtual machine as a linked clone from the latest snapshot.
 	// Defaults to `false`. Conflicts with `disk_size`.
 	//
 	// ~> **Note:** Applies only when cloning from a `template`; rejected when
-	// `remote_source` is set.
+	// `ovf_source` is set.
 	LinkedClone bool `mapstructure:"linked_clone"`
 	// The network to which the virtual machine will connect.
 	//
@@ -141,7 +141,7 @@ type CloneConfig struct {
 	// ~> **Note:** If no network is specified, provide `host` to allow the
 	// plugin to search for an available network.
 	//
-	// ~> **Note:** When deploying from a remote OVF/OVA source, each network
+	// ~> **Note:** When deploying from an OVF/OVA source, each network
 	// defined in the OVF descriptor is mapped to this network. If the OVF
 	// defines multiple networks, they all use this same mapping.
 	Network string `mapstructure:"network"`
@@ -164,18 +164,18 @@ func (c *CloneConfig) Prepare() []error {
 	var errs []error
 
 	hasTemplate := c.Template != ""
-	hasRemoteSource := c.RemoteSource != nil
+	hasOvfSource := c.OvfSource != nil
 
-	if !hasTemplate && !hasRemoteSource {
-		errs = append(errs, fmt.Errorf("either 'template' or 'remote_source' must be specified"))
+	if !hasTemplate && !hasOvfSource {
+		errs = append(errs, fmt.Errorf("either 'template' or 'ovf_source' must be specified"))
 	}
 
-	if hasTemplate && hasRemoteSource {
-		errs = append(errs, fmt.Errorf("cannot specify both 'template' and 'remote_source' - choose one source type"))
+	if hasTemplate && hasOvfSource {
+		errs = append(errs, fmt.Errorf("cannot specify both 'template' and 'ovf_source' - choose one source type"))
 	}
 
-	if hasRemoteSource {
-		errs = append(errs, c.prepareRemoteSource()...)
+	if hasOvfSource {
+		errs = append(errs, c.prepareOvfSource()...)
 	}
 
 	errs = append(errs, c.StorageConfig.Prepare()...)
@@ -191,40 +191,40 @@ func (c *CloneConfig) Prepare() []error {
 	return errs
 }
 
-func (c *CloneConfig) prepareRemoteSource() []error {
+func (c *CloneConfig) prepareOvfSource() []error {
 	var errs []error
 
-	if c.RemoteSource.URL == "" {
-		errs = append(errs, fmt.Errorf("'url' is required when using 'remote_source'"))
+	if c.OvfSource.URL == "" {
+		errs = append(errs, fmt.Errorf("'url' is required when using 'ovf_source'"))
 	} else {
-		parsedURL, err := url.Parse(c.RemoteSource.URL)
+		parsedURL, err := url.Parse(c.OvfSource.URL)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("invalid 'remote_source' URL format: %s", err))
+			errs = append(errs, fmt.Errorf("invalid 'ovf_source' URL format: %s", err))
 		} else if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-			errs = append(errs, fmt.Errorf("'remote_source' URL must use HTTP or HTTPS protocol"))
+			errs = append(errs, fmt.Errorf("'ovf_source' URL must use HTTP or HTTPS protocol"))
 		}
 	}
 
-	hasUsername := c.RemoteSource.Username != ""
-	hasPassword := c.RemoteSource.Password != ""
+	hasUsername := c.OvfSource.Username != ""
+	hasPassword := c.OvfSource.Password != ""
 	if hasUsername && !hasPassword {
-		errs = append(errs, fmt.Errorf("'password' is required when 'username' is specified for remote source"))
+		errs = append(errs, fmt.Errorf("'password' is required when 'username' is specified for OVF source"))
 	}
 	if hasPassword && !hasUsername {
-		errs = append(errs, fmt.Errorf("'username' is required when 'password' is specified for remote source"))
+		errs = append(errs, fmt.Errorf("'username' is required when 'password' is specified for OVF source"))
 	}
 
 	if c.DiskSize != 0 {
-		errs = append(errs, fmt.Errorf("'disk_size' cannot be used with 'remote_source'"))
+		errs = append(errs, fmt.Errorf("'disk_size' cannot be used with 'ovf_source'"))
 	}
 	if c.LinkedClone {
-		errs = append(errs, fmt.Errorf("'linked_clone' cannot be used with 'remote_source'"))
+		errs = append(errs, fmt.Errorf("'linked_clone' cannot be used with 'ovf_source'"))
 	}
 	if len(c.StorageConfig.DiskControllerType) > 0 {
-		errs = append(errs, fmt.Errorf("'disk_controller_type' cannot be used with 'remote_source'"))
+		errs = append(errs, fmt.Errorf("'disk_controller_type' cannot be used with 'ovf_source'"))
 	}
 	if len(c.StorageConfig.Storage) > 0 {
-		errs = append(errs, fmt.Errorf("'storage' cannot be used with 'remote_source'"))
+		errs = append(errs, fmt.Errorf("'storage' cannot be used with 'ovf_source'"))
 	}
 
 	return errs
@@ -239,8 +239,8 @@ type StepCloneVM struct {
 
 // Run executes the clone VM step by detecting the source type and delegating to the appropriate method.
 func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {
-	if s.Config.RemoteSource != nil {
-		return s.deployFromRemoteOvf(ctx, state)
+	if s.Config.OvfSource != nil {
+		return s.deployFromOvf(ctx, state)
 	}
 	return s.cloneFromTemplate(ctx, state)
 }
@@ -351,16 +351,16 @@ func (s *StepCloneVM) cloneFromTemplate(ctx context.Context, state multistep.Sta
 	return multistep.ActionContinue
 }
 
-// deployFromRemoteOvf handles deployment from remote OVF/OVA sources. The
-// plugin downloads the descriptor and archive files on the Packer host and
+// deployFromOvf handles deployment from OVF/OVA sources. The
+// plugin reads the descriptor and archive files on the Packer host and
 // uploads disk content to vSphere over an NFC lease; vSphere does not fetch
-// the remote URL directly.
-func (s *StepCloneVM) deployFromRemoteOvf(ctx context.Context, state multistep.StateBag) multistep.StepAction {
+// the source directly.
+func (s *StepCloneVM) deployFromOvf(ctx context.Context, state multistep.StateBag) multistep.StepAction {
 	ui := state.Get("ui").(packersdk.Ui)
 	d := state.Get("driver").(driver.Driver)
 	vmPath := path.Join(s.Location.Folder, s.Location.VMName)
 
-	ui.Say("Deploying virtual machine from remote OVF/OVA...")
+	ui.Say("Deploying virtual machine from OVF/OVA...")
 
 	err := d.PreCleanVM(ui, vmPath, s.Force, s.Location.Cluster, s.Location.Host, s.Location.ResourcePool)
 	if err != nil {
@@ -375,15 +375,15 @@ func (s *StepCloneVM) deployFromRemoteOvf(ctx context.Context, state multistep.S
 	}
 
 	var auth *driver.OvfAuthConfig
-	if s.Config.RemoteSource.Username != "" && s.Config.RemoteSource.Password != "" {
+	if s.Config.OvfSource.Username != "" && s.Config.OvfSource.Password != "" {
 		auth = &driver.OvfAuthConfig{
-			Username: s.Config.RemoteSource.Username,
-			Password: s.Config.RemoteSource.Password,
+			Username: s.Config.OvfSource.Username,
+			Password: s.Config.OvfSource.Password,
 		}
 	}
 
 	ovfConfig := &driver.OvfDeployConfig{
-		URL:              s.Config.RemoteSource.URL,
+		URL:              s.Config.OvfSource.URL,
 		Authentication:   auth,
 		Name:             s.Location.VMName,
 		Folder:           s.Location.Folder,
@@ -397,18 +397,18 @@ func (s *StepCloneVM) deployFromRemoteOvf(ctx context.Context, state multistep.S
 		VAppProperties:   s.Config.VAppConfig.Properties,
 		DeploymentOption: s.Config.VAppConfig.DeploymentOption,
 		Locale:           "US",
-		SkipTlsVerify:    s.Config.RemoteSource.SkipTlsVerify,
+		SkipTlsVerify:    s.Config.OvfSource.SkipTlsVerify,
 	}
 
 	// Validate OVF deployment parameters with enhanced error handling
 	if err := s.validateOvfConfiguration(ctx, d, ovfConfig); err != nil {
-		state.Put("error", s.wrapStepError("OVF configuration validation failed", err, s.Config.RemoteSource.URL))
+		state.Put("error", s.wrapStepError("OVF configuration validation failed", err, s.Config.OvfSource.URL))
 		return multistep.ActionHalt
 	}
 
 	vm, err := d.DeployOvf(ctx, ovfConfig, ui)
 	if err != nil {
-		state.Put("error", s.wrapStepError("OVF deployment failed", err, s.Config.RemoteSource.URL))
+		state.Put("error", s.wrapStepError("OVF deployment failed", err, s.Config.OvfSource.URL))
 		return multistep.ActionHalt
 	}
 
@@ -417,7 +417,7 @@ func (s *StepCloneVM) deployFromRemoteOvf(ctx context.Context, state multistep.S
 		return multistep.ActionHalt
 	}
 
-	ui.Say("Successfully deployed virtual machine from remote OVF/OVA source")
+	ui.Say("Successfully deployed virtual machine from OVF/OVA source")
 
 	if s.Config.Destroy {
 		state.Put("destroy_vm", s.Config.Destroy)
@@ -516,7 +516,7 @@ func (s *StepCloneVM) validateOvfVAppProperties(_ context.Context, _ driver.Driv
 func (s *StepCloneVM) wrapStepError(context string, err error, url string) error {
 	sanitizedURL := driver.SanitizeOvfURL(url)
 	sanitizedErr := driver.SanitizeOvfErrorMessage(err.Error())
-	return fmt.Errorf("%s for remote source '%s': %s", context, sanitizedURL, sanitizedErr)
+	return fmt.Errorf("%s for OVF source '%s': %s", context, sanitizedURL, sanitizedErr)
 }
 
 // Cleanup performs step cleanup.

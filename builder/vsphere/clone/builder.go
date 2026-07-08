@@ -222,8 +222,8 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		"generated_data": state.Get("generated_data"),
 		"metadata":       state.Get("metadata"),
 	}
-	if b.config.RemoteSource != nil {
-		stateData["source_remote_url"] = driver.SanitizeOvfURL(b.config.RemoteSource.URL)
+	if b.config.OvfSource != nil {
+		stateData["source_ovf_url"] = driver.SanitizeOvfURL(b.config.OvfSource.URL)
 	} else {
 		stateData["source_template"] = b.config.Template
 	}

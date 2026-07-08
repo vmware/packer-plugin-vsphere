@@ -114,7 +114,7 @@ type DiskConfig struct {
 // source template's disks plus any newly configured disks and controllers.
 // `storage {}`, `disk_controller_type`, and `disk_size` apply in this mode.
 //
-// When deploying from `remote_source`, the plugin downloads the OVF/OVA package
+// When deploying from `ovf_source`, the plugin downloads the OVF/OVA package
 // on the Packer host and imports it into vSphere using the OVF Manager and an
 // NFC lease upload. Virtual disks, how many, how large, and how they are
 // provisioned (for example, thin or thick) are provided by the OVF/OVA descriptor.
@@ -123,7 +123,7 @@ type DiskConfig struct {
 // section.
 //
 // ~> **Note:** `storage {}`, `disk_controller_type`, and `disk_size` cannot be used with
-// `remote_source`.
+// `ovf_source`.
 //
 // ~> **Note:** Use `datastore` or `datastore_cluster` in the builder location
 // configuration to choose where imported disks are stored.

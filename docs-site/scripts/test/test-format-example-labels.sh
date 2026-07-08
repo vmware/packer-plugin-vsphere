@@ -313,10 +313,10 @@ EOF
   assert_contains "$output" $'    "vapp": {\n      "properties": {' "json inner indent preserved in list"
 }
 
-test_remote_source_section_headings() {
+test_ovf_source_section_headings() {
   local input
   input="$(cat <<'EOF'
-- `remote_source` (*RemoteSourceConfig) - Configuration for deploying from a remote OVF/OVA source accessible using
+- `ovf_source` (*OvfSourceConfig) - Configuration for deploying from a remote OVF/OVA source accessible using
   HTTP or HTTPS. Conflicts with `template`.
 
   HTTP
@@ -324,7 +324,7 @@ test_remote_source_section_headings() {
   HCL Example:
 
   ```hcl
-  remote_source {
+  ovf_source {
     url = "http://example.com/example.ovf"
   }
   ```
@@ -332,7 +332,7 @@ test_remote_source_section_headings() {
   JSON Example:
 
   ```json
-  "remote_source": {
+  "ovf_source": {
     "url": "http://example.com/example.ovf"
   }
   ```
@@ -362,7 +362,7 @@ main() {
   test_examples_after_block_admonition
   test_nested_fence_preserves_inner_indentation
   test_skip_code_fence
-  test_remote_source_section_headings
+  test_ovf_source_section_headings
   echo "All example label formatting tests passed."
 }
 

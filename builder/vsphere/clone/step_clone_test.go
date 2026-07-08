@@ -88,7 +88,7 @@ func TestCreateConfig_Prepare(t *testing.T) {
 				},
 			},
 			fail:           true,
-			expectedErrMsg: "either 'template' or 'remote_source' must be specified",
+			expectedErrMsg: "either 'template' or 'ovf_source' must be specified",
 		},
 		{
 			name: "Validate LinkedClone and DiskSize set at the same time",
@@ -126,10 +126,10 @@ func TestCreateConfig_Prepare(t *testing.T) {
 			expectedErrMsg: "'network' is required when 'mac_address' is specified",
 		},
 		{
-			name: "Validate template and remote_source mutual exclusivity",
+			name: "Validate template and ovf_source mutual exclusivity",
 			config: &CloneConfig{
 				Template: "template name",
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 				StorageConfig: common.StorageConfig{
@@ -142,61 +142,61 @@ func TestCreateConfig_Prepare(t *testing.T) {
 				},
 			},
 			fail:           true,
-			expectedErrMsg: "cannot specify both 'template' and 'remote_source' - choose one source type",
+			expectedErrMsg: "cannot specify both 'template' and 'ovf_source' - choose one source type",
 		},
 		{
-			name: "Valid remote_source config",
+			name: "Valid ovf_source config",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 			},
 			fail: false,
 		},
 		{
-			name: "Validate remote_source URL is required",
+			name: "Validate ovf_source URL is required",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{},
+				OvfSource: &OvfSourceConfig{},
 			},
 			fail:           true,
-			expectedErrMsg: "'url' is required when using 'remote_source'",
+			expectedErrMsg: "'url' is required when using 'ovf_source'",
 		},
 		{
-			name: "Validate remote_source URL protocol",
+			name: "Validate ovf_source URL protocol",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "ftp://packages.example.com/artifacts/example.ovf",
 				},
 			},
 			fail:           true,
-			expectedErrMsg: "'remote_source' URL must use HTTP or HTTPS protocol",
+			expectedErrMsg: "'ovf_source' URL must use HTTP or HTTPS protocol",
 		},
 		{
-			name: "Validate remote_source username requires password",
+			name: "Validate ovf_source username requires password",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL:      "https://packages.example.com/artifacts/example.ovf",
 					Username: "testuser",
 				},
 			},
 			fail:           true,
-			expectedErrMsg: "'password' is required when 'username' is specified for remote source",
+			expectedErrMsg: "'password' is required when 'username' is specified for OVF source",
 		},
 		{
-			name: "Validate remote_source password requires username",
+			name: "Validate ovf_source password requires username",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL:      "https://packages.example.com/artifacts/example.ovf",
 					Password: "testpass",
 				},
 			},
 			fail:           true,
-			expectedErrMsg: "'username' is required when 'password' is specified for remote source",
+			expectedErrMsg: "'username' is required when 'password' is specified for OVF source",
 		},
 		{
-			name: "Valid remote_source with SkipTlsVerify for HTTPS",
+			name: "Valid ovf_source with SkipTlsVerify for HTTPS",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL:           "https://packages.example.com/artifacts/example.ovf",
 					SkipTlsVerify: true,
 				},
@@ -204,31 +204,31 @@ func TestCreateConfig_Prepare(t *testing.T) {
 			fail: false,
 		},
 		{
-			name: "Validate disk_size cannot be used with remote_source",
+			name: "Validate disk_size cannot be used with ovf_source",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 				DiskSize: 32768,
 			},
 			fail:           true,
-			expectedErrMsg: "'disk_size' cannot be used with 'remote_source'",
+			expectedErrMsg: "'disk_size' cannot be used with 'ovf_source'",
 		},
 		{
-			name: "Validate linked_clone cannot be used with remote_source",
+			name: "Validate linked_clone cannot be used with ovf_source",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 				LinkedClone: true,
 			},
 			fail:           true,
-			expectedErrMsg: "'linked_clone' cannot be used with 'remote_source'",
+			expectedErrMsg: "'linked_clone' cannot be used with 'ovf_source'",
 		},
 		{
-			name: "Validate storage cannot be used with remote_source",
+			name: "Validate storage cannot be used with ovf_source",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 				StorageConfig: common.StorageConfig{
@@ -238,12 +238,12 @@ func TestCreateConfig_Prepare(t *testing.T) {
 				},
 			},
 			fail:           true,
-			expectedErrMsg: "'storage' cannot be used with 'remote_source'",
+			expectedErrMsg: "'storage' cannot be used with 'ovf_source'",
 		},
 		{
-			name: "Validate disk_controller_type cannot be used with remote_source",
+			name: "Validate disk_controller_type cannot be used with ovf_source",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 				StorageConfig: common.StorageConfig{
@@ -251,7 +251,7 @@ func TestCreateConfig_Prepare(t *testing.T) {
 				},
 			},
 			fail:           true,
-			expectedErrMsg: "'disk_controller_type' cannot be used with 'remote_source'",
+			expectedErrMsg: "'disk_controller_type' cannot be used with 'ovf_source'",
 		},
 	}
 
@@ -389,8 +389,8 @@ func driverCreateConfig(config *CloneConfig, location *common.LocationConfig) *d
 	}
 }
 
-// TestStepCloneVM_RemoteSourceDetection tests that the step correctly detects remote source configuration and branches to the appropriate deployment method.
-func TestStepCloneVM_RemoteSourceDetection(t *testing.T) {
+// TestStepCloneVM_OvfSourceDetection tests that the step correctly detects remote source configuration and branches to the appropriate deployment method.
+func TestStepCloneVM_OvfSourceDetection(t *testing.T) {
 	tests := []struct {
 		name           string
 		config         *CloneConfig
@@ -408,7 +408,7 @@ func TestStepCloneVM_RemoteSourceDetection(t *testing.T) {
 		{
 			name: "Remote source detection",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 			},
@@ -453,10 +453,10 @@ func TestStepCloneVM_RemoteSourceDetection(t *testing.T) {
 				}
 			} else if tt.expectRemote {
 				if !driverMock.DeployOvfCalled {
-					t.Error("expected DeployOvf to be called for remote source")
+					t.Error("expected DeployOvf to be called for OVF source")
 				}
 				if driverMock.FindVMCalled {
-					t.Error("expected FindVM NOT to be called for remote source")
+					t.Error("expected FindVM NOT to be called for OVF source")
 				}
 			}
 		})
@@ -482,7 +482,7 @@ func TestStepCloneVM_OvfDeploymentUsesResolvedDatastore(t *testing.T) {
 
 	step := &StepCloneVM{
 		Config: &CloneConfig{
-			RemoteSource: &RemoteSourceConfig{
+			OvfSource: &OvfSourceConfig{
 				URL: "https://packages.example.com/artifacts/example.ovf",
 			},
 		},
@@ -516,7 +516,7 @@ func TestStepCloneVM_OvfDeploymentWithMockedCalls(t *testing.T) {
 		{
 			name: "Successful OVF deployment",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 				StorageConfig: common.StorageConfig{
@@ -538,7 +538,7 @@ func TestStepCloneVM_OvfDeploymentWithMockedCalls(t *testing.T) {
 		{
 			name: "OVF deployment with authentication",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL:      "https://packages.example.com/artifacts/example.ovf",
 					Username: "testuser",
 					Password: "testpass",
@@ -562,7 +562,7 @@ func TestStepCloneVM_OvfDeploymentWithMockedCalls(t *testing.T) {
 		{
 			name: "OVF deployment failure",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 				StorageConfig: common.StorageConfig{
@@ -581,7 +581,7 @@ func TestStepCloneVM_OvfDeploymentWithMockedCalls(t *testing.T) {
 				mock.DeployOvfError = fmt.Errorf("network error accessing remote OVF")
 			},
 			expectError:    true,
-			expectedErrMsg: "OVF deployment failed for remote source 'https://packages.example.com/artifacts/example.ovf': network error accessing remote OVF",
+			expectedErrMsg: "OVF deployment failed for OVF source 'https://packages.example.com/artifacts/example.ovf': network error accessing remote OVF",
 		},
 	}
 
@@ -625,19 +625,19 @@ func TestStepCloneVM_OvfDeploymentWithMockedCalls(t *testing.T) {
 					t.Error("expected DeployOvf to be called")
 				}
 
-				if driverMock.DeployOvfConfig.URL != tt.config.RemoteSource.URL {
-					t.Errorf("expected URL '%s', got '%s'", tt.config.RemoteSource.URL, driverMock.DeployOvfConfig.URL)
+				if driverMock.DeployOvfConfig.URL != tt.config.OvfSource.URL {
+					t.Errorf("expected URL '%s', got '%s'", tt.config.OvfSource.URL, driverMock.DeployOvfConfig.URL)
 				}
 
-				if tt.config.RemoteSource.Username != "" {
+				if tt.config.OvfSource.Username != "" {
 					if driverMock.DeployOvfConfig.Authentication == nil {
 						t.Error("expected authentication config to be set")
 					} else {
-						if driverMock.DeployOvfConfig.Authentication.Username != tt.config.RemoteSource.Username {
-							t.Errorf("expected username '%s', got '%s'", tt.config.RemoteSource.Username, driverMock.DeployOvfConfig.Authentication.Username)
+						if driverMock.DeployOvfConfig.Authentication.Username != tt.config.OvfSource.Username {
+							t.Errorf("expected username '%s', got '%s'", tt.config.OvfSource.Username, driverMock.DeployOvfConfig.Authentication.Username)
 						}
-						if driverMock.DeployOvfConfig.Authentication.Password != tt.config.RemoteSource.Password {
-							t.Errorf("expected password '%s', got '%s'", tt.config.RemoteSource.Password, driverMock.DeployOvfConfig.Authentication.Password)
+						if driverMock.DeployOvfConfig.Authentication.Password != tt.config.OvfSource.Password {
+							t.Errorf("expected password '%s', got '%s'", tt.config.OvfSource.Password, driverMock.DeployOvfConfig.Authentication.Password)
 						}
 					}
 				} else {
@@ -722,7 +722,7 @@ func TestStepCloneVM_VAppPropertyIntegration(t *testing.T) {
 			state.Put("driver", driverMock)
 
 			config := &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 				VAppConfig: tt.vappConfig,
@@ -796,7 +796,7 @@ func TestStepCloneVM_OvfValidationIntegration(t *testing.T) {
 		{
 			name: "Valid deployment option",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 				VAppConfig: common.VAppConfig{
@@ -834,7 +834,7 @@ func TestStepCloneVM_OvfValidationIntegration(t *testing.T) {
 		{
 			name: "Valid deployment option with skip TLS verify",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL:           "https://packages.example.com/artifacts/example.ovf",
 					SkipTlsVerify: true,
 				},
@@ -867,7 +867,7 @@ func TestStepCloneVM_OvfValidationIntegration(t *testing.T) {
 		{
 			name: "Invalid deployment option",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 				VAppConfig: common.VAppConfig{
@@ -944,8 +944,8 @@ func TestStepCloneVM_OvfValidationIntegration(t *testing.T) {
 					if !driverMock.GetOvfOptionsCalled {
 						t.Error("expected GetOvfOptions to be called for deployment option validation")
 					}
-					if tt.config.RemoteSource != nil && driverMock.GetOvfOptionsSkipTlsVerify != tt.config.RemoteSource.SkipTlsVerify {
-						t.Errorf("expected GetOvfOptionsSkipTlsVerify %v, got %v", tt.config.RemoteSource.SkipTlsVerify, driverMock.GetOvfOptionsSkipTlsVerify)
+					if tt.config.OvfSource != nil && driverMock.GetOvfOptionsSkipTlsVerify != tt.config.OvfSource.SkipTlsVerify {
+						t.Errorf("expected GetOvfOptionsSkipTlsVerify %v, got %v", tt.config.OvfSource.SkipTlsVerify, driverMock.GetOvfOptionsSkipTlsVerify)
 					}
 				}
 			}
@@ -1001,7 +1001,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 		{
 			name: "Network connectivity error",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 				StorageConfig: common.StorageConfig{
@@ -1019,13 +1019,13 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 				mock.DeployOvfError = fmt.Errorf("dial tcp: connection refused")
 			},
 			expectError:    true,
-			expectedErrMsg: "OVF deployment failed for remote source 'https://packages.example.com/artifacts/example.ovf': dial tcp: connection refused",
+			expectedErrMsg: "OVF deployment failed for OVF source 'https://packages.example.com/artifacts/example.ovf': dial tcp: connection refused",
 			errorType:      "network",
 		},
 		{
 			name: "Authentication failure error",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL:      "https://packages.example.com/artifacts/example.ovf",
 					Username: "testuser",
 					Password: "wrongpass",
@@ -1045,13 +1045,13 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 				mock.DeployOvfError = fmt.Errorf("HTTP 401 Unauthorized")
 			},
 			expectError:    true,
-			expectedErrMsg: "OVF deployment failed for remote source 'https://packages.example.com/artifacts/example.ovf': HTTP 401 Unauthorized",
+			expectedErrMsg: "OVF deployment failed for OVF source 'https://packages.example.com/artifacts/example.ovf': HTTP 401 Unauthorized",
 			errorType:      "authentication",
 		},
 		{
 			name: "File not found error",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example-nonexistent.ovf",
 				},
 				StorageConfig: common.StorageConfig{
@@ -1069,13 +1069,13 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 				mock.DeployOvfError = fmt.Errorf("HTTP 404 Not Found")
 			},
 			expectError:    true,
-			expectedErrMsg: "OVF deployment failed for remote source 'https://packages.example.com/artifacts/example-nonexistent.ovf': HTTP 404 Not Found",
+			expectedErrMsg: "OVF deployment failed for OVF source 'https://packages.example.com/artifacts/example-nonexistent.ovf': HTTP 404 Not Found",
 			errorType:      "not_found",
 		},
 		{
 			name: "OVF validation error",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "hhttps://packages.example.com/artifacts/example-invalid.ovf",
 				},
 				StorageConfig: common.StorageConfig{
@@ -1093,13 +1093,13 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 				mock.DeployOvfError = fmt.Errorf("invalid OVF descriptor: malformed XML")
 			},
 			expectError:    true,
-			expectedErrMsg: "OVF deployment failed for remote source 'hhttps://packages.example.com/artifacts/example-invalid.ovf': invalid OVF descriptor: malformed XML",
+			expectedErrMsg: "OVF deployment failed for OVF source 'hhttps://packages.example.com/artifacts/example-invalid.ovf': invalid OVF descriptor: malformed XML",
 			errorType:      "validation",
 		},
 		{
 			name: "TLS certificate error",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 				StorageConfig: common.StorageConfig{
@@ -1117,13 +1117,13 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 				mock.DeployOvfError = fmt.Errorf("x509: certificate signed by unknown authority")
 			},
 			expectError:    true,
-			expectedErrMsg: "OVF deployment failed for remote source 'https://packages.example.com/artifacts/example.ovf': x509: certificate signed by unknown authority",
+			expectedErrMsg: "OVF deployment failed for OVF source 'https://packages.example.com/artifacts/example.ovf': x509: certificate signed by unknown authority",
 			errorType:      "tls",
 		},
 		{
 			name: "TLS certificate error with SkipTlsVerify enabled",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL:           "https://packages.example.com/artifacts/example.ovf",
 					SkipTlsVerify: true,
 				},
@@ -1146,7 +1146,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 		{
 			name: "Insufficient resources error",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL: "https://packages.example.com/artifacts/example-large.ovf",
 				},
 				StorageConfig: common.StorageConfig{
@@ -1164,13 +1164,13 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 				mock.DeployOvfError = fmt.Errorf("insufficient disk space on datastore")
 			},
 			expectError:    true,
-			expectedErrMsg: "OVF deployment failed for remote source 'https://packages.example.com/artifacts/example-large.ovf': insufficient disk space on datastore",
+			expectedErrMsg: "OVF deployment failed for OVF source 'https://packages.example.com/artifacts/example-large.ovf': insufficient disk space on datastore",
 			errorType:      "resources",
 		},
 		{
 			name: "Credential sanitization in error messages",
 			config: &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL:      "https://packages.example.com/artifacts/example.ovf",
 					Username: "testuser",
 					Password: "testpass",
@@ -1190,7 +1190,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 				mock.DeployOvfError = fmt.Errorf("authentication failed with password=secretpassword for user testuser")
 			},
 			expectError:    true,
-			expectedErrMsg: "OVF deployment failed for remote source 'https://packages.example.com/artifacts/example.ovf'",
+			expectedErrMsg: "OVF deployment failed for OVF source 'https://packages.example.com/artifacts/example.ovf'",
 			errorType:      "credential_sanitization",
 		},
 	}
@@ -1267,7 +1267,7 @@ func TestStepCloneVM_ErrorMessageFormatting(t *testing.T) {
 			mockError:   fmt.Errorf("connection failed"),
 			expectedURL: "https://packages.example.com/artifacts/example.ovf",
 			shouldContain: []string{
-				"OVF deployment failed for remote source",
+				"OVF deployment failed for OVF source",
 				"https://packages.example.com/artifacts/example.ovf",
 				"connection failed",
 			},
@@ -1279,7 +1279,7 @@ func TestStepCloneVM_ErrorMessageFormatting(t *testing.T) {
 			mockError:   fmt.Errorf("authentication failed: password=testpass"),
 			expectedURL: "https://packages.example.com/artifacts/example.ovf",
 			shouldContain: []string{
-				"OVF deployment failed for remote source",
+				"OVF deployment failed for OVF source",
 				"https://packages.example.com/artifacts/example.ovf",
 			},
 			shouldNotContain: []string{"testpass", "password=testpass"},
@@ -1290,7 +1290,7 @@ func TestStepCloneVM_ErrorMessageFormatting(t *testing.T) {
 			mockError:   fmt.Errorf("failed with password=testpass and token=testtoken"),
 			expectedURL: "https://packages.example.com/artifacts/example.ovf",
 			shouldContain: []string{
-				"OVF deployment failed for remote source",
+				"OVF deployment failed for OVF source",
 				"https://packages.example.com/artifacts/example.ovf",
 			},
 			shouldNotContain: []string{"testpass", "testtoken", "password=testpass", "token=testtoken"},
@@ -1301,7 +1301,7 @@ func TestStepCloneVM_ErrorMessageFormatting(t *testing.T) {
 			mockError:   fmt.Errorf("network timeout occurred"),
 			expectedURL: "https://packages.example.com/artifacts/example.ovf",
 			shouldContain: []string{
-				"OVF deployment failed for remote source",
+				"OVF deployment failed for OVF source",
 				"https://packages.example.com/artifacts/example.ovf",
 				"network timeout occurred",
 			},
@@ -1320,7 +1320,7 @@ func TestStepCloneVM_ErrorMessageFormatting(t *testing.T) {
 			state.Put("driver", driverMock)
 
 			config := &CloneConfig{
-				RemoteSource: &RemoteSourceConfig{
+				OvfSource: &OvfSourceConfig{
 					URL:      tt.url,
 					Username: tt.username,
 					Password: tt.password,
@@ -1373,15 +1373,15 @@ func TestStepCloneVM_ErrorMessageFormatting(t *testing.T) {
 	}
 }
 
-// TestRemoteSourceConfig_SensitiveVariables verifies that RemoteSourceConfig properly supports
+// TestOvfSourceConfig_SensitiveVariables verifies that OvfSourceConfig properly supports
 // Packer sensitive variables and environment variable interpolation.
-func TestRemoteSourceConfig_SensitiveVariables(t *testing.T) {
+func TestOvfSourceConfig_SensitiveVariables(t *testing.T) {
 	tests := []struct {
 		name     string
 		template string
 		vars     map[string]string
 		env      map[string]string
-		want     RemoteSourceConfig
+		want     OvfSourceConfig
 	}{
 		{
 			name: "sensitive variables",
@@ -1398,7 +1398,7 @@ func TestRemoteSourceConfig_SensitiveVariables(t *testing.T) {
 				},
 				"builders": [{
 					"type": "vsphere-clone",
-					"remote_source": {
+					"ovf_source": {
 						"url": "https://packages.example.com/artifacts/example.ovf",
 						"username": "{{user ` + "`ovf_username`" + `}}",
 						"password": "{{user ` + "`ovf_password`" + `}}"
@@ -1409,7 +1409,7 @@ func TestRemoteSourceConfig_SensitiveVariables(t *testing.T) {
 				"ovf_username": "testuser",
 				"ovf_password": "testpass",
 			},
-			want: RemoteSourceConfig{
+			want: OvfSourceConfig{
 				URL:      "https://packages.example.com/artifacts/example.ovf",
 				Username: "testuser",
 				Password: "testpass",
@@ -1420,7 +1420,7 @@ func TestRemoteSourceConfig_SensitiveVariables(t *testing.T) {
 			template: `{
 				"builders": [{
 					"type": "vsphere-clone",
-					"remote_source": {
+					"ovf_source": {
 						"url": "https://packages.example.com/artifacts/example.ovf",
 						"username": "{{env ` + "`OVF_USERNAME`" + `}}",
 						"password": "{{env ` + "`OVF_PASSWORD`" + `}}"
@@ -1431,7 +1431,7 @@ func TestRemoteSourceConfig_SensitiveVariables(t *testing.T) {
 				"OVF_USERNAME": "envuser",
 				"OVF_PASSWORD": "envpass",
 			},
-			want: RemoteSourceConfig{
+			want: OvfSourceConfig{
 				URL:      "https://packages.example.com/artifacts/example.ovf",
 				Username: "envuser",
 				Password: "envpass",
@@ -1450,14 +1450,14 @@ func TestRemoteSourceConfig_SensitiveVariables(t *testing.T) {
 
 			// Create a minimal configuration for testing.
 			var cfg struct {
-				RemoteSource *RemoteSourceConfig `mapstructure:"remote_source"`
+				OvfSource *OvfSourceConfig `mapstructure:"ovf_source"`
 			}
 
 			// Note: In real usage, Packer would handle variable interpolation.
 
 			// Create raw config data
 			rawConfig := map[string]interface{}{
-				"remote_source": map[string]interface{}{
+				"ovf_source": map[string]interface{}{
 					"url":      tt.want.URL,
 					"username": tt.template, // This would be interpolated.
 					"password": tt.template, // This would be interpolated.
@@ -1466,21 +1466,21 @@ func TestRemoteSourceConfig_SensitiveVariables(t *testing.T) {
 
 			// Directly set the expected values since this tests the struct
 			// definition and mapstructure tags.
-			cfg.RemoteSource = &RemoteSourceConfig{
+			cfg.OvfSource = &OvfSourceConfig{
 				URL:      tt.want.URL,
 				Username: tt.want.Username,
 				Password: tt.want.Password,
 			}
 
 			// Verify the configuration was set correctly.
-			if cfg.RemoteSource.URL != tt.want.URL {
-				t.Errorf("URL = %v, want %v", cfg.RemoteSource.URL, tt.want.URL)
+			if cfg.OvfSource.URL != tt.want.URL {
+				t.Errorf("URL = %v, want %v", cfg.OvfSource.URL, tt.want.URL)
 			}
-			if cfg.RemoteSource.Username != tt.want.Username {
-				t.Errorf("Username = %v, want %v", cfg.RemoteSource.Username, tt.want.Username)
+			if cfg.OvfSource.Username != tt.want.Username {
+				t.Errorf("Username = %v, want %v", cfg.OvfSource.Username, tt.want.Username)
 			}
-			if cfg.RemoteSource.Password != tt.want.Password {
-				t.Errorf("Password = %v, want %v", cfg.RemoteSource.Password, tt.want.Password)
+			if cfg.OvfSource.Password != tt.want.Password {
+				t.Errorf("Password = %v, want %v", cfg.OvfSource.Password, tt.want.Password)
 			}
 
 			// Verify that the struct has the correct mapstructure tags.
@@ -1490,9 +1490,9 @@ func TestRemoteSourceConfig_SensitiveVariables(t *testing.T) {
 	}
 }
 
-// TestRemoteSourceConfig_CredentialSanitization verifies that URLs containing credentials
+// TestOvfSourceConfig_CredentialSanitization verifies that URLs containing credentials
 // are properly sanitized to prevent credential exposure in logs.
-func TestRemoteSourceConfig_CredentialSanitization(t *testing.T) {
+func TestOvfSourceConfig_CredentialSanitization(t *testing.T) {
 	tests := []struct {
 		name     string
 		url      string
@@ -1526,9 +1526,9 @@ func TestRemoteSourceConfig_CredentialSanitization(t *testing.T) {
 	}
 }
 
-// TestRemoteSourceConfig_ErrorMessageSanitization verifies that error messages containing
+// TestOvfSourceConfig_ErrorMessageSanitization verifies that error messages containing
 // credential patterns are properly sanitized to prevent credential exposure.
-func TestRemoteSourceConfig_ErrorMessageSanitization(t *testing.T) {
+func TestOvfSourceConfig_ErrorMessageSanitization(t *testing.T) {
 	tests := []struct {
 		name     string
 		errMsg   string

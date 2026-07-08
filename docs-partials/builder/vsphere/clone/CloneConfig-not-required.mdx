@@ -1,9 +1,9 @@
 <!-- Code generated from the comments of the CloneConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
 - `template` (string) - The name of the source virtual machine template to clone. Specify either
-  `template` or `remote_source`, but not both.
+  `template` or `ovf_source`, but not both.
 
-- `remote_source` (\*RemoteSourceConfig) - Configuration for deploying from a remote OVF/OVA source accessible using
+- `ovf_source` (\*OvfSourceConfig) - Configuration for deploying from an OVF/OVA source accessible using
   HTTP or HTTPS. Conflicts with `template`.
   
   HTTP
@@ -11,7 +11,7 @@
   HCL Example:
   
   ```hcl
-  remote_source {
+  ovf_source {
     url = "http://packages.example.com/templates/example.ovf"
   }
   ```
@@ -19,7 +19,7 @@
   JSON Example:
   
   ```json
-  "remote_source": {
+  "ovf_source": {
     "url": "http://packages.example.com/templates/example.ovf"
   }
   ```
@@ -29,7 +29,7 @@
   HCL Example:
   
   ```hcl
-  remote_source {
+  ovf_source {
     url = "https://packages.example.com/templates/example.ovf"
   }
   ```
@@ -37,7 +37,7 @@
   JSON Example:
   
   ```json
-  "remote_source": {
+  "ovf_source": {
     "url": "https://packages.example.com/templates/example.ovf"
   }
   ```
@@ -47,10 +47,10 @@
   HCL Example:
   
   ```hcl
-  remote_source {
+  ovf_source {
     url             = "https://packages.example.com/artifacts/example.ovf"
-    username        = "remote_source_username"
-    password        = "remote_source_password"
+    username        = "ovf_source_username"
+    password        = "ovf_source_password"
     skip_tls_verify = false
   }
   ```
@@ -58,10 +58,10 @@
   JSON Example:
   
   ```json
-  "remote_source": {
+  "ovf_source": {
     "url": "https://packages.example.com/artifacts/example.ovf",
-    "username": "remote_source_username",
-    "password": "remote_source_password",
+    "username": "ovf_source_username",
+    "password": "ovf_source_password",
     "skip_tls_verify": false
   }
   ```
@@ -75,13 +75,13 @@
   are not supported.
   
   ~> **Note:** Applies only when cloning from a `template`; rejected when
-  `remote_source` is set.
+  `ovf_source` is set.
 
 - `linked_clone` (bool) - Create the virtual machine as a linked clone from the latest snapshot.
   Defaults to `false`. Conflicts with `disk_size`.
   
   ~> **Note:** Applies only when cloning from a `template`; rejected when
-  `remote_source` is set.
+  `ovf_source` is set.
 
 - `network` (string) - The network to which the virtual machine will connect.
   
@@ -100,7 +100,7 @@
   ~> **Note:** If no network is specified, provide `host` to allow the
   plugin to search for an available network.
   
-  ~> **Note:** When deploying from a remote OVF/OVA source, each network
+  ~> **Note:** When deploying from an OVF/OVA source, each network
   defined in the OVF descriptor is mapped to this network. If the OVF
   defines multiple networks, they all use this same mapping.
 

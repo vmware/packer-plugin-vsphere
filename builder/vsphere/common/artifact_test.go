@@ -89,7 +89,7 @@ func TestArtifactHCPPackerRegistrySourceRemoteURL(t *testing.T) {
 		Name:       "test-vm",
 		Datacenter: vm.Datacenter(),
 		StateData: map[string]interface{}{
-			"source_remote_url": "https://user:***@packages.example.com/artifacts/example.ovf",
+			"source_ovf_url": "https://user:***@packages.example.com/artifacts/example.ovf",
 		},
 	}
 
@@ -100,7 +100,7 @@ func TestArtifactHCPPackerRegistrySourceRemoteURL(t *testing.T) {
 	if metadata.SourceImageID != "https://user:***@packages.example.com/artifacts/example.ovf" {
 		t.Fatalf("unexpected SourceImageID: got %q", metadata.SourceImageID)
 	}
-	if metadata.Labels["source_remote_url"] != "https://user:***@packages.example.com/artifacts/example.ovf" {
-		t.Fatalf("unexpected source_remote_url label: got %v", metadata.Labels["source_remote_url"])
+	if metadata.Labels["source_ovf_url"] != "https://user:***@packages.example.com/artifacts/example.ovf" {
+		t.Fatalf("unexpected source_ovf_url label: got %v", metadata.Labels["source_ovf_url"])
 	}
 }

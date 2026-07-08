@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 //go:generate packer-sdc struct-markdown
-//go:generate packer-sdc mapstructure-to-hcl2 -type Config,RemoteSourceConfig
+//go:generate packer-sdc mapstructure-to-hcl2 -type Config,OvfSourceConfig
 
 package clone
 

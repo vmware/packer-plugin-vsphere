@@ -78,8 +78,8 @@ func testConfigErr(t *testing.T, context string, warns []string, err error) {
 	}
 }
 
-// TestCloneConfig_RemoteSourceValidation tests the validation logic for remote source configurations
-func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
+// TestCloneConfig_OvfSourceValidation tests the validation logic for OVF source configurations
+func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 	testCases := []struct {
 		name           string
 		config         map[string]interface{}
@@ -96,7 +96,7 @@ func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"remote_source": map[string]interface{}{
+				"ovf_source": map[string]interface{}{
 					"url": "http://packages.example.com/artifacts/example.ovf",
 				},
 			},
@@ -112,7 +112,7 @@ func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"remote_source": map[string]interface{}{
+				"ovf_source": map[string]interface{}{
 					"url": "https://packages.example.com/artifacts/example.ovf",
 				},
 			},
@@ -128,7 +128,7 @@ func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"remote_source": map[string]interface{}{
+				"ovf_source": map[string]interface{}{
 					"url":      "https://packages.example.com/artifacts/example.ovf",
 					"username": "testuser",
 					"password": "testpass",
@@ -146,7 +146,7 @@ func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"remote_source": map[string]interface{}{
+				"ovf_source": map[string]interface{}{
 					"url":             "https://packages.example.com/artifacts/example.ovf",
 					"skip_tls_verify": true,
 				},
@@ -154,7 +154,7 @@ func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "Invalid: both template and remote_source specified",
+			name: "Invalid: both template and ovf_source specified",
 			config: map[string]interface{}{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
@@ -164,15 +164,15 @@ func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"remote_source": map[string]interface{}{
+				"ovf_source": map[string]interface{}{
 					"url": "https://packages.example.com/artifacts/example.ovf",
 				},
 			},
 			expectError:    true,
-			expectedErrMsg: "cannot specify both 'template' and 'remote_source' - choose one source type",
+			expectedErrMsg: "cannot specify both 'template' and 'ovf_source' - choose one source type",
 		},
 		{
-			name: "Invalid: neither template nor remote_source specified",
+			name: "Invalid: neither template nor ovf_source specified",
 			config: map[string]interface{}{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
@@ -183,10 +183,10 @@ func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
 				"ssh_password":   "VMw@re1!",
 			},
 			expectError:    true,
-			expectedErrMsg: "either 'template' or 'remote_source' must be specified",
+			expectedErrMsg: "either 'template' or 'ovf_source' must be specified",
 		},
 		{
-			name: "Invalid: remote_source URL is empty",
+			name: "Invalid: ovf_source URL is empty",
 			config: map[string]interface{}{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
@@ -195,15 +195,15 @@ func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"remote_source": map[string]interface{}{
+				"ovf_source": map[string]interface{}{
 					"url": "",
 				},
 			},
 			expectError:    true,
-			expectedErrMsg: "'url' is required when using 'remote_source'",
+			expectedErrMsg: "'url' is required when using 'ovf_source'",
 		},
 		{
-			name: "Invalid: remote_source URL missing",
+			name: "Invalid: ovf_source URL missing",
 			config: map[string]interface{}{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
@@ -212,16 +212,16 @@ func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"remote_source": map[string]interface{}{
+				"ovf_source": map[string]interface{}{
 					"username": "testuser",
 					"password": "testpass",
 				},
 			},
 			expectError:    true,
-			expectedErrMsg: "'url' is required when using 'remote_source'",
+			expectedErrMsg: "'url' is required when using 'ovf_source'",
 		},
 		{
-			name: "Invalid: remote_source URL with unsupported protocol",
+			name: "Invalid: ovf_source URL with unsupported protocol",
 			config: map[string]interface{}{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
@@ -230,15 +230,15 @@ func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"remote_source": map[string]interface{}{
+				"ovf_source": map[string]interface{}{
 					"url": "ftp://packages.example.com/artifacts/example.ovf",
 				},
 			},
 			expectError:    true,
-			expectedErrMsg: "'remote_source' URL must use HTTP or HTTPS protocol",
+			expectedErrMsg: "'ovf_source' URL must use HTTP or HTTPS protocol",
 		},
 		{
-			name: "Invalid: remote_source URL with invalid format",
+			name: "Invalid: ovf_source URL with invalid format",
 			config: map[string]interface{}{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
@@ -247,15 +247,15 @@ func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"remote_source": map[string]interface{}{
+				"ovf_source": map[string]interface{}{
 					"url": "://invalid-url-format",
 				},
 			},
 			expectError:    true,
-			expectedErrMsg: "invalid 'remote_source' URL format",
+			expectedErrMsg: "invalid 'ovf_source' URL format",
 		},
 		{
-			name: "Invalid: remote_source username without password",
+			name: "Invalid: ovf_source username without password",
 			config: map[string]interface{}{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
@@ -264,16 +264,16 @@ func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"remote_source": map[string]interface{}{
+				"ovf_source": map[string]interface{}{
 					"url":      "https://packages.example.com/artifacts/example.ovf",
 					"username": "testuser",
 				},
 			},
 			expectError:    true,
-			expectedErrMsg: "'password' is required when 'username' is specified for remote source",
+			expectedErrMsg: "'password' is required when 'username' is specified for OVF source",
 		},
 		{
-			name: "Invalid: remote_source password without username",
+			name: "Invalid: ovf_source password without username",
 			config: map[string]interface{}{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
@@ -282,13 +282,13 @@ func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"remote_source": map[string]interface{}{
+				"ovf_source": map[string]interface{}{
 					"url":      "https://packages.example.com/artifacts/example.ovf",
 					"password": "testpass",
 				},
 			},
 			expectError:    true,
-			expectedErrMsg: "'username' is required when 'password' is specified for remote source",
+			expectedErrMsg: "'username' is required when 'password' is specified for OVF source",
 		},
 	}
 
@@ -317,8 +317,8 @@ func TestCloneConfig_RemoteSourceValidation(t *testing.T) {
 	}
 }
 
-// TestCloneConfig_RemoteSourceMutualExclusivity tests that template and remote_source are mutually exclusive
-func TestCloneConfig_RemoteSourceMutualExclusivity(t *testing.T) {
+// TestCloneConfig_OvfSourceMutualExclusivity tests that template and ovf_source are mutually exclusive
+func TestCloneConfig_OvfSourceMutualExclusivity(t *testing.T) {
 	testCases := []struct {
 		name        string
 		template    string
@@ -368,7 +368,7 @@ func TestCloneConfig_RemoteSourceMutualExclusivity(t *testing.T) {
 			}
 
 			if tc.remoteURL != "" {
-				config["remote_source"] = map[string]interface{}{
+				config["ovf_source"] = map[string]interface{}{
 					"url": tc.remoteURL,
 				}
 			}
@@ -392,8 +392,8 @@ func TestCloneConfig_RemoteSourceMutualExclusivity(t *testing.T) {
 	}
 }
 
-// TestCloneConfig_RemoteSourceAuthenticationValidation tests authentication parameter validation
-func TestCloneConfig_RemoteSourceAuthenticationValidation(t *testing.T) {
+// TestCloneConfig_OvfSourceAuthenticationValidation tests authentication parameter validation
+func TestCloneConfig_OvfSourceAuthenticationValidation(t *testing.T) {
 	testCases := []struct {
 		name           string
 		username       string
@@ -418,14 +418,14 @@ func TestCloneConfig_RemoteSourceAuthenticationValidation(t *testing.T) {
 			username:       "testuser",
 			password:       "",
 			expectError:    true,
-			expectedErrMsg: "'password' is required when 'username' is specified for remote source",
+			expectedErrMsg: "'password' is required when 'username' is specified for OVF source",
 		},
 		{
 			name:           "Password without username - invalid",
 			username:       "",
 			password:       "testpass",
 			expectError:    true,
-			expectedErrMsg: "'username' is required when 'password' is specified for remote source",
+			expectedErrMsg: "'username' is required when 'password' is specified for OVF source",
 		},
 	}
 
@@ -439,16 +439,16 @@ func TestCloneConfig_RemoteSourceAuthenticationValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"remote_source": map[string]interface{}{
+				"ovf_source": map[string]interface{}{
 					"url": "https://packages.example.com/artifacts/example.ovf",
 				},
 			}
 
 			if tc.username != "" {
-				config["remote_source"].(map[string]interface{})["username"] = tc.username
+				config["ovf_source"].(map[string]interface{})["username"] = tc.username
 			}
 			if tc.password != "" {
-				config["remote_source"].(map[string]interface{})["password"] = tc.password
+				config["ovf_source"].(map[string]interface{})["password"] = tc.password
 			}
 
 			c := new(Config)

@@ -96,10 +96,10 @@ func (a *Artifact) stateHCPPackerRegistryMetadata() interface{} {
 		sourceID = templatePath
 	}
 
-	remoteURL, ok := a.StateData["source_remote_url"].(string)
-	if ok && remoteURL != "" {
-		sourceID = remoteURL
-		labels["source_remote_url"] = remoteURL
+	ovfURL, ok := a.StateData["source_ovf_url"].(string)
+	if ok && ovfURL != "" {
+		sourceID = ovfURL
+		labels["source_ovf_url"] = ovfURL
 	}
 
 	img, _ := registryimage.FromArtifact(a,

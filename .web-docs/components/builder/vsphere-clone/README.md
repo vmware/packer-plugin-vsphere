@@ -60,9 +60,9 @@ references, which are necessary for a build to succeed and can be found further 
 <!-- Code generated from the comments of the CloneConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
 - `template` (string) - The name of the source virtual machine template to clone. Specify either
-  `template` or `remote_source`, but not both.
+  `template` or `ovf_source`, but not both.
 
-- `remote_source` (\*RemoteSourceConfig) - Configuration for deploying from a remote OVF/OVA source accessible using
+- `ovf_source` (\*OvfSourceConfig) - Configuration for deploying from an OVF/OVA source accessible using
   HTTP or HTTPS. Conflicts with `template`.
   
   HTTP
@@ -70,7 +70,7 @@ references, which are necessary for a build to succeed and can be found further 
   HCL Example:
   
   ```hcl
-  remote_source {
+  ovf_source {
     url = "http://packages.example.com/templates/example.ovf"
   }
   ```
@@ -78,7 +78,7 @@ references, which are necessary for a build to succeed and can be found further 
   JSON Example:
   
   ```json
-  "remote_source": {
+  "ovf_source": {
     "url": "http://packages.example.com/templates/example.ovf"
   }
   ```
@@ -88,7 +88,7 @@ references, which are necessary for a build to succeed and can be found further 
   HCL Example:
   
   ```hcl
-  remote_source {
+  ovf_source {
     url = "https://packages.example.com/templates/example.ovf"
   }
   ```
@@ -96,7 +96,7 @@ references, which are necessary for a build to succeed and can be found further 
   JSON Example:
   
   ```json
-  "remote_source": {
+  "ovf_source": {
     "url": "https://packages.example.com/templates/example.ovf"
   }
   ```
@@ -106,10 +106,10 @@ references, which are necessary for a build to succeed and can be found further 
   HCL Example:
   
   ```hcl
-  remote_source {
+  ovf_source {
     url             = "https://packages.example.com/artifacts/example.ovf"
-    username        = "remote_source_username"
-    password        = "remote_source_password"
+    username        = "ovf_source_username"
+    password        = "ovf_source_password"
     skip_tls_verify = false
   }
   ```
@@ -117,10 +117,10 @@ references, which are necessary for a build to succeed and can be found further 
   JSON Example:
   
   ```json
-  "remote_source": {
+  "ovf_source": {
     "url": "https://packages.example.com/artifacts/example.ovf",
-    "username": "remote_source_username",
-    "password": "remote_source_password",
+    "username": "ovf_source_username",
+    "password": "ovf_source_password",
     "skip_tls_verify": false
   }
   ```
@@ -134,13 +134,13 @@ references, which are necessary for a build to succeed and can be found further 
   are not supported.
   
   ~> **Note:** Applies only when cloning from a `template`; rejected when
-  `remote_source` is set.
+  `ovf_source` is set.
 
 - `linked_clone` (bool) - Create the virtual machine as a linked clone from the latest snapshot.
   Defaults to `false`. Conflicts with `disk_size`.
   
   ~> **Note:** Applies only when cloning from a `template`; rejected when
-  `remote_source` is set.
+  `ovf_source` is set.
 
 - `network` (string) - The network to which the virtual machine will connect.
   
@@ -159,7 +159,7 @@ references, which are necessary for a build to succeed and can be found further 
   ~> **Note:** If no network is specified, provide `host` to allow the
   plugin to search for an available network.
   
-  ~> **Note:** When deploying from a remote OVF/OVA source, each network
+  ~> **Note:** When deploying from an OVF/OVA source, each network
   defined in the OVF descriptor is mapped to this network. If the OVF
   defines multiple networks, they all use this same mapping.
 
@@ -177,7 +177,7 @@ references, which are necessary for a build to succeed and can be found further 
 <!-- End of code generated from the comments of the CloneConfig struct in builder/vsphere/clone/step_clone.go; -->
 
 
-<!-- Code generated from the comments of the RemoteSourceConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
+<!-- Code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
 - `url` (string) - The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
 
@@ -193,7 +193,7 @@ references, which are necessary for a build to succeed and can be found further 
   -> **Note:** This option is beneficial in scenarios where the certificate
   is self-signed or does not meet standard validation criteria.
 
-<!-- End of code generated from the comments of the RemoteSourceConfig struct in builder/vsphere/clone/step_clone.go; -->
+<!-- End of code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; -->
 
 
 <!-- Code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
@@ -217,7 +217,7 @@ When cloning from a `template`, the resulting virtual machine contains the
 source template's disks plus any newly configured disks and controllers.
 `storage {}`, `disk_controller_type`, and `disk_size` apply in this mode.
 
-When deploying from `remote_source`, the plugin downloads the OVF/OVA package
+When deploying from `ovf_source`, the plugin downloads the OVF/OVA package
 on the Packer host and imports it into vSphere using the OVF Manager and an
 NFC lease upload. Virtual disks, how many, how large, and how they are
 provisioned (for example, thin or thick) are provided by the OVF/OVA descriptor.
@@ -226,7 +226,7 @@ to select one. For more information, refer to the [vApp Options Configuration](#
 section.
 
 ~> **Note:** `storage {}`, `disk_controller_type`, and `disk_size` cannot be used with
-`remote_source`.
+`ovf_source`.
 
 ~> **Note:** Use `datastore` or `datastore_cluster` in the builder location
 configuration to choose where imported disks are stored.
