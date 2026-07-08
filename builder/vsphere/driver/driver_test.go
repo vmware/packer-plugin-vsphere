@@ -127,7 +127,7 @@ func (s *VCenterSimulator) ChooseSimulatorPreCreatedDatastore() (Datastore, *sim
 	return datastore, ds
 }
 
-// Simulator shortcut to choose any pre-created EXSi host.
+// Simulator shortcut to choose any pre-created ESX host.
 func (s *VCenterSimulator) ChooseSimulatorPreCreatedHost() (*Host, *simulator.HostSystem) {
 	h := s.model.Map().Any("HostSystem").(*simulator.HostSystem)
 	ref := h.Reference()
