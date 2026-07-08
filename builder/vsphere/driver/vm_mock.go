@@ -27,6 +27,10 @@ type VirtualMachineMock struct {
 	ConfigureCalled         bool
 	ConfigureHardwareConfig *HardwareConfig
 
+	ReconfigureCalled bool
+	ReconfigureSpec   types.VirtualMachineConfigSpec
+	ReconfigureError  error
+
 	FindSATAControllerCalled bool
 	FindSATAControllerErr    error
 
@@ -140,6 +144,11 @@ func (vm *VirtualMachineMock) Configure(config *HardwareConfig) error {
 }
 
 func (vm *VirtualMachineMock) Reconfigure(confSpec types.VirtualMachineConfigSpec) error {
+	vm.ReconfigureCalled = true
+	vm.ReconfigureSpec = confSpec
+	if vm.ReconfigureError != nil {
+		return vm.ReconfigureError
+	}
 	return nil
 }
 

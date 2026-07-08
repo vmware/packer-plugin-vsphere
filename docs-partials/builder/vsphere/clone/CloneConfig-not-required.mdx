@@ -1,13 +1,87 @@
 <!-- Code generated from the comments of the CloneConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
-- `template` (string) - The name of the source virtual machine to clone.
+- `template` (string) - The name of the source virtual machine template to clone. Specify either
+  `template` or `ovf_source`, but not both.
 
-- `disk_size` (int64) - The size of the primary disk in MiB. Cannot be used with `linked_clone`.
-  -> **Note:** Only the primary disk size can be specified. Additional
-  disks are not supported.
+- `ovf_source` (\*OvfSourceConfig) - Configuration for deploying from an OVF/OVA source accessible using
+  HTTP or HTTPS. Conflicts with `template`.
+  
+  HTTP
+  
+  HCL Example:
+  
+  ```hcl
+  ovf_source {
+    url = "http://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "ovf_source": {
+    "url": "http://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  HTTPS
+  
+  HCL Example:
+  
+  ```hcl
+  ovf_source {
+    url = "https://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "ovf_source": {
+    "url": "https://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  HTTPS and Basic Authentication
+  
+  HCL Example:
+  
+  ```hcl
+  ovf_source {
+    url             = "https://packages.example.com/artifacts/example.ovf"
+    username        = "ovf_source_username"
+    password        = "ovf_source_password"
+    skip_tls_verify = false
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "ovf_source": {
+    "url": "https://packages.example.com/artifacts/example.ovf",
+    "username": "ovf_source_username",
+    "password": "ovf_source_password",
+    "skip_tls_verify": false
+  }
+  ```
+  
+  -> **Note:** For credentials, use variables marked `sensitive = true` for
+  `username` and `password`.
+
+- `disk_size` (int64) - The size of the primary disk in MiB. Conflicts with `linked_clone`.
+  
+  -> **Note:** Only the primary disk size can be specified. Additional disks
+  are not supported.
+  
+  ~> **Note:** Applies only when cloning from a `template`; rejected when
+  `ovf_source` is set.
 
 - `linked_clone` (bool) - Create the virtual machine as a linked clone from the latest snapshot.
-  Defaults to `false`. Cannot be used with `disk_size`.`
+  Defaults to `false`. Conflicts with `disk_size`.
+  
+  ~> **Note:** Applies only when cloning from a `template`; rejected when
+  `ovf_source` is set.
 
 - `network` (string) - The network to which the virtual machine will connect.
   
@@ -25,6 +99,10 @@
   
   ~> **Note:** If no network is specified, provide `host` to allow the
   plugin to search for an available network.
+  
+  ~> **Note:** When deploying from an OVF/OVA source, each network
+  defined in the OVF descriptor is mapped to this network. If the OVF
+  defines multiple networks, they all use this same mapping.
 
 - `mac_address` (string) - The network card MAC address. For example `00:50:56:00:00:00`.
   If set, the `network` must be also specified.
@@ -35,7 +113,6 @@
   Defaults to `false`.
 
 - `vapp` (common.VAppConfig) - The vApp Options for the virtual machine. For more information, refer to
-  the [vApp Options Configuration](/packer/plugins/builders/vmware/vsphere-clone#vapp-options-configuration)
-  section.
+  the [vApp Options Configuration](#vapp-options-configuration) section.
 
 <!-- End of code generated from the comments of the CloneConfig struct in builder/vsphere/clone/step_clone.go; -->

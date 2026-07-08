@@ -1,0 +1,21 @@
+<!-- Code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
+
+When cloning from a `template`, the resulting virtual machine contains the
+source template's disks plus any newly configured disks and controllers.
+`storage {}`, `disk_controller_type`, and `disk_size` apply in this mode.
+
+When deploying from `ovf_source`, the plugin downloads the OVF/OVA package
+on the Packer host and imports it into vSphere using the OVF Manager and an
+NFC lease upload. Virtual disks, how many, how large, and how they are
+provisioned (for example, thin or thick) are provided by the OVF/OVA descriptor.
+When the descriptor offers multiple deployment sizes, use `vapp.deployment_option`
+to select one. For more information, refer to the [vApp Options Configuration](#vapp-options-configuration)
+section.
+
+~> **Note:** `storage {}`, `disk_controller_type`, and `disk_size` cannot be used with
+`ovf_source`.
+
+~> **Note:** Use `datastore` or `datastore_cluster` in the builder location
+configuration to choose where imported disks are stored.
+
+<!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->

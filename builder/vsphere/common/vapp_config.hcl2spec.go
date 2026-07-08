@@ -10,7 +10,8 @@ import (
 // FlatVAppConfig is an auto-generated flat version of VAppConfig.
 // Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
 type FlatVAppConfig struct {
-	Properties map[string]string `mapstructure:"properties" cty:"properties" hcl:"properties"`
+	Properties       map[string]string `mapstructure:"properties" cty:"properties" hcl:"properties"`
+	DeploymentOption *string           `mapstructure:"deployment_option" cty:"deployment_option" hcl:"deployment_option"`
 }
 
 // FlatMapstructure returns a new FlatVAppConfig.
@@ -25,7 +26,8 @@ func (*VAppConfig) FlatMapstructure() interface{ HCL2Spec() map[string]hcldec.Sp
 // The decoded values from this spec will then be applied to a FlatVAppConfig.
 func (*FlatVAppConfig) HCL2Spec() map[string]hcldec.Spec {
 	s := map[string]hcldec.Spec{
-		"properties": &hcldec.AttrSpec{Name: "properties", Type: cty.Map(cty.String), Required: false},
+		"properties":        &hcldec.AttrSpec{Name: "properties", Type: cty.Map(cty.String), Required: false},
+		"deployment_option": &hcldec.AttrSpec{Name: "deployment_option", Type: cty.String, Required: false},
 	}
 	return s
 }

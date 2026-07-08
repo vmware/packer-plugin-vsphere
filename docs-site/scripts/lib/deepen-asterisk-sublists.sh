@@ -3,7 +3,7 @@
 # The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 # SPDX-License-Identifier: MPL-2.0
 
-# Indent asterisk sublists so Zensical renders nested lists correctly.
+# Indent nested sublists so Zensical renders nested lists correctly.
 
 set -euo pipefail
 
@@ -23,8 +23,8 @@ deepen_asterisk_sublists() {
         push @out, $line;
         next;
       }
-      if (!$in_fence && $line =~ /^  (\* )/) {
-        $line =~ s/^  (\* )/    $1/;
+      if (!$in_fence && $line =~ /^  ([\*-] )/) {
+        $line =~ s/^  ([\*-] )/    $1/;
       }
       push @out, $line;
     }

@@ -2,8 +2,8 @@ Type: `vsphere-clone`
 
 Artifact BuilderId: `vmware.vsphere`
 
-This builder clones an existing template, modifies the virtual machine image, and saves the result
-as a new template using the vSphere API.
+This builder creates a virtual machine from an existing template or an OVF/OVA source,
+modifies the image, and saves the result as a new template using the vSphere API.
 
 -> **Note:** This builder is developed to maintain compatibility with VMware vSphere versions until
 their respective End of General Support dates. For detailed information, refer to the
@@ -59,14 +59,88 @@ references, which are necessary for a build to succeed and can be found further 
 
 <!-- Code generated from the comments of the CloneConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
-- `template` (string) - The name of the source virtual machine to clone.
+- `template` (string) - The name of the source virtual machine template to clone. Specify either
+  `template` or `ovf_source`, but not both.
 
-- `disk_size` (int64) - The size of the primary disk in MiB. Cannot be used with `linked_clone`.
-  -> **Note:** Only the primary disk size can be specified. Additional
-  disks are not supported.
+- `ovf_source` (\*OvfSourceConfig) - Configuration for deploying from an OVF/OVA source accessible using
+  HTTP or HTTPS. Conflicts with `template`.
+  
+  HTTP
+  
+  HCL Example:
+  
+  ```hcl
+  ovf_source {
+    url = "http://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "ovf_source": {
+    "url": "http://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  HTTPS
+  
+  HCL Example:
+  
+  ```hcl
+  ovf_source {
+    url = "https://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "ovf_source": {
+    "url": "https://packages.example.com/templates/example.ovf"
+  }
+  ```
+  
+  HTTPS and Basic Authentication
+  
+  HCL Example:
+  
+  ```hcl
+  ovf_source {
+    url             = "https://packages.example.com/artifacts/example.ovf"
+    username        = "ovf_source_username"
+    password        = "ovf_source_password"
+    skip_tls_verify = false
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "ovf_source": {
+    "url": "https://packages.example.com/artifacts/example.ovf",
+    "username": "ovf_source_username",
+    "password": "ovf_source_password",
+    "skip_tls_verify": false
+  }
+  ```
+  
+  -> **Note:** For credentials, use variables marked `sensitive = true` for
+  `username` and `password`.
+
+- `disk_size` (int64) - The size of the primary disk in MiB. Conflicts with `linked_clone`.
+  
+  -> **Note:** Only the primary disk size can be specified. Additional disks
+  are not supported.
+  
+  ~> **Note:** Applies only when cloning from a `template`; rejected when
+  `ovf_source` is set.
 
 - `linked_clone` (bool) - Create the virtual machine as a linked clone from the latest snapshot.
-  Defaults to `false`. Cannot be used with `disk_size`.`
+  Defaults to `false`. Conflicts with `disk_size`.
+  
+  ~> **Note:** Applies only when cloning from a `template`; rejected when
+  `ovf_source` is set.
 
 - `network` (string) - The network to which the virtual machine will connect.
   
@@ -84,6 +158,10 @@ references, which are necessary for a build to succeed and can be found further 
   
   ~> **Note:** If no network is specified, provide `host` to allow the
   plugin to search for an available network.
+  
+  ~> **Note:** When deploying from an OVF/OVA source, each network
+  defined in the OVF descriptor is mapped to this network. If the OVF
+  defines multiple networks, they all use this same mapping.
 
 - `mac_address` (string) - The network card MAC address. For example `00:50:56:00:00:00`.
   If set, the `network` must be also specified.
@@ -94,10 +172,28 @@ references, which are necessary for a build to succeed and can be found further 
   Defaults to `false`.
 
 - `vapp` (common.VAppConfig) - The vApp Options for the virtual machine. For more information, refer to
-  the [vApp Options Configuration](/packer/integrations/hashicorp/vmware/latest/components/builder/vsphere-clone#vapp-options-configuration)
-  section.
+  the [vApp Options Configuration](#vapp-options-configuration) section.
 
 <!-- End of code generated from the comments of the CloneConfig struct in builder/vsphere/clone/step_clone.go; -->
+
+
+<!-- Code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
+
+- `url` (string) - The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
+
+- `username` (string) - The username for basic authentication when accessing the remote OVF/OVA file.
+  Must be used together with `password`.
+
+- `password` (string) - The password for basic authentication when accessing the remote OVF/OVA file.
+  Must be used together with `username`.
+
+- `skip_tls_verify` (bool) - Do not validate the certificate when accessing HTTPS URLs.
+  Defaults to `false`.
+  
+  -> **Note:** This option is beneficial in scenarios where the certificate
+  is self-signed or does not meet standard validation criteria.
+
+<!-- End of code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; -->
 
 
 <!-- Code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
@@ -109,16 +205,34 @@ references, which are necessary for a build to succeed and can be found further 
   for additional information.
 
 - `storage` ([]DiskConfig) - A collection of one or more disks to be provisioned.
-  Refer to the [Storage Configuration](#storage-configuration) section for additional information.
 
 <!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->
 
 
 ### Storage Configuration
 
-When cloning a virtual machine, the storage configuration can be used to add additional storage and
-disk controllers. The resulting virtual machine will contain the origin virtual machine storage and
-disk controller plus the new configured ones.
+<!-- Code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
+
+When cloning from a `template`, the resulting virtual machine contains the
+source template's disks plus any newly configured disks and controllers.
+`storage {}`, `disk_controller_type`, and `disk_size` apply in this mode.
+
+When deploying from `ovf_source`, the plugin downloads the OVF/OVA package
+on the Packer host and imports it into vSphere using the OVF Manager and an
+NFC lease upload. Virtual disks, how many, how large, and how they are
+provisioned (for example, thin or thick) are provided by the OVF/OVA descriptor.
+When the descriptor offers multiple deployment sizes, use `vapp.deployment_option`
+to select one. For more information, refer to the [vApp Options Configuration](#vapp-options-configuration)
+section.
+
+~> **Note:** `storage {}`, `disk_controller_type`, and `disk_size` cannot be used with
+`ovf_source`.
+
+~> **Note:** Use `datastore` or `datastore_cluster` in the builder location
+configuration to choose where imported disks are stored.
+
+<!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->
+
 
 <!-- Code generated from the comments of the DiskConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
 
@@ -258,6 +372,7 @@ JSON Example:
       hostname  = var.hostname
       user-data = base64encode(var.user_data)
     }
+    deployment_option = "small"
   }
   ```
 
@@ -268,7 +383,8 @@ JSON Example:
     "properties": {
       "hostname": "{{ user `hostname`}}",
       "user-data": "{{ env `USERDATA`}}"
-    }
+    },
+    "deployment_option": "small"
   }
   ```
 
@@ -278,6 +394,10 @@ JSON Example:
   ```console
   export USERDATA=$(gzip -c9 <userdata.yaml | { base64 -w0 2>/dev/null || base64; })
   ```
+
+- `deployment_option` (string) - The deployment configuration to use when deploying from an OVF/OVA file.
+  This corresponds to deployment configurations defined in an OVF descriptor.
+  -> **Note:** Only applicable when using OVF/OVA sources.
 
 
 ### Extra Configuration Parameters

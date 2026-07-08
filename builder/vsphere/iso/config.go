@@ -117,7 +117,6 @@ func (c *Config) Prepare(raws ...interface{}) ([]string, error) {
 	errs = packersdk.MultiErrorAppend(errs, c.CreateConfig.Prepare()...)
 	errs = packersdk.MultiErrorAppend(errs, c.LocationConfig.Prepare()...)
 	errs = packersdk.MultiErrorAppend(errs, c.HardwareConfig.Prepare()...)
-	errs = packersdk.MultiErrorAppend(errs, c.ConfigParamsConfig.Prepare()...)
 	errs = packersdk.MultiErrorAppend(errs, c.FlagConfig.Prepare(&c.HardwareConfig)...)
 	errs = packersdk.MultiErrorAppend(errs, c.HTTPConfig.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.CDRomConfig.Prepare(&c.ReattachCDRomConfig)...)

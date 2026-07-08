@@ -2,8 +2,8 @@
 modeline: |
   vim: set ft=pandoc:
 description: >
-  This builder clones an existing template, modifies the virtual machine image, and saves the result
-  as a new template using the vSphere API.
+  This builder creates a virtual machine from an existing template or an OVF/OVA source,
+  modifies the image, and saves the result as a new template using the vSphere API.
 page_title: vSphere Clone - Builders
 sidebar_title: Clone
 ---
@@ -14,8 +14,8 @@ Type: `vsphere-clone`
 
 Artifact BuilderId: `vmware.vsphere`
 
-This builder clones an existing template, modifies the virtual machine image, and saves the result
-as a new template using the vSphere API.
+This builder creates a virtual machine from an existing template or an OVF/OVA source,
+modifies the image, and saves the result as a new template using the vSphere API.
 
 -> **Note:** This builder is developed to maintain compatibility with VMware vSphere versions until
 their respective End of General Support dates. For detailed information, refer to the
@@ -44,13 +44,13 @@ references, which are necessary for a build to succeed and can be found further 
 
 @include 'builder/vsphere/clone/CloneConfig-not-required.mdx'
 
+@include 'builder/vsphere/clone/OvfSourceConfig-not-required.mdx'
+
 @include 'builder/vsphere/common/StorageConfig-not-required.mdx'
 
 ### Storage Configuration
 
-When cloning a virtual machine, the storage configuration can be used to add additional storage and
-disk controllers. The resulting virtual machine will contain the origin virtual machine storage and
-disk controller plus the new configured ones.
+@include 'builder/vsphere/common/StorageConfig.mdx'
 
 @include 'builder/vsphere/common/DiskConfig.mdx'
 
