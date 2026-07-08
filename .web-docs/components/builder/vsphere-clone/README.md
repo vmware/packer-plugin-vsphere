@@ -660,7 +660,7 @@ source "vsphere-clone" "example" {
       ipv4_address = "10.0.0.10"
       ipv4_netmask = "24"
     }
-    ipv4_gateway = 10.0.0.1
+    ipv4_gateway = "10.0.0.1"
     dns_server_list = ["10.0.0.18"]
   }
   # ... other configuration ...
@@ -739,10 +739,11 @@ source "vsphere-clone" "example" {
       ipv4_address = "10.0.0.10"
       ipv4_netmask = "24"
     }
-    ipv4_gateway = 10.0.0.1
+    ipv4_gateway = "10.0.0.1"
     dns_server_list = ["10.0.0.18"]
   }
   # ... other configuration ...
+}
 ```
 
 JSON Example:
@@ -1897,7 +1898,7 @@ This plugin supports the following configuration formats:
 <!-- End of code generated from the comments of the TagsConfig struct in builder/vsphere/common/tags_config.go; -->
 
 
-Tags consist of the following parts::
+Tags consist of the following parts:
 
 <!-- Code generated from the comments of the TagConfig struct in builder/vsphere/common/tags_config.go; DO NOT EDIT MANUALLY -->
 
