@@ -11,6 +11,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -459,6 +460,127 @@ func TestRemoteOvfArchive_AuthURL(t *testing.T) {
 			}
 			if archive.rawURL != tt.expectedURL {
 				t.Errorf("expected rawURL '%s', got '%s'", tt.expectedURL, archive.rawURL)
+			}
+		})
+	}
+}
+
+func TestHttpOvfFetchError(t *testing.T) {
+	const fileURL = "https://user:secret@packages.example.com/artifacts/example.ovf"
+	const sanitized = "https://packages.example.com/artifacts/example.ovf"
+
+	tests := []struct {
+		name           string
+		statusCode     int
+		wantContains   []string
+		wantNotContain string
+	}{
+		{
+			name:         "unauthorized",
+			statusCode:   http.StatusUnauthorized,
+			wantContains: []string{"authentication failed", "(HTTP 401)", sanitized},
+		},
+		{
+			name:         "forbidden",
+			statusCode:   http.StatusForbidden,
+			wantContains: []string{"access denied", "(HTTP 403)", sanitized},
+		},
+		{
+			name:         "not found",
+			statusCode:   http.StatusNotFound,
+			wantContains: []string{"OVF/OVA file not found", "(HTTP 404)", sanitized},
+		},
+		{
+			name:         "gone",
+			statusCode:   http.StatusGone,
+			wantContains: []string{"no longer available", "(HTTP 410)", sanitized},
+		},
+		{
+			name:         "rate limited",
+			statusCode:   http.StatusTooManyRequests,
+			wantContains: []string{"rate-limited", "(HTTP 429)", sanitized},
+		},
+		{
+			name:         "server error",
+			statusCode:   http.StatusInternalServerError,
+			wantContains: []string{"remote server error", "(HTTP 500)", sanitized},
+		},
+		{
+			name:         "unexpected client error",
+			statusCode:   http.StatusBadRequest,
+			wantContains: []string{"unexpected HTTP 400", sanitized},
+		},
+		{
+			name:           "strips credentials from URL",
+			statusCode:     http.StatusNotFound,
+			wantContains:   []string{sanitized},
+			wantNotContain: "secret",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := httpOvfFetchError(tt.statusCode, fileURL)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			msg := err.Error()
+			for _, want := range tt.wantContains {
+				if !strings.Contains(msg, want) {
+					t.Errorf("error %q missing %q", msg, want)
+				}
+			}
+			if tt.wantNotContain != "" && strings.Contains(msg, tt.wantNotContain) {
+				t.Errorf("error %q must not contain %q", msg, tt.wantNotContain)
+			}
+		})
+	}
+}
+
+func TestRemoteOvfArchive_OpenHTTPStatusErrors(t *testing.T) {
+	tests := []struct {
+		name         string
+		statusCode   int
+		wantContains string
+	}{
+		{
+			name:         "unauthorized",
+			statusCode:   http.StatusUnauthorized,
+			wantContains: "authentication failed",
+		},
+		{
+			name:         "not found",
+			statusCode:   http.StatusNotFound,
+			wantContains: "OVF/OVA file not found",
+		},
+		{
+			name:         "forbidden",
+			statusCode:   http.StatusForbidden,
+			wantContains: "access denied",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.statusCode)
+			}))
+			defer server.Close()
+
+			archive, err := newRemoteOvfArchive(server.URL+"/artifacts/example.ovf", nil, false)
+			if err != nil {
+				t.Fatalf("unexpected error creating archive: %s", err)
+			}
+
+			_, _, err = archive.Open("")
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !strings.Contains(err.Error(), tt.wantContains) {
+				t.Errorf("error %q missing %q", err.Error(), tt.wantContains)
+			}
+			if !strings.Contains(err.Error(), fmt.Sprintf("(HTTP %d)", tt.statusCode)) {
+				t.Errorf("error %q missing HTTP status %d", err.Error(), tt.statusCode)
 			}
 		})
 	}

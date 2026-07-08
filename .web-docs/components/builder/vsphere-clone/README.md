@@ -2,7 +2,7 @@ Type: `vsphere-clone`
 
 Artifact BuilderId: `vmware.vsphere`
 
-This builder creates a virtual machine from an existing template or a remote OVF/OVA source,
+This builder creates a virtual machine from an existing template or an OVF/OVA source,
 modifies the image, and saves the result as a new template using the vSphere API.
 
 -> **Note:** This builder is developed to maintain compatibility with VMware vSphere versions until
@@ -397,7 +397,7 @@ JSON Example:
 
 - `deployment_option` (string) - The deployment configuration to use when deploying from an OVF/OVA file.
   This corresponds to deployment configurations defined in an OVF descriptor.
-  -> **Note:** Only applicable when using remote OVF/OVA sources.
+  -> **Note:** Only applicable when using OVF/OVA sources.
 
 
 ### Extra Configuration Parameters

@@ -66,6 +66,29 @@ func (a *remoteOvfArchive) Open(name string) (io.ReadCloser, int64, error) {
 	return a.openFromHTTP(name)
 }
 
+// httpOvfFetchError maps non-OK HTTP responses to actionable errors for remote
+// OVF/OVA fetches.
+func httpOvfFetchError(statusCode int, fileURL string) error {
+	sanitizedURL := SanitizeOvfURL(fileURL)
+	switch statusCode {
+	case http.StatusUnauthorized:
+		return fmt.Errorf("authentication failed for '%s' (HTTP 401); verify username and password", sanitizedURL)
+	case http.StatusForbidden:
+		return fmt.Errorf("access denied for '%s' (HTTP 403); verify credentials and server permissions", sanitizedURL)
+	case http.StatusNotFound:
+		return fmt.Errorf("OVF/OVA file not found at '%s' (HTTP 404); verify the URL is correct", sanitizedURL)
+	case http.StatusGone:
+		return fmt.Errorf("OVF/OVA file no longer available at '%s' (HTTP 410)", sanitizedURL)
+	case http.StatusTooManyRequests:
+		return fmt.Errorf("remote server rate-limited the request for '%s' (HTTP 429); retry later", sanitizedURL)
+	default:
+		if statusCode >= http.StatusInternalServerError {
+			return fmt.Errorf("remote server error fetching '%s' (HTTP %d)", sanitizedURL, statusCode)
+		}
+		return fmt.Errorf("unexpected HTTP %d fetching '%s'", statusCode, sanitizedURL)
+	}
+}
+
 // openFromTar streams the OVA TAR and returns the first entry whose base name
 // matches the glob pattern given by name.
 func (a *remoteOvfArchive) openFromTar(name string) (io.ReadCloser, int64, error) {
@@ -75,7 +98,7 @@ func (a *remoteOvfArchive) openFromTar(name string) (io.ReadCloser, int64, error
 	}
 	if resp.StatusCode != http.StatusOK {
 		_ = resp.Body.Close()
-		return nil, 0, fmt.Errorf("remote OVA source returned HTTP %d", resp.StatusCode)
+		return nil, 0, httpOvfFetchError(resp.StatusCode, a.rawURL)
 	}
 
 	tr := tar.NewReader(resp.Body)
@@ -118,7 +141,7 @@ func (a *remoteOvfArchive) openFromHTTP(name string) (io.ReadCloser, int64, erro
 	}
 	if resp.StatusCode != http.StatusOK {
 		_ = resp.Body.Close()
-		return nil, 0, fmt.Errorf("remote server returned HTTP %d for '%s'", resp.StatusCode, SanitizeOvfURL(fileURL))
+		return nil, 0, httpOvfFetchError(resp.StatusCode, fileURL)
 	}
 
 	return resp.Body, resp.ContentLength, nil
