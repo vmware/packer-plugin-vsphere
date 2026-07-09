@@ -63,81 +63,14 @@ references, which are necessary for a build to succeed and can be found further 
   `template` or `ovf_source`, but not both.
 
 - `ovf_source` (\*OvfSourceConfig) - Configuration for deploying from an OVF/OVA source. Specify either a
-  remote `url` or a local `path`. Conflicts with `template`.
-  
-  Local
-  
-  HCL Example:
-  
-  ```hcl
-  ovf_source {
-    path = "./artifacts/example.ovf"
-  }
-  ```
-  
-  JSON Example:
-  
-  ```json
-  "ovf_source": {
-    "path": "./artifacts/example.ovf"
-  }
-  ```
-  
-  -> **Note:** The `path` must end in `.ovf` or `.ova`.
-  
-  Remote
-  
-  HCL Example:
-  
-  ```hcl
-  ovf_source {
-    url = "https://packages.example.com/artifacts/example.ovf"
-  }
-  ```
-  
-  JSON Example:
-  
-  ```json
-  "ovf_source": {
-    "url": "https://packages.example.com/artifacts/example.ovf"
-  }
-  ```
-  
-  -> **Note:** Use `http://` or `https://`. The `url` must end in `.ovf`
-  or `.ova`.
-  
-  HCL Example:
-  
-  ```hcl
-  ovf_source {
-    url             = "https://packages.example.com/artifacts/example.ova"
-    username        = "ovf_source_username"
-    password        = "ovf_source_password"
-    skip_tls_verify = false
-  }
-  ```
-  
-  JSON Example:
-  
-  ```json
-  "ovf_source": {
-    "url": "https://packages.example.com/artifacts/example.ova",
-    "username": "ovf_source_username",
-    "password": "ovf_source_password",
-    "skip_tls_verify": false
-  }
-  ```
-  
-  -> **Note:** For credentials, use variables marked `sensitive = true` for
-  `username` and `password`.
-  
-  -> **Note:** When using a multi-file OVF, keep the descriptor and its disk
-  files in the same directory on the local and remote sources.
+  local `path` or a remote `url`. Conflicts with `template`. Refer to the
+  [OVF source configuration](#ovf-source-configuration) section for available
+  fields.
 
 - `disk_size` (int64) - The size of the primary disk in MiB. Conflicts with `linked_clone`.
   
   -> **Note:** Only the primary disk size can be specified. Additional disks
-  are not supported.
+  are configured with [`storage`](#storage-configuration).
   
   ~> **Note:** Applies only when cloning from a `template`; rejected when
   `ovf_source` is set.
@@ -183,40 +116,109 @@ references, which are necessary for a build to succeed and can be found further 
 <!-- End of code generated from the comments of the CloneConfig struct in builder/vsphere/clone/step_clone.go; -->
 
 
+- `storage` ([]DiskConfig) - Additional disks to attach to the virtual machine, and optional
+  disk controllers. Does not resize the primary disk; use [`disk_size`](#clone-configuration) for that.
+  For more information, refer to the [Storage Configuration](#storage-configuration) section.
+
+### OVF Source Configuration
+
 <!-- Code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
-- `url` (string) - The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
-  Conflicts with `path`.
+Specify either a local `path` or a remote `url`.
+
+<!-- End of code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; -->
+
+
+**Optional:**
+
+<!-- Code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
 - `path` (string) - The path to a local OVF/OVA file on the host filesystem.
   Conflicts with `url`.
+  
+  HCL Example:
+  
+  ```hcl
+  ovf_source {
+    path = "./artifacts/example.ovf"
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "ovf_source": {
+    "path": "./artifacts/example.ovf"
+  }
+  ```
+  
+  -> **Note:** The `path` must end in `.ovf` or `.ova`.
+
+- `url` (string) - The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
+  Conflicts with `path`.
+  
+  HCL Example:
+  
+  ```hcl
+  ovf_source {
+    url = "https://packages.example.com/artifacts/example.ovf"
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "ovf_source": {
+    "url": "https://packages.example.com/artifacts/example.ovf"
+  }
+  ```
+  
+  -> **Note:** Use `http://` or `https://`.
+  
+  -> **Note:** The `url` must end in `.ovf` or `.ova`.
 
 - `username` (string) - The username for basic authentication when accessing the remote OVF/OVA file.
   Must be used together with `password`. Only applicable when `url` is set.
+  
+  -> **Note:** For credentials, use variables marked `sensitive = true`.
 
 - `password` (string) - The password for basic authentication when accessing the remote OVF/OVA file.
   Must be used together with `username`. Only applicable when `url` is set.
+  
+  -> **Note:** For credentials, use variables marked `sensitive = true`.
 
 - `skip_tls_verify` (bool) - Do not validate the certificate when accessing HTTPS URLs.
   Defaults to `false`. Only applicable when `url` is set.
   
   -> **Note:** This option is beneficial in scenarios where the certificate
   is self-signed or does not meet standard validation criteria.
+  
+  HCL Example:
+  
+  ```hcl
+  ovf_source {
+    url             = "https://packages.example.com/artifacts/example.ova"
+    username        = "ovf_source_username"
+    password        = "ovf_source_password"
+    skip_tls_verify = false
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "ovf_source": {
+    "url": "https://packages.example.com/artifacts/example.ova",
+    "username": "ovf_source_username",
+    "password": "ovf_source_password",
+    "skip_tls_verify": false
+  }
+  ```
+  
+  -> **Note:** When using a multi-file OVF, keep the descriptor and its disk
+  files in the same directory on the local and remote sources.
 
 <!-- End of code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; -->
-
-
-<!-- Code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
-
-- `disk_controller_type` ([]string) - The disk controller type. One of `lsilogic`, `lsilogic-sas`, `pvscsi`,
-  `nvme`, `scsi`, or `sata`. Defaults to `lsilogic`. Use a list to define
-  additional controllers. Refer to [SCSI, SATA, and NVMe Storage Controller
-  Conditions, Limitations, and Compatibility](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-virtual-machine-administration-guide-8-0/configuring-virtual-machine-hardwarevsphere-vm-admin/scsi-controller-configurationvsphere-vm-admin.html)
-  for additional information.
-
-- `storage` ([]DiskConfig) - A collection of one or more disks to be provisioned.
-
-<!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->
 
 
 ### Storage Configuration
@@ -227,114 +229,40 @@ When cloning from a `template`, the resulting virtual machine contains the
 source template's disks plus any newly configured disks and controllers.
 `storage {}`, `disk_controller_type`, and `disk_size` apply in this mode.
 
-When deploying from `ovf_source`, the plugin reads the OVF/OVA package on
-the Packer host (from an HTTP(S) URL or a local filesystem `path`) and
-imports it into vSphere using the OVF Manager and an NFC lease upload.
-Virtual disks, how many, how large, and how they are provisioned (for
-example, thin or thick) are provided by the OVF/OVA descriptor.
-When the descriptor offers multiple deployment sizes, use `vapp.deployment_option`
-to select one. For more information, refer to the [vApp Options Configuration](#vapp-options-configuration)
-section.
+When deploying from `ovf_source` from either an HTTP(S) `url` or a local
+filesystem `path`, the source OVF/OVA descriptor defines the configured disks
+and controllers. When the descriptor offers multiple deployment sizes,
+use `vapp.deployment_option` to select one. For more information, refer to
+the [vApp Options Configuration](#vapp-options-configuration) section.
 
-~> **Note:** `storage {}`, `disk_controller_type`, and `disk_size` cannot be used with
-`ovf_source`.
+~> **Note:** `storage {}`, `disk_controller_type`, and `disk_size` cannot be
+used with `ovf_source`.
 
-~> **Note:** Use `datastore` or `datastore_cluster` in the builder location
-configuration to choose where imported disks are stored.
+~> **Note:** Use `datastore` or `datastore_cluster` in the
+[Location Configuration](#location-configuration) to choose where imported
+disks are stored.
 
 <!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->
 
 
-<!-- Code generated from the comments of the DiskConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
+**Optional:**
 
-The following example that will create a 15GB and a 20GB disk on the virtual
-machine. The second disk will be thin provisioned:
+<!-- Code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
 
-HCL Example:
+- `disk_controller_type` ([]string) - The disk controller type. One of `lsilogic`, `lsilogic-sas`, `pvscsi`,
+  `nvme`, `scsi`, or `sata`. Defaults to `lsilogic`. Use a list to define
+  additional controllers. Refer to [SCSI, SATA, and NVMe Storage Controller
+  Conditions, Limitations, and Compatibility](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-virtual-machine-administration-guide-8-0/configuring-virtual-machine-hardwarevsphere-vm-admin/scsi-controller-configurationvsphere-vm-admin.html)
+  for additional information.
 
-```hcl
+- `storage` ([]DiskConfig) - Additional disks to attach to the virtual machine. Each `storage` block
+  defines one disk. Does not resize the primary disk; use `disk_size` for
+  that when cloning from a `template`.
 
-	storage {
-	    disk_size = 15000
-	}
-	storage {
-	    disk_size = 20000
-	    disk_thin_provisioned = true
-	}
+<!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->
 
-```
 
-JSON Example:
-
-```json
-
-	"storage": [
-	  {
-	    "disk_size": 15000
-	  },
-	  {
-	    "disk_size": 20000,
-	    "disk_thin_provisioned": true
-	  }
-	],
-
-```
-
-The following example will use two PVSCSI controllers and two disks on each
-controller.
-
-HCL Example:
-
-```hcl
-
-	 disk_controller_type = ["pvscsi", "pvscsi"]
-		storage {
-		   disk_size = 15000
-		   disk_controller_index = 0
-		}
-		storage {
-		   disk_size = 15000
-		   disk_controller_index = 0
-		}
-		storage {
-		   disk_size = 15000
-		   disk_controller_index = 1
-		}
-		storage {
-		   disk_size = 15000
-		   disk_controller_index = 1
-		}
-
-```
-
-JSON Example:
-
-```json
-
-	"disk_controller_type": ["pvscsi", "pvscsi"],
-	"storage": [
-	  {
-	    "disk_size": 15000,
-	    "disk_controller_index": 0
-	  },
-	  {
-	    "disk_size": 15000,
-	    "disk_controller_index": 0
-	  },
-	  {
-	    "disk_size": 15000,
-	    "disk_controller_index": 1
-	  },
-	  {
-	    "disk_size": 15000,
-	    "disk_controller_index": 1
-	  }
-	],
-
-```
-
-<!-- End of code generated from the comments of the DiskConfig struct in builder/vsphere/common/storage_config.go; -->
-
+#### Storage Disk Settings
 
 **Required:**
 
@@ -360,6 +288,84 @@ JSON Example:
 
 <!-- End of code generated from the comments of the DiskConfig struct in builder/vsphere/common/storage_config.go; -->
 
+
+The following example creates a 15GB and a 20GB disk on the virtual machine.
+The second disk is thin provisioned:
+
+HCL Example:
+
+```hcl
+storage {
+  disk_size = 15000
+}
+storage {
+  disk_size             = 20000
+  disk_thin_provisioned = true
+}
+```
+
+JSON Example:
+
+```json
+"storage": [
+  {
+    "disk_size": 15000
+  },
+  {
+    "disk_size": 20000,
+    "disk_thin_provisioned": true
+  }
+]
+```
+
+The following example uses two PVSCSI controllers and two disks on each
+controller:
+
+HCL Example:
+
+```hcl
+disk_controller_type = ["pvscsi", "pvscsi"]
+storage {
+  disk_size             = 15000
+  disk_controller_index = 0
+}
+storage {
+  disk_size             = 15000
+  disk_controller_index = 0
+}
+storage {
+  disk_size             = 15000
+  disk_controller_index = 1
+}
+storage {
+  disk_size             = 15000
+  disk_controller_index = 1
+}
+```
+
+JSON Example:
+
+```json
+"disk_controller_type": ["pvscsi", "pvscsi"],
+"storage": [
+  {
+    "disk_size": 15000,
+    "disk_controller_index": 0
+  },
+  {
+    "disk_size": 15000,
+    "disk_controller_index": 0
+  },
+  {
+    "disk_size": 15000,
+    "disk_controller_index": 1
+  },
+  {
+    "disk_size": 15000,
+    "disk_controller_index": 1
+  }
+]
+```
 
 ### vApp Options Configuration
 

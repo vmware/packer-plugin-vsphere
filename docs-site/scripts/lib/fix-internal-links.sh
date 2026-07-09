@@ -32,6 +32,8 @@ fix_internal_links() {
         "resource_pool" => "location-configuration",
         "overwrite" => "content-library-configuration",
         "ovf" => "content-library-configuration",
+        "storage" => "storage-configuration",
+        "disk_size" => "clone-configuration",
       );
     }
 

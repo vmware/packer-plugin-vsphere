@@ -4,81 +4,14 @@
   `template` or `ovf_source`, but not both.
 
 - `ovf_source` (\*OvfSourceConfig) - Configuration for deploying from an OVF/OVA source. Specify either a
-  remote `url` or a local `path`. Conflicts with `template`.
-  
-  Local
-  
-  HCL Example:
-  
-  ```hcl
-  ovf_source {
-    path = "./artifacts/example.ovf"
-  }
-  ```
-  
-  JSON Example:
-  
-  ```json
-  "ovf_source": {
-    "path": "./artifacts/example.ovf"
-  }
-  ```
-  
-  -> **Note:** The `path` must end in `.ovf` or `.ova`.
-  
-  Remote
-  
-  HCL Example:
-  
-  ```hcl
-  ovf_source {
-    url = "https://packages.example.com/artifacts/example.ovf"
-  }
-  ```
-  
-  JSON Example:
-  
-  ```json
-  "ovf_source": {
-    "url": "https://packages.example.com/artifacts/example.ovf"
-  }
-  ```
-  
-  -> **Note:** Use `http://` or `https://`. The `url` must end in `.ovf`
-  or `.ova`.
-  
-  HCL Example:
-  
-  ```hcl
-  ovf_source {
-    url             = "https://packages.example.com/artifacts/example.ova"
-    username        = "ovf_source_username"
-    password        = "ovf_source_password"
-    skip_tls_verify = false
-  }
-  ```
-  
-  JSON Example:
-  
-  ```json
-  "ovf_source": {
-    "url": "https://packages.example.com/artifacts/example.ova",
-    "username": "ovf_source_username",
-    "password": "ovf_source_password",
-    "skip_tls_verify": false
-  }
-  ```
-  
-  -> **Note:** For credentials, use variables marked `sensitive = true` for
-  `username` and `password`.
-  
-  -> **Note:** When using a multi-file OVF, keep the descriptor and its disk
-  files in the same directory on the local and remote sources.
+  local `path` or a remote `url`. Conflicts with `template`. Refer to the
+  [OVF source configuration](#ovf-source-configuration) section for available
+  fields.
 
 - `disk_size` (int64) - The size of the primary disk in MiB. Conflicts with `linked_clone`.
   
   -> **Note:** Only the primary disk size can be specified. Additional disks
-  are not supported.
+  are configured with [`storage`](#storage-configuration).
   
   ~> **Note:** Applies only when cloning from a `template`; rejected when
   `ovf_source` is set.

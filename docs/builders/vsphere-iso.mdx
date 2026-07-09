@@ -170,7 +170,11 @@ JSON Example:
 
 ### Storage Configuration
 
-@include 'builder/vsphere/common/DiskConfig.mdx'
+**Optional**:
+
+@include 'builder/vsphere/common/StorageConfig-not-required.mdx'
+
+#### Storage Disk Settings
 
 **Required**:
 
@@ -180,7 +184,83 @@ JSON Example:
 
 @include 'builder/vsphere/common/DiskConfig-not-required.mdx'
 
-@include 'builder/vsphere/common/StorageConfig-not-required.mdx'
+The following example creates a 15GB and a 20GB disk on the virtual machine.
+The second disk is thin provisioned:
+
+HCL Example:
+
+```hcl
+storage {
+  disk_size = 15000
+}
+storage {
+  disk_size             = 20000
+  disk_thin_provisioned = true
+}
+```
+
+JSON Example:
+
+```json
+"storage": [
+  {
+    "disk_size": 15000
+  },
+  {
+    "disk_size": 20000,
+    "disk_thin_provisioned": true
+  }
+]
+```
+
+The following example uses two PVSCSI controllers and two disks on each
+controller:
+
+HCL Example:
+
+```hcl
+disk_controller_type = ["pvscsi", "pvscsi"]
+storage {
+  disk_size             = 15000
+  disk_controller_index = 0
+}
+storage {
+  disk_size             = 15000
+  disk_controller_index = 0
+}
+storage {
+  disk_size             = 15000
+  disk_controller_index = 1
+}
+storage {
+  disk_size             = 15000
+  disk_controller_index = 1
+}
+```
+
+JSON Example:
+
+```json
+"disk_controller_type": ["pvscsi", "pvscsi"],
+"storage": [
+  {
+    "disk_size": 15000,
+    "disk_controller_index": 0
+  },
+  {
+    "disk_size": 15000,
+    "disk_controller_index": 0
+  },
+  {
+    "disk_size": 15000,
+    "disk_controller_index": 1
+  },
+  {
+    "disk_size": 15000,
+    "disk_controller_index": 1
+  }
+]
+```
 
 ### Flag Configuration
 
