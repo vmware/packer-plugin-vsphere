@@ -200,7 +200,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				},
 			},
 			expectError:    true,
-			expectedErrMsg: "'url' is required when using 'ovf_source'",
+			expectedErrMsg: "either 'url' or 'path' is required when using 'ovf_source'",
 		},
 		{
 			name: "Invalid: ovf_source URL missing",
@@ -218,7 +218,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				},
 			},
 			expectError:    true,
-			expectedErrMsg: "'url' is required when using 'ovf_source'",
+			expectedErrMsg: "either 'url' or 'path' is required when using 'ovf_source'",
 		},
 		{
 			name: "Invalid: ovf_source URL with unsupported protocol",
@@ -235,7 +235,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				},
 			},
 			expectError:    true,
-			expectedErrMsg: "'ovf_source' URL must use HTTP or HTTPS protocol",
+			expectedErrMsg: "'ovf_source' url must use HTTP or HTTPS protocol",
 		},
 		{
 			name: "Invalid: ovf_source URL with invalid format",
@@ -252,7 +252,24 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				},
 			},
 			expectError:    true,
-			expectedErrMsg: "invalid 'ovf_source' URL format",
+			expectedErrMsg: "invalid 'ovf_source' url format",
+		},
+		{
+			name: "Invalid: ovf_source URL with unsupported file extension",
+			config: map[string]interface{}{
+				"vcenter_server": "vcenter.example.com",
+				"username":       "administrator@vsphere.local",
+				"password":       "VMw@re1!",
+				"vm_name":        "vm-01",
+				"host":           "esxi-01.example.com",
+				"ssh_username":   "root",
+				"ssh_password":   "VMw@re1!",
+				"ovf_source": map[string]interface{}{
+					"url": "https://packages.example.com/artifacts/example.ovx",
+				},
+			},
+			expectError:    true,
+			expectedErrMsg: "'ovf_source' url must point to an OVF (.ovf) or OVA (.ova) file",
 		},
 		{
 			name: "Invalid: ovf_source username without password",

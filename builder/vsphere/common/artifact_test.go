@@ -104,3 +104,32 @@ func TestArtifactHCPPackerRegistrySourceRemoteURL(t *testing.T) {
 		t.Fatalf("unexpected source_ovf_url label: got %v", metadata.Labels["source_ovf_url"])
 	}
 }
+
+func TestArtifactState_OvfLocalPathMetadata(t *testing.T) {
+	sim, err := NewVCenterSimulator()
+	if err != nil {
+		t.Fatalf("should not fail: %s", err)
+	}
+	defer sim.Close()
+
+	vm, _ := sim.ChooseSimulatorPreCreatedVM()
+
+	artifact := &Artifact{
+		Name:       "test-vm",
+		Datacenter: vm.Datacenter(),
+		StateData: map[string]interface{}{
+			"source_ovf_path": "./artifacts/example.ova",
+		},
+	}
+
+	metadata, ok := artifact.State(registryimage.ArtifactStateURI).(*registryimage.Image)
+	if !ok {
+		t.Fatalf("unexpected result: expected '*registryimage.Image', but returned '%T'", artifact.State(registryimage.ArtifactStateURI))
+	}
+	if metadata.SourceImageID != "./artifacts/example.ova" {
+		t.Fatalf("unexpected SourceImageID: got %q", metadata.SourceImageID)
+	}
+	if metadata.Labels["source_ovf_path"] != "./artifacts/example.ova" {
+		t.Fatalf("unexpected source_ovf_path label: got %v", metadata.Labels["source_ovf_path"])
+	}
+}

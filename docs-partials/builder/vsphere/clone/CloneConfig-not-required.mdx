@@ -3,16 +3,16 @@
 - `template` (string) - The name of the source virtual machine template to clone. Specify either
   `template` or `ovf_source`, but not both.
 
-- `ovf_source` (\*OvfSourceConfig) - Configuration for deploying from an OVF/OVA source accessible using
-  HTTP or HTTPS. Conflicts with `template`.
+- `ovf_source` (\*OvfSourceConfig) - Configuration for deploying from an OVF/OVA source. Specify either a
+  remote `url` or a local `path`. Conflicts with `template`.
   
-  HTTP
+  Local
   
   HCL Example:
   
   ```hcl
   ovf_source {
-    url = "http://packages.example.com/templates/example.ovf"
+    path = "./artifacts/example.ovf"
   }
   ```
   
@@ -20,17 +20,19 @@
   
   ```json
   "ovf_source": {
-    "url": "http://packages.example.com/templates/example.ovf"
+    "path": "./artifacts/example.ovf"
   }
   ```
   
-  HTTPS
+  -> **Note:** The `path` must end in `.ovf` or `.ova`.
+  
+  Remote
   
   HCL Example:
   
   ```hcl
   ovf_source {
-    url = "https://packages.example.com/templates/example.ovf"
+    url = "https://packages.example.com/artifacts/example.ovf"
   }
   ```
   
@@ -38,17 +40,18 @@
   
   ```json
   "ovf_source": {
-    "url": "https://packages.example.com/templates/example.ovf"
+    "url": "https://packages.example.com/artifacts/example.ovf"
   }
   ```
   
-  HTTPS and Basic Authentication
+  -> **Note:** Use `http://` or `https://`. The `url` must end in `.ovf`
+  or `.ova`.
   
   HCL Example:
   
   ```hcl
   ovf_source {
-    url             = "https://packages.example.com/artifacts/example.ovf"
+    url             = "https://packages.example.com/artifacts/example.ova"
     username        = "ovf_source_username"
     password        = "ovf_source_password"
     skip_tls_verify = false
@@ -59,7 +62,7 @@
   
   ```json
   "ovf_source": {
-    "url": "https://packages.example.com/artifacts/example.ovf",
+    "url": "https://packages.example.com/artifacts/example.ova",
     "username": "ovf_source_username",
     "password": "ovf_source_password",
     "skip_tls_verify": false
@@ -68,6 +71,9 @@
   
   -> **Note:** For credentials, use variables marked `sensitive = true` for
   `username` and `password`.
+  
+  -> **Note:** When using a multi-file OVF, keep the descriptor and its disk
+  files in the same directory on the local and remote sources.
 
 - `disk_size` (int64) - The size of the primary disk in MiB. Conflicts with `linked_clone`.
   

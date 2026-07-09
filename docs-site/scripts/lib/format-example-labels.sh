@@ -59,7 +59,7 @@ format_example_labels() {
 
     sub example_section_heading_on_line {
       my ($line) = @_;
-      if ($line =~ /^(\s{2,})(?:\*\*)?(HTTP|HTTPS(?: and Basic Authentication)?)(?:\*\*)?\s*$/) {
+      if ($line =~ /^(\s{2,})(?:\*\*)?(Local|Remote)(?:\*\*)?\s*$/) {
         return ($1, $2);
       }
       return;

@@ -22,6 +22,15 @@ func SanitizeOvfURL(urlStr string) string {
 	return u.String()
 }
 
+// SanitizeOvfSource returns a safe label for an OVF source. HTTP(S) URLs have
+// credentials stripped; local filesystem paths are returned unchanged.
+func SanitizeOvfSource(urlStr, pathStr string) string {
+	if pathStr != "" {
+		return pathStr
+	}
+	return SanitizeOvfURL(urlStr)
+}
+
 // SanitizeOvfErrorMessage removes sensitive information from error messages.
 func SanitizeOvfErrorMessage(errMsg string) string {
 	sanitized := sanitizeOvfURLsInString(errMsg)
