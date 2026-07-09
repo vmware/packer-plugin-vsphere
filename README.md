@@ -100,8 +100,7 @@ To install the compiled plugin, please refer to the Packer [documentation][docs-
 
 ## Documentation
 
-- Please refer to the plugin [documentation][docs-vsphere-plugin] for more information on
-the plugin usage.
+- For information on plugin usage, refer to the plugin [documentation][docs-vsphere-plugin].
 
 ## Contributing
 
@@ -130,6 +129,7 @@ Licensed under the [Mozilla Public License, version 2.0][license].
 [docs-vsphere-iso]: https://vmware.github.io/packer-plugin-vsphere/latest/builders/vsphere-iso/
 [docs-vsphere-supervisor]: https://vmware.github.io/packer-plugin-vsphere/latest/builders/vsphere-supervisor/
 [docs-vsphere-plugin]: https://vmware.github.io/packer-plugin-vsphere/latest/
+[docs-release-verification]: https://vmware.github.io/packer-plugin-vsphere/latest/community/release-verification/
 [golang-install]: https://golang.org/doc/install
 [packer]: https://www.packer.io
 [releases-vsphere-plugin]: https://github.com/vmware/packer-plugin-vsphere/releases
