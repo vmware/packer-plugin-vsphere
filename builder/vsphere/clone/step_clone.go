@@ -25,35 +25,10 @@ import (
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
 
+// Specify either a local `path` or a remote `url`.
 type OvfSourceConfig struct {
-	// The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
-	// Conflicts with `path`.
-	URL string `mapstructure:"url"`
 	// The path to a local OVF/OVA file on the host filesystem.
 	// Conflicts with `url`.
-	Path string `mapstructure:"path"`
-	// The username for basic authentication when accessing the remote OVF/OVA file.
-	// Must be used together with `password`. Only applicable when `url` is set.
-	Username string `mapstructure:"username"`
-	// The password for basic authentication when accessing the remote OVF/OVA file.
-	// Must be used together with `username`. Only applicable when `url` is set.
-	Password string `mapstructure:"password"`
-	// Do not validate the certificate when accessing HTTPS URLs.
-	// Defaults to `false`. Only applicable when `url` is set.
-	//
-	// -> **Note:** This option is beneficial in scenarios where the certificate
-	// is self-signed or does not meet standard validation criteria.
-	SkipTlsVerify bool `mapstructure:"skip_tls_verify"`
-}
-
-type CloneConfig struct {
-	// The name of the source virtual machine template to clone. Specify either
-	// `template` or `ovf_source`, but not both.
-	Template string `mapstructure:"template"`
-	// Configuration for deploying from an OVF/OVA source. Specify either a
-	// remote `url` or a local `path`. Conflicts with `template`.
-	//
-	// Local
 	//
 	// HCL Example:
 	//
@@ -72,8 +47,9 @@ type CloneConfig struct {
 	// ```
 	//
 	// -> **Note:** The `path` must end in `.ovf` or `.ova`.
-	//
-	// Remote
+	Path string `mapstructure:"path"`
+	// The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
+	// Conflicts with `path`.
 	//
 	// HCL Example:
 	//
@@ -91,8 +67,25 @@ type CloneConfig struct {
 	// }
 	// ```
 	//
-	// -> **Note:** Use `http://` or `https://`. The `url` must end in `.ovf`
-	// or `.ova`.
+	// -> **Note:** Use `http://` or `https://`.
+	//
+	// -> **Note:** The `url` must end in `.ovf` or `.ova`.
+	URL string `mapstructure:"url"`
+	// The username for basic authentication when accessing the remote OVF/OVA file.
+	// Must be used together with `password`. Only applicable when `url` is set.
+	//
+	// -> **Note:** For credentials, use variables marked `sensitive = true`.
+	Username string `mapstructure:"username"`
+	// The password for basic authentication when accessing the remote OVF/OVA file.
+	// Must be used together with `username`. Only applicable when `url` is set.
+	//
+	// -> **Note:** For credentials, use variables marked `sensitive = true`.
+	Password string `mapstructure:"password"`
+	// Do not validate the certificate when accessing HTTPS URLs.
+	// Defaults to `false`. Only applicable when `url` is set.
+	//
+	// -> **Note:** This option is beneficial in scenarios where the certificate
+	// is self-signed or does not meet standard validation criteria.
 	//
 	// HCL Example:
 	//
@@ -116,16 +109,24 @@ type CloneConfig struct {
 	// }
 	// ```
 	//
-	// -> **Note:** For credentials, use variables marked `sensitive = true` for
-	// `username` and `password`.
-	//
 	// -> **Note:** When using a multi-file OVF, keep the descriptor and its disk
 	// files in the same directory on the local and remote sources.
+	SkipTlsVerify bool `mapstructure:"skip_tls_verify"`
+}
+
+type CloneConfig struct {
+	// The name of the source virtual machine template to clone. Specify either
+	// `template` or `ovf_source`, but not both.
+	Template string `mapstructure:"template"`
+	// Configuration for deploying from an OVF/OVA source. Specify either a
+	// local `path` or a remote `url`. Conflicts with `template`. Refer to the
+	// [OVF source configuration](#ovf-source-configuration) section for available
+	// fields.
 	OvfSource *OvfSourceConfig `mapstructure:"ovf_source"`
 	// The size of the primary disk in MiB. Conflicts with `linked_clone`.
 	//
 	// -> **Note:** Only the primary disk size can be specified. Additional disks
-	// are not supported.
+	// are configured with [`storage`](#storage-configuration).
 	//
 	// ~> **Note:** Applies only when cloning from a `template`; rejected when
 	// `ovf_source` is set.
@@ -167,7 +168,9 @@ type CloneConfig struct {
 	Destroy bool `mapstructure:"destroy"`
 	// The vApp Options for the virtual machine. For more information, refer to
 	// the [vApp Options Configuration](#vapp-options-configuration) section.
-	VAppConfig    common.VAppConfig    `mapstructure:"vapp"`
+	VAppConfig common.VAppConfig `mapstructure:"vapp"`
+	// The storage configuration for the virtual machine. For more information,
+	// refer to the [Storage Configuration](#storage-configuration) section.
 	StorageConfig common.StorageConfig `mapstructure:",squash"`
 }
 

@@ -6,6 +6,8 @@
   Conditions, Limitations, and Compatibility](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-virtual-machine-administration-guide-8-0/configuring-virtual-machine-hardwarevsphere-vm-admin/scsi-controller-configurationvsphere-vm-admin.html)
   for additional information.
 
-- `storage` ([]DiskConfig) - A collection of one or more disks to be provisioned.
+- `storage` ([]DiskConfig) - Additional disks to attach to the virtual machine. Each `storage` block
+  defines one disk. Does not resize the primary disk; use `disk_size` for
+  that when cloning from a `template`.
 
 <!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->

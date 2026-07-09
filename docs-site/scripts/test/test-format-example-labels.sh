@@ -313,13 +313,32 @@ EOF
   assert_contains "$output" $'    "vapp": {\n      "properties": {' "json inner indent preserved in list"
 }
 
-test_ovf_source_section_headings() {
+test_ovf_source_field_examples() {
   local input
   input="$(cat <<'EOF'
-- `ovf_source` (*OvfSourceConfig) - Configuration for deploying from an OVF/OVA source. Specify either a
-  remote `url` or a local `path`. Conflicts with `template`.
+- `url` (string) - The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
+  Conflicts with `path`.
 
-  Local
+  HCL Example:
+
+  ```hcl
+  ovf_source {
+    url = "https://example.com/example.ovf"
+  }
+  ```
+
+  JSON Example:
+
+  ```json
+  "ovf_source": {
+    "url": "https://example.com/example.ovf"
+  }
+  ```
+
+  -> **Note:** Use `http://` or `https://`.
+
+- `path` (string) - The path to a local OVF/OVA file on the host filesystem.
+  Conflicts with `url`.
 
   HCL Example:
 
@@ -337,31 +356,15 @@ test_ovf_source_section_headings() {
   }
   ```
 
-  Remote
-
-  HCL Example:
-
-  ```hcl
-  ovf_source {
-    url = "https://example.com/example.ovf"
-  }
-  ```
-
-  JSON Example:
-
-  ```json
-  "ovf_source": {
-    "url": "https://example.com/example.ovf"
-  }
-  ```
+  -> **Note:** The `path` must end in `.ovf` or `.ova`.
 EOF
 )"
   local output
   output="$(format_example_labels "$input")"
-  assert_contains "$output" $'template`.\n\n    **Local**' "section heading on its own line"
-  assert_not_contains "$output" $'template`. **Local**' "section heading not inline with description"
-  assert_contains "$output" $'    **Local**\n\n    **HCL Example:**' "blank before hcl example after local heading"
-  assert_contains "$output" $'    **Remote**\n\n    **HCL Example:**' "blank before hcl example after remote heading"
+  assert_contains "$output" $'path`.\n\n    **HCL Example:**' "hcl example nested under url"
+  assert_contains "$output" $'url`.\n\n    **HCL Example:**' "hcl example nested under path"
+  assert_contains "$output" $'  -> **Note:** Use `http://` or `https://`.' "url note nested under field"
+  assert_contains "$output" $'  -> **Note:** The `path` must end in `.ovf` or `.ova`.' "path note nested under field"
 }
 
 main() {
@@ -381,7 +384,7 @@ main() {
   test_examples_after_block_admonition
   test_nested_fence_preserves_inner_indentation
   test_skip_code_fence
-  test_ovf_source_section_headings
+  test_ovf_source_field_examples
   echo "All example label formatting tests passed."
 }
 

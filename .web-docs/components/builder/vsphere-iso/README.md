@@ -812,96 +812,24 @@ JSON Example:
 
 ### Storage Configuration
 
-<!-- Code generated from the comments of the DiskConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
+**Optional**:
 
-The following example that will create a 15GB and a 20GB disk on the virtual
-machine. The second disk will be thin provisioned:
+<!-- Code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
 
-HCL Example:
+- `disk_controller_type` ([]string) - The disk controller type. One of `lsilogic`, `lsilogic-sas`, `pvscsi`,
+  `nvme`, `scsi`, or `sata`. Defaults to `lsilogic`. Use a list to define
+  additional controllers. Refer to [SCSI, SATA, and NVMe Storage Controller
+  Conditions, Limitations, and Compatibility](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-virtual-machine-administration-guide-8-0/configuring-virtual-machine-hardwarevsphere-vm-admin/scsi-controller-configurationvsphere-vm-admin.html)
+  for additional information.
 
-```hcl
+- `storage` ([]DiskConfig) - Additional disks to attach to the virtual machine. Each `storage` block
+  defines one disk. Does not resize the primary disk; use `disk_size` for
+  that when cloning from a `template`.
 
-	storage {
-	    disk_size = 15000
-	}
-	storage {
-	    disk_size = 20000
-	    disk_thin_provisioned = true
-	}
+<!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->
 
-```
 
-JSON Example:
-
-```json
-
-	"storage": [
-	  {
-	    "disk_size": 15000
-	  },
-	  {
-	    "disk_size": 20000,
-	    "disk_thin_provisioned": true
-	  }
-	],
-
-```
-
-The following example will use two PVSCSI controllers and two disks on each
-controller.
-
-HCL Example:
-
-```hcl
-
-	 disk_controller_type = ["pvscsi", "pvscsi"]
-		storage {
-		   disk_size = 15000
-		   disk_controller_index = 0
-		}
-		storage {
-		   disk_size = 15000
-		   disk_controller_index = 0
-		}
-		storage {
-		   disk_size = 15000
-		   disk_controller_index = 1
-		}
-		storage {
-		   disk_size = 15000
-		   disk_controller_index = 1
-		}
-
-```
-
-JSON Example:
-
-```json
-
-	"disk_controller_type": ["pvscsi", "pvscsi"],
-	"storage": [
-	  {
-	    "disk_size": 15000,
-	    "disk_controller_index": 0
-	  },
-	  {
-	    "disk_size": 15000,
-	    "disk_controller_index": 0
-	  },
-	  {
-	    "disk_size": 15000,
-	    "disk_controller_index": 1
-	  },
-	  {
-	    "disk_size": 15000,
-	    "disk_controller_index": 1
-	  }
-	],
-
-```
-
-<!-- End of code generated from the comments of the DiskConfig struct in builder/vsphere/common/storage_config.go; -->
-
+#### Storage Disk Settings
 
 **Required**:
 
@@ -928,18 +856,83 @@ JSON Example:
 <!-- End of code generated from the comments of the DiskConfig struct in builder/vsphere/common/storage_config.go; -->
 
 
-<!-- Code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
+The following example creates a 15GB and a 20GB disk on the virtual machine.
+The second disk is thin provisioned:
 
-- `disk_controller_type` ([]string) - The disk controller type. One of `lsilogic`, `lsilogic-sas`, `pvscsi`,
-  `nvme`, `scsi`, or `sata`. Defaults to `lsilogic`. Use a list to define
-  additional controllers. Refer to [SCSI, SATA, and NVMe Storage Controller
-  Conditions, Limitations, and Compatibility](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-virtual-machine-administration-guide-8-0/configuring-virtual-machine-hardwarevsphere-vm-admin/scsi-controller-configurationvsphere-vm-admin.html)
-  for additional information.
+HCL Example:
 
-- `storage` ([]DiskConfig) - A collection of one or more disks to be provisioned.
+```hcl
+storage {
+  disk_size = 15000
+}
+storage {
+  disk_size             = 20000
+  disk_thin_provisioned = true
+}
+```
 
-<!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->
+JSON Example:
 
+```json
+"storage": [
+  {
+    "disk_size": 15000
+  },
+  {
+    "disk_size": 20000,
+    "disk_thin_provisioned": true
+  }
+]
+```
+
+The following example uses two PVSCSI controllers and two disks on each
+controller:
+
+HCL Example:
+
+```hcl
+disk_controller_type = ["pvscsi", "pvscsi"]
+storage {
+  disk_size             = 15000
+  disk_controller_index = 0
+}
+storage {
+  disk_size             = 15000
+  disk_controller_index = 0
+}
+storage {
+  disk_size             = 15000
+  disk_controller_index = 1
+}
+storage {
+  disk_size             = 15000
+  disk_controller_index = 1
+}
+```
+
+JSON Example:
+
+```json
+"disk_controller_type": ["pvscsi", "pvscsi"],
+"storage": [
+  {
+    "disk_size": 15000,
+    "disk_controller_index": 0
+  },
+  {
+    "disk_size": 15000,
+    "disk_controller_index": 0
+  },
+  {
+    "disk_size": 15000,
+    "disk_controller_index": 1
+  },
+  {
+    "disk_size": 15000,
+    "disk_controller_index": 1
+  }
+]
+```
 
 ### Flag Configuration
 

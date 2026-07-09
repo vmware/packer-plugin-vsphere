@@ -320,8 +320,8 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 // FlatOvfSourceConfig is an auto-generated flat version of OvfSourceConfig.
 // Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
 type FlatOvfSourceConfig struct {
-	URL           *string `mapstructure:"url" cty:"url" hcl:"url"`
 	Path          *string `mapstructure:"path" cty:"path" hcl:"path"`
+	URL           *string `mapstructure:"url" cty:"url" hcl:"url"`
 	Username      *string `mapstructure:"username" cty:"username" hcl:"username"`
 	Password      *string `mapstructure:"password" cty:"password" hcl:"password"`
 	SkipTlsVerify *bool   `mapstructure:"skip_tls_verify" cty:"skip_tls_verify" hcl:"skip_tls_verify"`
@@ -339,8 +339,8 @@ func (*OvfSourceConfig) FlatMapstructure() interface{ HCL2Spec() map[string]hcld
 // The decoded values from this spec will then be applied to a FlatOvfSourceConfig.
 func (*FlatOvfSourceConfig) HCL2Spec() map[string]hcldec.Spec {
 	s := map[string]hcldec.Spec{
-		"url":             &hcldec.AttrSpec{Name: "url", Type: cty.String, Required: false},
 		"path":            &hcldec.AttrSpec{Name: "path", Type: cty.String, Required: false},
+		"url":             &hcldec.AttrSpec{Name: "url", Type: cty.String, Required: false},
 		"username":        &hcldec.AttrSpec{Name: "username", Type: cty.String, Required: false},
 		"password":        &hcldec.AttrSpec{Name: "password", Type: cty.String, Required: false},
 		"skip_tls_verify": &hcldec.AttrSpec{Name: "skip_tls_verify", Type: cty.Bool, Required: false},

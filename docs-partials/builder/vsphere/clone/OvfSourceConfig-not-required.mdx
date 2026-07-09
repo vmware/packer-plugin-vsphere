@@ -1,21 +1,88 @@
 <!-- Code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
-- `url` (string) - The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
-  Conflicts with `path`.
-
 - `path` (string) - The path to a local OVF/OVA file on the host filesystem.
   Conflicts with `url`.
+  
+  HCL Example:
+  
+  ```hcl
+  ovf_source {
+    path = "./artifacts/example.ovf"
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "ovf_source": {
+    "path": "./artifacts/example.ovf"
+  }
+  ```
+  
+  -> **Note:** The `path` must end in `.ovf` or `.ova`.
+
+- `url` (string) - The URL of the remote OVF/OVA file. Supports HTTP and HTTPS protocols.
+  Conflicts with `path`.
+  
+  HCL Example:
+  
+  ```hcl
+  ovf_source {
+    url = "https://packages.example.com/artifacts/example.ovf"
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "ovf_source": {
+    "url": "https://packages.example.com/artifacts/example.ovf"
+  }
+  ```
+  
+  -> **Note:** Use `http://` or `https://`.
+  
+  -> **Note:** The `url` must end in `.ovf` or `.ova`.
 
 - `username` (string) - The username for basic authentication when accessing the remote OVF/OVA file.
   Must be used together with `password`. Only applicable when `url` is set.
+  
+  -> **Note:** For credentials, use variables marked `sensitive = true`.
 
 - `password` (string) - The password for basic authentication when accessing the remote OVF/OVA file.
   Must be used together with `username`. Only applicable when `url` is set.
+  
+  -> **Note:** For credentials, use variables marked `sensitive = true`.
 
 - `skip_tls_verify` (bool) - Do not validate the certificate when accessing HTTPS URLs.
   Defaults to `false`. Only applicable when `url` is set.
   
   -> **Note:** This option is beneficial in scenarios where the certificate
   is self-signed or does not meet standard validation criteria.
+  
+  HCL Example:
+  
+  ```hcl
+  ovf_source {
+    url             = "https://packages.example.com/artifacts/example.ova"
+    username        = "ovf_source_username"
+    password        = "ovf_source_password"
+    skip_tls_verify = false
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "ovf_source": {
+    "url": "https://packages.example.com/artifacts/example.ova",
+    "username": "ovf_source_username",
+    "password": "ovf_source_password",
+    "skip_tls_verify": false
+  }
+  ```
+  
+  -> **Note:** When using a multi-file OVF, keep the descriptor and its disk
+  files in the same directory on the local and remote sources.
 
 <!-- End of code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; -->

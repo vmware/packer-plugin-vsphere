@@ -59,6 +59,14 @@ test_ovf_anchor() {
   assert_contains "$output" '[ovf](#content-library-configuration)' "ovf field anchor"
 }
 
+test_storage_field_anchors() {
+  local input='are configured with [`storage`](#storage). use [`disk_size`](#disk_size) for that.'
+  local output
+  output="$(fix_internal_links "$input" "builders/vsphere-clone.md")"
+  assert_contains "$output" '[`storage`](#storage-configuration)' "storage field anchor"
+  assert_contains "$output" '[`disk_size`](#clone-configuration)' "disk_size field anchor"
+}
+
 test_home_page_component_link() {
   local input='[vsphere-iso](builders/vsphere-iso.md)'
   local output
@@ -74,6 +82,7 @@ main() {
   test_location_field_anchor
   test_customization_anchor
   test_ovf_anchor
+  test_storage_field_anchors
   test_home_page_component_link
   echo "All fix-internal-links tests passed."
 }
