@@ -117,7 +117,7 @@ type ExportConfig struct {
 	//   }
 	// ```
 	//
-	// JSON: Example:
+	// JSON Example:
 	//
 	// ```json
 	// ...

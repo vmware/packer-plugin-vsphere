@@ -34,7 +34,7 @@ test_export_options_examples() {
   export { options = ["mac"] }
   ```
 
-  JSON: Example:
+  JSON Example:
 
   ```json
   "export": { "options": ["mac"] }
@@ -49,7 +49,6 @@ EOF
   assert_contains "$output" $'exported.\n  For example' "example text in list item"
   assert_contains "$output" '=== "HCL"' "hcl example tab"
   assert_contains "$output" '=== "JSON"' "json example tab"
-  assert_not_contains "$output" "JSON: Example:" "legacy json label removed"
 }
 
 main() {

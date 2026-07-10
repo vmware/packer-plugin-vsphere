@@ -24,7 +24,6 @@ format_example_labels() {
       "Usage example (JSON)" => "JSON Example",
       "Usage example (HCL)"  => "HCL Example",
       "In JSON"              => "JSON Example",
-      "JSON: Example"        => "JSON Example",
       "In HCL2"              => "HCL Example",
       "In HCL"               => "HCL Example",
     );
