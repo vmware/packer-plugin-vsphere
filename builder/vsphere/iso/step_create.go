@@ -10,14 +10,12 @@ package iso
 import (
 	"context"
 	"fmt"
-	"log"
 	"path"
 	"strings"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/packerbuilderdata"
-	"github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
@@ -226,39 +224,9 @@ func (s *StepCreateVM) Run(_ context.Context, state multistep.StateBag) multiste
 	}
 
 	// Handle multi-disk placement when using a datastore cluster.
-	var datastoreRefs []*types.ManagedObjectReference
-	if s.Location.DatastoreCluster != "" && len(disks) > 1 {
-		if dsSelector, ok := d.(driver.DatastoreSelector); ok {
-			// Request Storage DRS recommendations for all disks at once for optimal placement.
-			ui.Sayf("Requesting Storage DRS recommendations for %d disks...", len(disks))
-
-			diskDatastores, method, err := dsSelector.SelectDatastoresForDisks(s.Location.DatastoreCluster, disks)
-			if err != nil {
-				ui.Errorf("Warning: Failed to get Storage DRS recommendations: %s. Using primary datastore.", err)
-				if primaryDatastore != nil {
-					for i := 0; i < len(disks); i++ {
-						ref := primaryDatastore.Reference()
-						datastoreRefs = append(datastoreRefs, &ref)
-					}
-				}
-			} else {
-				// Use the first disk's datastore as the primary datastore
-				if len(diskDatastores) > 0 {
-					datastoreName = diskDatastores[0].Name()
-				}
-
-				for i, ds := range diskDatastores {
-					ref := ds.Reference()
-					if method == driver.SelectionMethodDRS {
-						log.Printf("[INFO] Disk %d: Storage DRS selected datastore '%s'", i+1, ds.Name())
-					} else {
-						log.Printf("[INFO] Disk %d: Using first available datastore '%s'", i+1, ds.Name())
-					}
-					datastoreRefs = append(datastoreRefs, &ref)
-				}
-			}
-		}
-	}
+	datastoreName, datastoreRefs := common.ResolveMultiDiskDatastoreRefs(
+		ui, d, s.Location.DatastoreCluster, disks, primaryDatastore, datastoreName,
+	)
 
 	vm, err := d.CreateVM(&driver.CreateConfig{
 		StorageConfig: driver.StorageConfig{
