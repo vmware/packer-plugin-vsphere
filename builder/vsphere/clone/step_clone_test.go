@@ -23,7 +23,7 @@ import (
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
 
-func TestCreateConfig_Prepare(t *testing.T) {
+func TestCloneConfig_Prepare(t *testing.T) {
 	tc := []struct {
 		name           string
 		config         *CloneConfig
@@ -1197,7 +1197,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 			name: "OVF validation error",
 			config: &CloneConfig{
 				OvfSource: &OvfSourceConfig{
-					URL: "hhttps://packages.example.com/artifacts/example-invalid.ovf",
+					URL: "https://packages.example.com/artifacts/example-invalid.ovf",
 				},
 				StorageConfig: common.StorageConfig{
 					DiskControllerType: []string{"pvscsi"},
@@ -1214,7 +1214,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 				mock.DeployOvfError = fmt.Errorf("invalid OVF descriptor: malformed XML")
 			},
 			expectError:    true,
-			expectedErrMsg: "OVF deployment failed for OVF source 'hhttps://packages.example.com/artifacts/example-invalid.ovf': invalid OVF descriptor: malformed XML",
+			expectedErrMsg: "OVF deployment failed for OVF source 'https://packages.example.com/artifacts/example-invalid.ovf': invalid OVF descriptor: malformed XML",
 			errorType:      "validation",
 		},
 		{
