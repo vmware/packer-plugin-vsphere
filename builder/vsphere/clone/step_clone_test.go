@@ -1657,7 +1657,7 @@ func TestOvfSourceConfig_ErrorMessageSanitization(t *testing.T) {
 		{
 			name:     "error with password",
 			errMsg:   "authentication failed: password=testpass invalid",
-			expected: "authentication failed: [credentials removed] invalid",
+			expected: "authentication failed: password=[credentials removed] invalid",
 		},
 		{
 			name:     "error with URL credentials",

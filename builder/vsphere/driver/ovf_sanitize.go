@@ -9,6 +9,18 @@ import (
 	"regexp"
 )
 
+var (
+	ovfURLWithCredentialsPattern = regexp.MustCompile(`https?://[^:]+:[^@]+@[^\s]+`)
+	ovfCredentialPatterns        = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)(password[=:]\s*)[^\s&]+`),
+		regexp.MustCompile(`(?i)(passwd[=:]\s*)[^\s&]+`),
+		regexp.MustCompile(`(?i)(pwd[=:]\s*)[^\s&]+`),
+		regexp.MustCompile(`(?i)(token[=:]\s*)[^\s&]+`),
+		regexp.MustCompile(`(?i)(auth[=:]\s*)[^\s&]+`),
+		regexp.MustCompile(`(?i)(credential[s]?[=:]\s*)[^\s&]+`),
+	}
+)
+
 // SanitizeOvfURL removes credentials from URLs for safe logging.
 func SanitizeOvfURL(urlStr string) string {
 	u, err := url.Parse(urlStr)
@@ -16,9 +28,7 @@ func SanitizeOvfURL(urlStr string) string {
 		return "[invalid URL]"
 	}
 
-	if u.User != nil {
-		u.User = nil
-	}
+	u.User = nil
 	return u.String()
 }
 
@@ -38,8 +48,7 @@ func SanitizeOvfErrorMessage(errMsg string) string {
 }
 
 func sanitizeOvfURLsInString(str string) string {
-	urlPattern := regexp.MustCompile(`https?://[^:]+:[^@]+@[^\s]+`)
-	return urlPattern.ReplaceAllStringFunc(str, func(match string) string {
+	return ovfURLWithCredentialsPattern.ReplaceAllStringFunc(str, func(match string) string {
 		if u, err := url.Parse(match); err == nil {
 			u.User = nil
 			return u.String()
@@ -49,19 +58,9 @@ func sanitizeOvfURLsInString(str string) string {
 }
 
 func sanitizeOvfCredentialPatterns(str string) string {
-	patterns := []string{
-		`password[=:]\s*[^\s&]+`,
-		`passwd[=:]\s*[^\s&]+`,
-		`pwd[=:]\s*[^\s&]+`,
-		`token[=:]\s*[^\s&]+`,
-		`auth[=:]\s*[^\s&]+`,
-		`credential[s]?[=:]\s*[^\s&]+`,
-	}
-
 	sanitized := str
-	for _, pattern := range patterns {
-		re := regexp.MustCompile(`(?i)` + pattern)
-		sanitized = re.ReplaceAllString(sanitized, "[credentials removed]")
+	for _, re := range ovfCredentialPatterns {
+		sanitized = re.ReplaceAllString(sanitized, "$1[credentials removed]")
 	}
 	return sanitized
 }

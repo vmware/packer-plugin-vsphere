@@ -23,12 +23,12 @@ func TestSanitizeOvfErrorMessage(t *testing.T) {
 		{
 			name:     "Password in error message",
 			input:    "authentication failed: password=testpass",
-			expected: "authentication failed: [credentials removed]",
+			expected: "authentication failed: password=[credentials removed]",
 		},
 		{
 			name:     "Multiple credential patterns",
 			input:    "failed with password=secret and token=abc123",
-			expected: "failed with [credentials removed] and [credentials removed]",
+			expected: "failed with password=[credentials removed] and token=[credentials removed]",
 		},
 		{
 			name:     "No credentials to sanitize",
