@@ -246,7 +246,7 @@ func TestRemoteOvfArchive_AuthURL(t *testing.T) {
 }
 
 func TestHttpOvfFetchError(t *testing.T) {
-	const fileURL = "https://user:secret@packages.example.com/artifacts/example.ovf"
+	const fileURL = "https://testuser:testpass@packages.example.com/artifacts/example.ovf"
 	const sanitized = "https://packages.example.com/artifacts/example.ovf"
 
 	tests := []struct {
@@ -294,7 +294,7 @@ func TestHttpOvfFetchError(t *testing.T) {
 			name:           "strips credentials from URL",
 			statusCode:     http.StatusNotFound,
 			wantContains:   []string{sanitized},
-			wantNotContain: "secret",
+			wantNotContain: "testpass",
 		},
 	}
 

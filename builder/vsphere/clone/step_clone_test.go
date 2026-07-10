@@ -1428,7 +1428,7 @@ func TestStepCloneVM_ErrorMessageFormatting(t *testing.T) {
 	}{
 		{
 			name:        "URL with credentials sanitized",
-			url:         "https://testuser:secret@packages.example.com/artifacts/example.ovf",
+			url:         "https://testuser:testpass@packages.example.com/artifacts/example.ovf",
 			username:    "testuser",
 			password:    "testpass",
 			mockError:   fmt.Errorf("connection failed"),
@@ -1438,7 +1438,7 @@ func TestStepCloneVM_ErrorMessageFormatting(t *testing.T) {
 				"https://packages.example.com/artifacts/example.ovf",
 				"connection failed",
 			},
-			shouldNotContain: []string{"testpass", "secret", "testuser@", "testuser:secret"},
+			shouldNotContain: []string{"testpass", "testuser@", "testuser:testpass"},
 		},
 		{
 			name:        "Error message with password pattern sanitized",
@@ -1616,8 +1616,8 @@ func TestOvfSourceConfig_CredentialSanitization(t *testing.T) {
 		},
 		{
 			name:     "HTTP URL with credentials",
-			url:      "http://admin:secret@internal.example.com/templates/vm.ova",
-			expected: "http://internal.example.com/templates/vm.ova",
+			url:      "http://testuser:testpass@packages.example.com/artifacts/example.ovf",
+			expected: "http://packages.example.com/artifacts/example.ovf",
 		},
 	}
 
