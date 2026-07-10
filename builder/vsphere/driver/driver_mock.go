@@ -52,6 +52,19 @@ type DriverMock struct {
 	GetOvfOptionsAuth          *OvfAuthConfig
 	GetOvfOptionsLocale        string
 	GetOvfOptionsSkipTlsVerify bool
+
+	ResolveContentLibraryItemCalled     bool
+	ResolveContentLibraryItemLibrary    string
+	ResolveContentLibraryItemName       string
+	ResolveContentLibraryItemShouldFail bool
+	ResolveContentLibraryItemError      error
+	ResolveContentLibraryItemResult     *library.Item
+
+	DeployContentLibraryItemCalled     bool
+	DeployContentLibraryItemConfig     *ContentLibraryDeployConfig
+	DeployContentLibraryItemShouldFail bool
+	DeployContentLibraryItemError      error
+	DeployContentLibraryItemVM         VirtualMachine
 }
 
 // NewDriverMock creates a new instance of DriverMock for testing.
@@ -211,6 +224,45 @@ func (d *DriverMock) GetOvfOptions(ctx context.Context, config *OvfDeployConfig)
 	}
 
 	return d.GetOvfOptionsResult, nil
+}
+
+func (d *DriverMock) ResolveContentLibraryItem(libraryName, itemName string) (*library.Item, error) {
+	d.ResolveContentLibraryItemCalled = true
+	d.ResolveContentLibraryItemLibrary = libraryName
+	d.ResolveContentLibraryItemName = itemName
+
+	if d.ResolveContentLibraryItemShouldFail {
+		if d.ResolveContentLibraryItemError != nil {
+			return nil, d.ResolveContentLibraryItemError
+		}
+		return nil, fmt.Errorf("resolve content library item failed")
+	}
+
+	if d.ResolveContentLibraryItemResult == nil {
+		d.ResolveContentLibraryItemResult = &library.Item{
+			Name: itemName,
+			Type: library.ItemTypeVMTX,
+		}
+	}
+
+	return d.ResolveContentLibraryItemResult, nil
+}
+
+func (d *DriverMock) DeployContentLibraryItem(ctx context.Context, config *ContentLibraryDeployConfig, ui packersdk.Ui) (VirtualMachine, error) {
+	d.DeployContentLibraryItemCalled = true
+	d.DeployContentLibraryItemConfig = config
+
+	if d.DeployContentLibraryItemShouldFail {
+		if d.DeployContentLibraryItemError != nil {
+			return nil, d.DeployContentLibraryItemError
+		}
+		return nil, fmt.Errorf("deploy content library item failed")
+	}
+
+	if d.DeployContentLibraryItemVM == nil {
+		d.DeployContentLibraryItemVM = new(VirtualMachineMock)
+	}
+	return d.DeployContentLibraryItemVM, nil
 }
 
 func (d *DriverMock) Cleanup() (error, error) {

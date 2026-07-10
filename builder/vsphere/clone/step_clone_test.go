@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/mitchellh/mapstructure"
+	"github.com/vmware/govmomi/vapi/library"
 	"github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
@@ -91,7 +92,7 @@ func TestCloneConfig_Prepare(t *testing.T) {
 				},
 			},
 			fail:           true,
-			expectedErrMsg: "either 'template' or 'ovf_source' must be specified",
+			expectedErrMsg: "clone source is required - specify either 'template', 'ovf_source', or 'content_library_source'",
 		},
 		{
 			name: "Validate LinkedClone and DiskSize set at the same time",
@@ -127,6 +128,38 @@ func TestCloneConfig_Prepare(t *testing.T) {
 			},
 			fail:           true,
 			expectedErrMsg: "'network' is required when 'mac_address' is specified",
+		},
+		{
+			name: "Reject vapp.deployment_option with template",
+			config: &CloneConfig{
+				Template: "template name",
+				VAppConfig: common.VAppConfig{
+					DeploymentOption: "small",
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "'vapp.deployment_option' cannot be used with 'template'",
+		},
+		{
+			name: "Allow mac_address without network for ovf_source",
+			config: &CloneConfig{
+				OvfSource: &OvfSourceConfig{
+					URL: "https://packages.example.com/artifacts/example.ovf",
+				},
+				MacAddress: "00:50:56:00:00:00",
+			},
+			fail: false,
+		},
+		{
+			name: "Allow mac_address without network for content_library_source at prepare",
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-template",
+				},
+				MacAddress: "00:50:56:00:00:00",
+			},
+			fail: false,
 		},
 		{
 			name: "Validate template and ovf_source mutual exclusivity",
@@ -173,6 +206,89 @@ func TestCloneConfig_Prepare(t *testing.T) {
 			},
 			fail:           true,
 			expectedErrMsg: "'ovf_source' url must use HTTP or HTTPS protocol",
+		},
+		{
+			name: "Validate linked_clone cannot be used with content_library_source",
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-template",
+				},
+				LinkedClone: true,
+			},
+			fail:           true,
+			expectedErrMsg: "'linked_clone' cannot be used with 'content_library_source'",
+		},
+		{
+			name: "Validate content_library_source library is required",
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Name: "example-template",
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "'library' is required when using 'content_library_source'",
+		},
+		{
+			name: "Validate content_library_source name is required",
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "'name' is required when using 'content_library_source'",
+		},
+		{
+			name: "Valid content_library_source config",
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-template",
+				},
+			},
+			fail: false,
+		},
+		{
+			name: "Validate template and content_library_source mutual exclusivity",
+			config: &CloneConfig{
+				Template: "template name",
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-template",
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "cannot specify both 'template' and 'content_library_source' - choose one source type",
+		},
+		{
+			name: "Validate ovf_source and content_library_source mutual exclusivity",
+			config: &CloneConfig{
+				OvfSource: &OvfSourceConfig{
+					URL: "https://packages.example.com/artifacts/example.ovf",
+				},
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-template",
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "cannot specify both 'ovf_source' and 'content_library_source' - choose one source type",
+		},
+		{
+			name: "Validate all three sources mutual exclusivity",
+			config: &CloneConfig{
+				Template: "template name",
+				OvfSource: &OvfSourceConfig{
+					URL: "https://packages.example.com/artifacts/example.ovf",
+				},
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-template",
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "cannot specify both 'template' and 'ovf_source' - choose one source type",
 		},
 		{
 			name: "Validate ovf_source URL extension",
@@ -589,6 +705,402 @@ func TestStepCloneVM_OvfSourceDetection(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestStepCloneVM_ContentLibrarySourceDetection(t *testing.T) {
+	state := new(multistep.BasicStateBag)
+	state.Put("ui", &packersdk.BasicUi{
+		Reader: new(bytes.Buffer),
+		Writer: new(bytes.Buffer),
+	})
+	driverMock := driver.NewDriverMock()
+	driverMock.DeployContentLibraryItemVM = new(driver.VirtualMachineMock)
+	state.Put("driver", driverMock)
+
+	step := &StepCloneVM{
+		Config: &CloneConfig{
+			ContentLibrarySource: &ContentLibrarySourceConfig{
+				Library: "Example Content Library",
+				Name:    "example-template",
+			},
+		},
+		Location: basicLocationConfig(),
+		Force:    true,
+	}
+
+	action := step.Run(context.Background(), state)
+	if action != multistep.ActionContinue {
+		t.Fatalf("expected ActionContinue, got %v; error: %v", action, state.Get("error"))
+	}
+	if !driverMock.ResolveContentLibraryItemCalled {
+		t.Fatal("expected ResolveContentLibraryItem to be called")
+	}
+	if driverMock.ResolveContentLibraryItemLibrary != "Example Content Library" {
+		t.Fatalf("expected resolve library %q, got %q", "Example Content Library", driverMock.ResolveContentLibraryItemLibrary)
+	}
+	if driverMock.ResolveContentLibraryItemName != "example-template" {
+		t.Fatalf("expected resolve item name %q, got %q", "example-template", driverMock.ResolveContentLibraryItemName)
+	}
+	if !driverMock.DeployContentLibraryItemCalled {
+		t.Fatal("expected DeployContentLibraryItem to be called")
+	}
+	if driverMock.FindVMCalled || driverMock.DeployOvfCalled {
+		t.Fatal("expected neither FindVM nor DeployOvf to be called")
+	}
+	if driverMock.DeployContentLibraryItemConfig == nil {
+		t.Fatal("expected DeployContentLibraryItemConfig to be set")
+	}
+	if driverMock.DeployContentLibraryItemConfig.Item == nil {
+		t.Fatal("expected DeployContentLibraryItemConfig.Item to be set")
+	}
+	if driverMock.DeployContentLibraryItemConfig.Item.Name != "example-template" {
+		t.Fatalf("expected item name %q, got %q", "example-template", driverMock.DeployContentLibraryItemConfig.Item.Name)
+	}
+}
+
+func TestStepCloneVM_ContentLibraryDeployConfigPassthrough(t *testing.T) {
+	state := new(multistep.BasicStateBag)
+	state.Put("ui", &packersdk.BasicUi{
+		Reader: new(bytes.Buffer),
+		Writer: new(bytes.Buffer),
+	})
+	driverMock := driver.NewDriverMock()
+	driverMock.ResolveContentLibraryItemResult = &library.Item{
+		Name: "example-template",
+		Type: library.ItemTypeVMTX,
+	}
+	driverMock.DeployContentLibraryItemVM = new(driver.VirtualMachineMock)
+	state.Put("driver", driverMock)
+
+	step := &StepCloneVM{
+		Config: &CloneConfig{
+			ContentLibrarySource: &ContentLibrarySourceConfig{
+				Library: "Example Content Library",
+				Name:    "example-template",
+			},
+			Network:    "VM Network",
+			MacAddress: "00:50:56:00:00:01",
+			Notes:      "built by packer",
+			DiskSize:   40960,
+			VAppConfig: common.VAppConfig{
+				Properties: map[string]string{
+					"hostname": "example",
+				},
+			},
+			StorageConfig: common.StorageConfig{
+				DiskControllerType: []string{"pvscsi"},
+				Storage: []common.DiskConfig{
+					{
+						DiskSize:            32768,
+						DiskThinProvisioned: true,
+					},
+				},
+			},
+		},
+		Location: basicLocationConfig(),
+		Force:    true,
+	}
+
+	action := step.Run(context.Background(), state)
+	if action != multistep.ActionContinue {
+		t.Fatalf("expected ActionContinue, got %v; error: %v", action, state.Get("error"))
+	}
+
+	cfg := driverMock.DeployContentLibraryItemConfig
+	if cfg == nil {
+		t.Fatal("expected DeployContentLibraryItemConfig to be set")
+	}
+	if cfg.Network != "VM Network" {
+		t.Fatalf("expected network %q, got %q", "VM Network", cfg.Network)
+	}
+	if cfg.MacAddress != "00:50:56:00:00:01" {
+		t.Fatalf("expected mac address %q, got %q", "00:50:56:00:00:01", cfg.MacAddress)
+	}
+	if cfg.Annotation != "built by packer" {
+		t.Fatalf("expected annotation %q, got %q", "built by packer", cfg.Annotation)
+	}
+	if cfg.PrimaryDiskSize != 40960 {
+		t.Fatalf("expected primary disk size 40960, got %d", cfg.PrimaryDiskSize)
+	}
+	if cfg.VAppProperties["hostname"] != "example" {
+		t.Fatalf("expected vApp property hostname=example, got %#v", cfg.VAppProperties)
+	}
+	if len(cfg.StorageConfig.DiskControllerType) != 1 || cfg.StorageConfig.DiskControllerType[0] != "pvscsi" {
+		t.Fatalf("unexpected disk controller type: %#v", cfg.StorageConfig.DiskControllerType)
+	}
+	if len(cfg.StorageConfig.Storage) != 1 || cfg.StorageConfig.Storage[0].DiskSize != 32768 {
+		t.Fatalf("unexpected storage config: %#v", cfg.StorageConfig.Storage)
+	}
+	if !cfg.StorageConfig.Storage[0].DiskThinProvisioned {
+		t.Fatal("expected thin provisioned disk")
+	}
+	if cfg.Datastore != "test-datastore" {
+		t.Fatalf("expected datastore %q, got %q", "test-datastore", cfg.Datastore)
+	}
+}
+
+func TestStepCloneVM_ContentLibraryResolveFailure(t *testing.T) {
+	state := new(multistep.BasicStateBag)
+	state.Put("ui", &packersdk.BasicUi{
+		Reader: new(bytes.Buffer),
+		Writer: new(bytes.Buffer),
+	})
+	driverMock := driver.NewDriverMock()
+	driverMock.ResolveContentLibraryItemShouldFail = true
+	driverMock.ResolveContentLibraryItemError = fmt.Errorf("library not found")
+	state.Put("driver", driverMock)
+
+	step := &StepCloneVM{
+		Config: &CloneConfig{
+			ContentLibrarySource: &ContentLibrarySourceConfig{
+				Library: "Missing Library",
+				Name:    "example-template",
+			},
+		},
+		Location: basicLocationConfig(),
+		Force:    true,
+	}
+
+	action := step.Run(context.Background(), state)
+	if action != multistep.ActionHalt {
+		t.Fatalf("expected ActionHalt, got %v", action)
+	}
+	if driverMock.DeployContentLibraryItemCalled {
+		t.Fatal("expected DeployContentLibraryItem NOT to be called")
+	}
+	errMsg := state.Get("error").(error).Error()
+	if !strings.Contains(errMsg, "error resolving content library source") {
+		t.Fatalf("unexpected error: %s", errMsg)
+	}
+}
+
+func TestStepCloneVM_ContentLibraryDeployFailure(t *testing.T) {
+	state := new(multistep.BasicStateBag)
+	state.Put("ui", &packersdk.BasicUi{
+		Reader: new(bytes.Buffer),
+		Writer: new(bytes.Buffer),
+	})
+	driverMock := driver.NewDriverMock()
+	driverMock.DeployContentLibraryItemShouldFail = true
+	driverMock.DeployContentLibraryItemError = fmt.Errorf("deploy failed")
+	state.Put("driver", driverMock)
+
+	step := &StepCloneVM{
+		Config: &CloneConfig{
+			ContentLibrarySource: &ContentLibrarySourceConfig{
+				Library: "Example Content Library",
+				Name:    "example-template",
+			},
+		},
+		Location: basicLocationConfig(),
+		Force:    true,
+	}
+
+	action := step.Run(context.Background(), state)
+	if action != multistep.ActionHalt {
+		t.Fatalf("expected ActionHalt, got %v", action)
+	}
+	errMsg := state.Get("error").(error).Error()
+	if !strings.Contains(errMsg, "content library deployment failed") {
+		t.Fatalf("unexpected error: %s", errMsg)
+	}
+}
+
+func TestStepCloneVM_ContentLibraryOvfRuntimeValidation(t *testing.T) {
+	tests := []struct {
+		name           string
+		itemType       string
+		config         *CloneConfig
+		expectHalt     bool
+		expectedErrMsg string
+	}{
+		{
+			name:     "Reject disk_size for OVF library item",
+			itemType: library.ItemTypeOVF,
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-ovf",
+				},
+				DiskSize: 40960,
+			},
+			expectHalt:     true,
+			expectedErrMsg: "'disk_size' cannot be used with OVF content library items",
+		},
+		{
+			name:     "Reject storage for OVF library item",
+			itemType: library.ItemTypeOVF,
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-ovf",
+				},
+				StorageConfig: common.StorageConfig{
+					Storage: []common.DiskConfig{
+						{DiskSize: 32768},
+					},
+				},
+			},
+			expectHalt:     true,
+			expectedErrMsg: "'storage' cannot be used with OVF content library items",
+		},
+		{
+			name:     "Reject disk_controller_type for OVF library item",
+			itemType: library.ItemTypeOVF,
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-ovf",
+				},
+				StorageConfig: common.StorageConfig{
+					DiskControllerType: []string{"pvscsi"},
+				},
+			},
+			expectHalt:     true,
+			expectedErrMsg: "'disk_controller_type' cannot be used with OVF content library items",
+		},
+		{
+			name:     "Allow disk_size for VM template library item",
+			itemType: library.ItemTypeVMTX,
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-template",
+				},
+				DiskSize: 40960,
+			},
+			expectHalt: false,
+		},
+		{
+			name:     "Reject mac_address without network for VM template library item",
+			itemType: library.ItemTypeVMTX,
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-template",
+				},
+				MacAddress: "00:50:56:00:00:00",
+			},
+			expectHalt:     true,
+			expectedErrMsg: "'network' is required when 'mac_address' is specified",
+		},
+		{
+			name:     "Allow mac_address without network for OVF library item",
+			itemType: library.ItemTypeOVF,
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-ovf",
+				},
+				MacAddress: "00:50:56:00:00:00",
+			},
+			expectHalt: false,
+		},
+		{
+			name:     "Reject vapp.deployment_option for VM template library item",
+			itemType: library.ItemTypeVMTX,
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-template",
+				},
+				VAppConfig: common.VAppConfig{
+					DeploymentOption: "small",
+				},
+			},
+			expectHalt:     true,
+			expectedErrMsg: "'vapp.deployment_option' cannot be used with VM template content library items",
+		},
+		{
+			name:     "Allow vapp.deployment_option for OVF library item",
+			itemType: library.ItemTypeOVF,
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-ovf",
+				},
+				VAppConfig: common.VAppConfig{
+					DeploymentOption: "small",
+				},
+			},
+			expectHalt: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			state := new(multistep.BasicStateBag)
+			state.Put("ui", &packersdk.BasicUi{
+				Reader: new(bytes.Buffer),
+				Writer: new(bytes.Buffer),
+			})
+			driverMock := driver.NewDriverMock()
+			driverMock.ResolveContentLibraryItemResult = &library.Item{
+				Name: tt.config.ContentLibrarySource.Name,
+				Type: tt.itemType,
+			}
+			driverMock.DeployContentLibraryItemVM = new(driver.VirtualMachineMock)
+			state.Put("driver", driverMock)
+
+			step := &StepCloneVM{
+				Config:   tt.config,
+				Location: basicLocationConfig(),
+				Force:    true,
+			}
+
+			action := step.Run(context.Background(), state)
+			if tt.expectHalt {
+				if action != multistep.ActionHalt {
+					t.Fatalf("expected ActionHalt, got %v; error: %v", action, state.Get("error"))
+				}
+				if driverMock.DeployContentLibraryItemCalled {
+					t.Fatal("expected DeployContentLibraryItem NOT to be called")
+				}
+				errMsg := state.Get("error").(error).Error()
+				if !strings.Contains(errMsg, tt.expectedErrMsg) {
+					t.Fatalf("unexpected error: %s", errMsg)
+				}
+				return
+			}
+
+			if action != multistep.ActionContinue {
+				t.Fatalf("expected ActionContinue, got %v; error: %v", action, state.Get("error"))
+			}
+			if !driverMock.DeployContentLibraryItemCalled {
+				t.Fatal("expected DeployContentLibraryItem to be called")
+			}
+		})
+	}
+}
+
+func TestValidateContentLibrarySourceOptions(t *testing.T) {
+	step := &StepCloneVM{
+		Config: &CloneConfig{
+			DiskSize: 40960,
+			StorageConfig: common.StorageConfig{
+				DiskControllerType: []string{"pvscsi"},
+				Storage: []common.DiskConfig{
+					{DiskSize: 32768},
+				},
+			},
+		},
+	}
+
+	err := step.validateContentLibrarySourceOptions(&library.Item{Type: library.ItemTypeOVF})
+	if err == nil {
+		t.Fatal("expected error for OVF library item with disk options")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "'disk_size' cannot be used with OVF content library items") {
+		t.Fatalf("expected disk_size error, got: %s", msg)
+	}
+	if !strings.Contains(msg, "and 2 more errors") {
+		t.Fatalf("expected aggregated errors, got: %s", msg)
+	}
+
+	if err := step.validateContentLibrarySourceOptions(&library.Item{Type: library.ItemTypeVMTX}); err != nil {
+		t.Fatalf("unexpected error for VM template library item: %v", err)
 	}
 }
 

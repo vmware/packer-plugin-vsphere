@@ -36,6 +36,7 @@ type FlatConfig struct {
 	Datacenter                      *string                                     `mapstructure:"datacenter" cty:"datacenter" hcl:"datacenter"`
 	Template                        *string                                     `mapstructure:"template" cty:"template" hcl:"template"`
 	OvfSource                       *FlatOvfSourceConfig                        `mapstructure:"ovf_source" cty:"ovf_source" hcl:"ovf_source"`
+	ContentLibrarySource            *FlatContentLibrarySourceConfig             `mapstructure:"content_library_source" cty:"content_library_source" hcl:"content_library_source"`
 	DiskSize                        *int64                                      `mapstructure:"disk_size" cty:"disk_size" hcl:"disk_size"`
 	LinkedClone                     *bool                                       `mapstructure:"linked_clone" cty:"linked_clone" hcl:"linked_clone"`
 	Network                         *string                                     `mapstructure:"network" cty:"network" hcl:"network"`
@@ -195,6 +196,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"datacenter":                     &hcldec.AttrSpec{Name: "datacenter", Type: cty.String, Required: false},
 		"template":                       &hcldec.AttrSpec{Name: "template", Type: cty.String, Required: false},
 		"ovf_source":                     &hcldec.BlockSpec{TypeName: "ovf_source", Nested: hcldec.ObjectSpec((*FlatOvfSourceConfig)(nil).HCL2Spec())},
+		"content_library_source":         &hcldec.BlockSpec{TypeName: "content_library_source", Nested: hcldec.ObjectSpec((*FlatContentLibrarySourceConfig)(nil).HCL2Spec())},
 		"disk_size":                      &hcldec.AttrSpec{Name: "disk_size", Type: cty.Number, Required: false},
 		"linked_clone":                   &hcldec.AttrSpec{Name: "linked_clone", Type: cty.Bool, Required: false},
 		"network":                        &hcldec.AttrSpec{Name: "network", Type: cty.String, Required: false},
@@ -315,6 +317,31 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"export":                         &hcldec.BlockSpec{TypeName: "export", Nested: hcldec.ObjectSpec((*common.FlatExportConfig)(nil).HCL2Spec())},
 		"content_library_destination":    &hcldec.BlockSpec{TypeName: "content_library_destination", Nested: hcldec.ObjectSpec((*common.FlatContentLibraryDestinationConfig)(nil).HCL2Spec())},
 		"customize":                      &hcldec.BlockSpec{TypeName: "customize", Nested: hcldec.ObjectSpec((*FlatCustomizeConfig)(nil).HCL2Spec())},
+	}
+	return s
+}
+
+// FlatContentLibrarySourceConfig is an auto-generated flat version of ContentLibrarySourceConfig.
+// Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
+type FlatContentLibrarySourceConfig struct {
+	Library *string `mapstructure:"library" cty:"library" hcl:"library"`
+	Name    *string `mapstructure:"name" cty:"name" hcl:"name"`
+}
+
+// FlatMapstructure returns a new FlatContentLibrarySourceConfig.
+// FlatContentLibrarySourceConfig is an auto-generated flat version of ContentLibrarySourceConfig.
+// Where the contents a fields with a `mapstructure:,squash` tag are bubbled up.
+func (*ContentLibrarySourceConfig) FlatMapstructure() interface{ HCL2Spec() map[string]hcldec.Spec } {
+	return new(FlatContentLibrarySourceConfig)
+}
+
+// HCL2Spec returns the hcl spec of a ContentLibrarySourceConfig.
+// This spec is used by HCL to read the fields of ContentLibrarySourceConfig.
+// The decoded values from this spec will then be applied to a FlatContentLibrarySourceConfig.
+func (*FlatContentLibrarySourceConfig) HCL2Spec() map[string]hcldec.Spec {
+	s := map[string]hcldec.Spec{
+		"library": &hcldec.AttrSpec{Name: "library", Type: cty.String, Required: false},
+		"name":    &hcldec.AttrSpec{Name: "name", Type: cty.String, Required: false},
 	}
 	return s
 }

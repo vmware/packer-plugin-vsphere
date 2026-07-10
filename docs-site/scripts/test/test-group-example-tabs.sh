@@ -134,6 +134,40 @@ test_mismatched_indent_pair() {
   assert_contains "$output" $'    === "JSON"' "json tab paired across indents"
 }
 
+test_nested_tabs_preserve_blank_before_heading() {
+  local input
+  input="$(cat <<'EOF'
+- `name` (string) - Item name.
+
+  **HCL Example:**
+
+  ```hcl
+  content_library_source {
+    name = "example"
+  }
+  ```
+
+  **JSON Example:**
+
+  ```json
+  "content_library_source": {
+    "name": "example"
+  }
+  ```
+
+### Storage Configuration
+
+Body text.
+EOF
+)"
+  local output
+  output="$(group_example_tabs "$input")"
+  assert_contains "$output" $'  === "HCL"' "nested hcl tab"
+  assert_contains "$output" $'  === "JSON"' "nested json tab"
+  assert_contains "$output" $'      ```\n\n### Storage Configuration' "blank before following heading"
+  assert_not_contains "$output" $'      ```\n### Storage Configuration' "heading not flush against fence"
+}
+
 test_supervisor_examples_with_image_import_variant() {
   local input
   input="$(cat <<'EOF'
@@ -228,6 +262,7 @@ main() {
   test_multi_fence_section_separate_blocks
   test_iso_style_section_grouping
   test_mismatched_indent_pair
+  test_nested_tabs_preserve_blank_before_heading
   test_supervisor_examples_with_image_import_variant
   test_cd_files_prose_not_swallowed
   echo "All group-example-tabs tests passed."

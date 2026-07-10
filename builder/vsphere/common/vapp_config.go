@@ -16,9 +16,11 @@ import (
 // Refer to each builder's documentation for usage details.
 type VAppConfig struct {
 	Properties map[string]string `mapstructure:"properties"`
-	// The deployment configuration to use when deploying from an OVF/OVA file.
-	// This corresponds to deployment configurations defined in an OVF descriptor.
-	// -> **Note:** Only applicable when using OVF/OVA sources.
+	// The deployment configuration to use when deploying from an OVF/OVA file or
+	// an OVF template from `ovf_source` or `content_library_source`. This
+	// corresponds to deployment configurations defined in an OVF descriptor.
+	//
+	// -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
 	DeploymentOption string `mapstructure:"deployment_option"`
 }
 

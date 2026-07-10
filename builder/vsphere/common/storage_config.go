@@ -25,20 +25,15 @@ type DiskConfig struct {
 	DiskControllerIndex int `mapstructure:"disk_controller_index"`
 }
 
-// When cloning from a `template`, the resulting virtual machine contains the
-// source template's disks plus any newly configured disks and controllers.
-// `storage {}`, `disk_controller_type`, and `disk_size` apply in this mode.
+// Disk layout depends on the builder and clone source. For `vsphere-clone`,
+// refer to the [Source Compatibility](#source-compatibility) section.
 //
-// When deploying from `ovf_source` from either an HTTP(S) `url` or a local
-// filesystem `path`, the source OVF/OVA descriptor defines the configured disks
-// and controllers. When the descriptor offers multiple deployment sizes,
-// use `vapp.deployment_option` to select one. For more information, refer to
-// the [vApp Options Configuration](#vapp-options-configuration) section.
+// When the source is an OVF descriptor (`ovf_source` or a
+// `content_library_source` OVF template) and multiple deployment sizes are
+// offered, use `vapp.deployment_option`. For more information, refer to the
+// [vApp Options Configuration](#vapp-options-configuration) section.
 //
-// ~> **Note:** `storage {}`, `disk_controller_type`, and `disk_size` cannot be
-// used with `ovf_source`.
-//
-// ~> **Note:** Use `datastore` or `datastore_cluster` in the
+// -> **Note:** Use `datastore` or `datastore_cluster` in the
 // [Location Configuration](#location-configuration) to choose where imported
 // disks are stored.
 type StorageConfig struct {
@@ -50,7 +45,7 @@ type StorageConfig struct {
 	DiskControllerType []string `mapstructure:"disk_controller_type"`
 	// Additional disks to attach to the virtual machine. Each `storage` block
 	// defines one disk. Does not resize the primary disk; use `disk_size` for
-	// that when cloning from a `template`.
+	// that.
 	Storage []DiskConfig `mapstructure:"storage"`
 }
 

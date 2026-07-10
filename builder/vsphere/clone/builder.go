@@ -222,14 +222,8 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		"generated_data": state.Get("generated_data"),
 		"metadata":       state.Get("metadata"),
 	}
-	if b.config.OvfSource != nil {
-		if b.config.OvfSource.Path != "" {
-			stateData["source_ovf_path"] = b.config.OvfSource.Path
-		} else {
-			stateData["source_ovf_url"] = driver.SanitizeOvfURL(b.config.OvfSource.URL)
-		}
-	} else {
-		stateData["source_template"] = b.config.Template
+	for key, value := range sourceArtifactStateData(&b.config) {
+		stateData[key] = value
 	}
 	artifact := &common.Artifact{
 		Name:                 b.config.VMName,
@@ -243,4 +237,25 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		artifact.Outconfig = &b.config.Export.OutputDir
 	}
 	return artifact, nil
+}
+
+// sourceArtifactStateData returns artifact StateData describing the clone source.
+func sourceArtifactStateData(config *Config) map[string]interface{} {
+	data := make(map[string]interface{})
+	if config.OvfSource != nil {
+		if config.OvfSource.Path != "" {
+			data["source_ovf_path"] = config.OvfSource.Path
+		} else {
+			data["source_ovf_url"] = driver.SanitizeOvfURL(config.OvfSource.URL)
+		}
+		return data
+	}
+	if config.ContentLibrarySource != nil {
+		data["source_content_library"] = fmt.Sprintf("%s/%s",
+			config.ContentLibrarySource.Library,
+			config.ContentLibrarySource.Name)
+		return data
+	}
+	data["source_template"] = config.Template
+	return data
 }

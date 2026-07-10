@@ -35,7 +35,7 @@ test_content_library_anchor() {
   local input='[content library import configuration](#content-library-import-configuration)'
   local output
   output="$(fix_internal_links "$input" "builders/vsphere-iso.md")"
-  assert_contains "$output" '#content-library-configuration' "content library anchor"
+  assert_contains "$output" '#content-library-destination-configuration' "content library destination anchor"
 }
 
 test_location_field_anchor() {
@@ -56,7 +56,7 @@ test_ovf_anchor() {
   local input='use an OVF template instead by setting the [ovf](#ovf) option'
   local output
   output="$(fix_internal_links "$input" "builders/vsphere-iso.md")"
-  assert_contains "$output" '[ovf](#content-library-configuration)' "ovf field anchor"
+  assert_contains "$output" '[ovf](#content-library-destination-configuration)' "ovf field anchor"
 }
 
 test_storage_field_anchors() {

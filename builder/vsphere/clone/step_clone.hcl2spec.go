@@ -11,17 +11,18 @@ import (
 // FlatCloneConfig is an auto-generated flat version of CloneConfig.
 // Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
 type FlatCloneConfig struct {
-	Template           *string                 `mapstructure:"template" cty:"template" hcl:"template"`
-	OvfSource          *FlatOvfSourceConfig    `mapstructure:"ovf_source" cty:"ovf_source" hcl:"ovf_source"`
-	DiskSize           *int64                  `mapstructure:"disk_size" cty:"disk_size" hcl:"disk_size"`
-	LinkedClone        *bool                   `mapstructure:"linked_clone" cty:"linked_clone" hcl:"linked_clone"`
-	Network            *string                 `mapstructure:"network" cty:"network" hcl:"network"`
-	MacAddress         *string                 `mapstructure:"mac_address" cty:"mac_address" hcl:"mac_address"`
-	Notes              *string                 `mapstructure:"notes" cty:"notes" hcl:"notes"`
-	Destroy            *bool                   `mapstructure:"destroy" cty:"destroy" hcl:"destroy"`
-	VAppConfig         *common.FlatVAppConfig  `mapstructure:"vapp" cty:"vapp" hcl:"vapp"`
-	DiskControllerType []string                `mapstructure:"disk_controller_type" cty:"disk_controller_type" hcl:"disk_controller_type"`
-	Storage            []common.FlatDiskConfig `mapstructure:"storage" cty:"storage" hcl:"storage"`
+	Template             *string                         `mapstructure:"template" cty:"template" hcl:"template"`
+	OvfSource            *FlatOvfSourceConfig            `mapstructure:"ovf_source" cty:"ovf_source" hcl:"ovf_source"`
+	ContentLibrarySource *FlatContentLibrarySourceConfig `mapstructure:"content_library_source" cty:"content_library_source" hcl:"content_library_source"`
+	DiskSize             *int64                          `mapstructure:"disk_size" cty:"disk_size" hcl:"disk_size"`
+	LinkedClone          *bool                           `mapstructure:"linked_clone" cty:"linked_clone" hcl:"linked_clone"`
+	Network              *string                         `mapstructure:"network" cty:"network" hcl:"network"`
+	MacAddress           *string                         `mapstructure:"mac_address" cty:"mac_address" hcl:"mac_address"`
+	Notes                *string                         `mapstructure:"notes" cty:"notes" hcl:"notes"`
+	Destroy              *bool                           `mapstructure:"destroy" cty:"destroy" hcl:"destroy"`
+	VAppConfig           *common.FlatVAppConfig          `mapstructure:"vapp" cty:"vapp" hcl:"vapp"`
+	DiskControllerType   []string                        `mapstructure:"disk_controller_type" cty:"disk_controller_type" hcl:"disk_controller_type"`
+	Storage              []common.FlatDiskConfig         `mapstructure:"storage" cty:"storage" hcl:"storage"`
 }
 
 // FlatMapstructure returns a new FlatCloneConfig.
@@ -36,17 +37,18 @@ func (*CloneConfig) FlatMapstructure() interface{ HCL2Spec() map[string]hcldec.S
 // The decoded values from this spec will then be applied to a FlatCloneConfig.
 func (*FlatCloneConfig) HCL2Spec() map[string]hcldec.Spec {
 	s := map[string]hcldec.Spec{
-		"template":             &hcldec.AttrSpec{Name: "template", Type: cty.String, Required: false},
-		"ovf_source":           &hcldec.BlockSpec{TypeName: "ovf_source", Nested: hcldec.ObjectSpec((*FlatOvfSourceConfig)(nil).HCL2Spec())},
-		"disk_size":            &hcldec.AttrSpec{Name: "disk_size", Type: cty.Number, Required: false},
-		"linked_clone":         &hcldec.AttrSpec{Name: "linked_clone", Type: cty.Bool, Required: false},
-		"network":              &hcldec.AttrSpec{Name: "network", Type: cty.String, Required: false},
-		"mac_address":          &hcldec.AttrSpec{Name: "mac_address", Type: cty.String, Required: false},
-		"notes":                &hcldec.AttrSpec{Name: "notes", Type: cty.String, Required: false},
-		"destroy":              &hcldec.AttrSpec{Name: "destroy", Type: cty.Bool, Required: false},
-		"vapp":                 &hcldec.BlockSpec{TypeName: "vapp", Nested: hcldec.ObjectSpec((*common.FlatVAppConfig)(nil).HCL2Spec())},
-		"disk_controller_type": &hcldec.AttrSpec{Name: "disk_controller_type", Type: cty.List(cty.String), Required: false},
-		"storage":              &hcldec.BlockListSpec{TypeName: "storage", Nested: hcldec.ObjectSpec((*common.FlatDiskConfig)(nil).HCL2Spec())},
+		"template":               &hcldec.AttrSpec{Name: "template", Type: cty.String, Required: false},
+		"ovf_source":             &hcldec.BlockSpec{TypeName: "ovf_source", Nested: hcldec.ObjectSpec((*FlatOvfSourceConfig)(nil).HCL2Spec())},
+		"content_library_source": &hcldec.BlockSpec{TypeName: "content_library_source", Nested: hcldec.ObjectSpec((*FlatContentLibrarySourceConfig)(nil).HCL2Spec())},
+		"disk_size":              &hcldec.AttrSpec{Name: "disk_size", Type: cty.Number, Required: false},
+		"linked_clone":           &hcldec.AttrSpec{Name: "linked_clone", Type: cty.Bool, Required: false},
+		"network":                &hcldec.AttrSpec{Name: "network", Type: cty.String, Required: false},
+		"mac_address":            &hcldec.AttrSpec{Name: "mac_address", Type: cty.String, Required: false},
+		"notes":                  &hcldec.AttrSpec{Name: "notes", Type: cty.String, Required: false},
+		"destroy":                &hcldec.AttrSpec{Name: "destroy", Type: cty.Bool, Required: false},
+		"vapp":                   &hcldec.BlockSpec{TypeName: "vapp", Nested: hcldec.ObjectSpec((*common.FlatVAppConfig)(nil).HCL2Spec())},
+		"disk_controller_type":   &hcldec.AttrSpec{Name: "disk_controller_type", Type: cty.List(cty.String), Required: false},
+		"storage":                &hcldec.BlockListSpec{TypeName: "storage", Nested: hcldec.ObjectSpec((*common.FlatDiskConfig)(nil).HCL2Spec())},
 	}
 	return s
 }

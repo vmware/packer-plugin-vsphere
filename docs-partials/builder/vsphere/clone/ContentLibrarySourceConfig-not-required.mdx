@@ -1,0 +1,26 @@
+<!-- Code generated from the comments of the ContentLibrarySourceConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
+
+- `library` (string) - The name of the content library containing the source item.
+
+- `name` (string) - The name of the content library item. Must be unique within the content
+  library.
+  
+  HCL Example:
+  
+  ```hcl
+  content_library_source {
+    library = "Example Content Library"
+    name    = "example-template"
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "content_library_source": {
+    "library": "Example Content Library",
+    "name": "example-template"
+  }
+  ```
+
+<!-- End of code generated from the comments of the ContentLibrarySourceConfig struct in builder/vsphere/clone/step_clone.go; -->
