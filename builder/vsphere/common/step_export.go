@@ -28,10 +28,17 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
 	"github.com/pkg/errors"
 	"github.com/vmware/govmomi/nfc"
+	"github.com/vmware/govmomi/ovf"
 	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
-	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
+
+type exportStepVM interface {
+	Export() (*nfc.Lease, error)
+	NewOvfManager() *ovf.Manager
+	GetOvfExportOptions(m *ovf.Manager) ([]types.OvfOptionInfo, error)
+	CreateDescriptor(m *ovf.Manager, cdp types.OvfCreateDescriptorParams) (*types.OvfCreateDescriptorResult, error)
+}
 
 const OvftoolWindows = "ovftool.exe"
 
@@ -247,9 +254,55 @@ type StepExport struct {
 func (s *StepExport) Cleanup(multistep.StateBag) {
 }
 
+func validateExportOptions(requested []string, available []types.OvfOptionInfo) error {
+	if len(requested) == 0 {
+		return nil
+	}
+
+	availableNames := make([]string, 0, len(available))
+	availableSet := make(map[string]struct{}, len(available))
+	for _, opt := range available {
+		availableNames = append(availableNames, opt.Option)
+		availableSet[opt.Option] = struct{}{}
+	}
+
+	var unknown []string
+	for _, option := range requested {
+		if _, ok := availableSet[option]; !ok {
+			unknown = append(unknown, option)
+		}
+	}
+	if len(unknown) == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("unknown export options: %s. available options: %s",
+		strings.Join(unknown, ", "),
+		strings.Join(availableNames, ", "))
+}
+
 func (s *StepExport) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {
 	ui := state.Get("ui").(packersdk.Ui)
-	vm := state.Get("vm").(*driver.VirtualMachineDriver)
+	vm := state.Get("vm").(exportStepVM)
+
+	cdp := types.OvfCreateDescriptorParams{
+		Name: s.Name,
+	}
+
+	m := vm.NewOvfManager()
+	if len(s.Options) > 0 {
+		exportOptions, err := vm.GetOvfExportOptions(m)
+		if err != nil {
+			state.Put("error", err)
+			return multistep.ActionHalt
+		}
+		if err := validateExportOptions(s.Options, exportOptions); err != nil {
+			ui.Errorf("%s", err)
+			state.Put("error", err)
+			return multistep.ActionHalt
+		}
+		cdp.ExportOption = append(cdp.ExportOption, s.Options...)
+	}
 
 	// Start exporting the virtual machine image to Open Virtualization Format.
 	ui.Say("Exporting to Open Virtualization Format (OVF)...")
@@ -267,37 +320,6 @@ func (s *StepExport) Run(ctx context.Context, state multistep.StateBag) multiste
 
 	u := lease.StartUpdater(ctx, info)
 	defer u.Done()
-
-	cdp := types.OvfCreateDescriptorParams{
-		Name: s.Name,
-	}
-
-	m := vm.NewOvfManager()
-	if len(s.Options) > 0 {
-		exportOptions, err := vm.GetOvfExportOptions(m)
-		if err != nil {
-			state.Put("error", err)
-			return multistep.ActionHalt
-		}
-		var unknown []string
-		for _, option := range s.Options {
-			found := false
-			for _, exportOpt := range exportOptions {
-				if exportOpt.Option == option {
-					found = true
-					break
-				}
-			}
-			if !found {
-				unknown = append(unknown, option)
-			}
-			cdp.ExportOption = append(cdp.ExportOption, option)
-		}
-
-		if len(unknown) > 0 {
-			ui.Errorf("unknown export options %s", strings.Join(unknown, ","))
-		}
-	}
 
 	for _, i := range info.Items {
 		if !s.include(&i) {
