@@ -228,11 +228,11 @@ func (s *StepCreateVM) Run(_ context.Context, state multistep.StateBag) multiste
 	// Handle multi-disk placement when using a datastore cluster.
 	var datastoreRefs []*types.ManagedObjectReference
 	if s.Location.DatastoreCluster != "" && len(disks) > 1 {
-		if vcDriver, ok := d.(*driver.VCenterDriver); ok {
+		if dsSelector, ok := d.(driver.DatastoreSelector); ok {
 			// Request Storage DRS recommendations for all disks at once for optimal placement.
 			ui.Sayf("Requesting Storage DRS recommendations for %d disks...", len(disks))
 
-			diskDatastores, method, err := vcDriver.SelectDatastoresForDisks(s.Location.DatastoreCluster, disks)
+			diskDatastores, method, err := dsSelector.SelectDatastoresForDisks(s.Location.DatastoreCluster, disks)
 			if err != nil {
 				ui.Errorf("Warning: Failed to get Storage DRS recommendations: %s. Using primary datastore.", err)
 				if primaryDatastore != nil {

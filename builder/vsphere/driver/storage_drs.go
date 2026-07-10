@@ -26,6 +26,8 @@ const (
 	SelectionMethodFallback = "first-available"
 )
 
+var _ DatastoreSelector = (*VCenterDriver)(nil)
+
 // RequestStoragePlacement requests a placement recommendation from Storage DRS.
 // It returns the placement result or an error if the request fails or times out.
 func (d *VCenterDriver) RequestStoragePlacement(
