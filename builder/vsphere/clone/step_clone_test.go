@@ -31,7 +31,7 @@ func TestCloneConfig_Prepare(t *testing.T) {
 		expectedErrMsg string
 	}{
 		{
-			name: "Valid config",
+			name: "Storage validate disk_size with disk_controller_type",
 			config: &CloneConfig{
 				Template: "template name",
 				StorageConfig: common.StorageConfig{
@@ -1351,9 +1351,11 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 						if strings.Contains(errorMsg, "secretpassword") {
 							t.Errorf("Error message should not contain password, got '%s'", errorMsg)
 						}
-						// Verify that credentials are sanitized from error message
 						if strings.Contains(errorMsg, "password=secretpassword") {
 							t.Errorf("Error message should not contain password pattern, got '%s'", errorMsg)
+						}
+						if !strings.Contains(errorMsg, "password=[credentials removed]") {
+							t.Errorf("expected sanitized password in error, got '%s'", errorMsg)
 						}
 					}
 				} else {
