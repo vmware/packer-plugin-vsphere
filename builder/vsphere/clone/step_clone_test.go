@@ -17,6 +17,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
+	"github.com/mitchellh/mapstructure"
 	"github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
@@ -1493,41 +1494,22 @@ func TestStepCloneVM_ErrorMessageFormatting(t *testing.T) {
 	}
 }
 
-// TestOvfSourceConfig_SensitiveVariables verifies that OvfSourceConfig properly supports
-// Packer sensitive variables and environment variable interpolation.
-func TestOvfSourceConfig_SensitiveVariables(t *testing.T) {
+// TestOvfSourceConfig_MapstructureDecode verifies that ovf_source decodes from
+// raw configuration maps using the struct's mapstructure tags.
+func TestOvfSourceConfig_MapstructureDecode(t *testing.T) {
 	tests := []struct {
-		name     string
-		template string
-		vars     map[string]string
-		env      map[string]string
-		want     OvfSourceConfig
+		name string
+		raw  map[string]interface{}
+		want OvfSourceConfig
 	}{
 		{
-			name: "sensitive variables",
-			template: `{
-				"variables": {
-					"ovf_username": {
-						"type": "string",
-						"sensitive": true
-					},
-					"ovf_password": {
-						"type": "string",
-						"sensitive": true
-					}
+			name: "url with credentials",
+			raw: map[string]interface{}{
+				"ovf_source": map[string]interface{}{
+					"url":      "https://packages.example.com/artifacts/example.ovf",
+					"username": "testuser",
+					"password": "testpass",
 				},
-				"builders": [{
-					"type": "vsphere-clone",
-					"ovf_source": {
-						"url": "https://packages.example.com/artifacts/example.ovf",
-						"username": "{{user ` + "`ovf_username`" + `}}",
-						"password": "{{user ` + "`ovf_password`" + `}}"
-					}
-				}]
-			}`,
-			vars: map[string]string{
-				"ovf_username": "testuser",
-				"ovf_password": "testpass",
 			},
 			want: OvfSourceConfig{
 				URL:      "https://packages.example.com/artifacts/example.ovf",
@@ -1536,76 +1518,34 @@ func TestOvfSourceConfig_SensitiveVariables(t *testing.T) {
 			},
 		},
 		{
-			name: "environment variables",
-			template: `{
-				"builders": [{
-					"type": "vsphere-clone",
-					"ovf_source": {
-						"url": "https://packages.example.com/artifacts/example.ovf",
-						"username": "{{env ` + "`OVF_USERNAME`" + `}}",
-						"password": "{{env ` + "`OVF_PASSWORD`" + `}}"
-					}
-				}]
-			}`,
-			env: map[string]string{
-				"OVF_USERNAME": "envuser",
-				"OVF_PASSWORD": "envpass",
+			name: "url with skip tls verify",
+			raw: map[string]interface{}{
+				"ovf_source": map[string]interface{}{
+					"url":             "https://packages.example.com/artifacts/example.ova",
+					"skip_tls_verify": true,
+				},
 			},
 			want: OvfSourceConfig{
-				URL:      "https://packages.example.com/artifacts/example.ovf",
-				Username: "envuser",
-				Password: "envpass",
+				URL:           "https://packages.example.com/artifacts/example.ova",
+				SkipTlsVerify: true,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set up environment variables, if provided.
-			if tt.env != nil {
-				for k, v := range tt.env {
-					t.Setenv(k, v)
-				}
-			}
-
-			// Create a minimal configuration for testing.
 			var cfg struct {
 				OvfSource *OvfSourceConfig `mapstructure:"ovf_source"`
 			}
-
-			// Note: In real usage, Packer would handle variable interpolation.
-
-			// Create raw config data
-			rawConfig := map[string]interface{}{
-				"ovf_source": map[string]interface{}{
-					"url":      tt.want.URL,
-					"username": tt.template, // This would be interpolated.
-					"password": tt.template, // This would be interpolated.
-				},
+			if err := mapstructure.Decode(tt.raw, &cfg); err != nil {
+				t.Fatalf("mapstructure.Decode: %v", err)
 			}
-
-			// Directly set the expected values since this tests the struct
-			// definition and mapstructure tags.
-			cfg.OvfSource = &OvfSourceConfig{
-				URL:      tt.want.URL,
-				Username: tt.want.Username,
-				Password: tt.want.Password,
+			if cfg.OvfSource == nil {
+				t.Fatal("expected ovf_source to be decoded")
 			}
-
-			// Verify the configuration was set correctly.
-			if cfg.OvfSource.URL != tt.want.URL {
-				t.Errorf("URL = %v, want %v", cfg.OvfSource.URL, tt.want.URL)
+			if diff := cmp.Diff(tt.want, *cfg.OvfSource); diff != "" {
+				t.Errorf("decoded config mismatch (-want +got):\n%s", diff)
 			}
-			if cfg.OvfSource.Username != tt.want.Username {
-				t.Errorf("Username = %v, want %v", cfg.OvfSource.Username, tt.want.Username)
-			}
-			if cfg.OvfSource.Password != tt.want.Password {
-				t.Errorf("Password = %v, want %v", cfg.OvfSource.Password, tt.want.Password)
-			}
-
-			// Verify that the struct has the correct mapstructure tags.
-			// This ensures Packer can properly decode the configuration
-			_ = rawConfig
 		})
 	}
 }
