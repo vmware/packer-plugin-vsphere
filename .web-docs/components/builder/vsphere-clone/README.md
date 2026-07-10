@@ -1746,7 +1746,7 @@ The above configuration would create the following files:
     }
   ```
   
-  JSON: Example:
+  JSON Example:
   
   ```json
   ...
