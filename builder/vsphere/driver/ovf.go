@@ -687,13 +687,13 @@ func (d *VCenterDriver) containsAny(s string, patterns []string) bool {
 }
 
 // wrapOvfError wraps errors with context and sanitizes sensitive information.
-func (d *VCenterDriver) wrapOvfError(context string, err error, source string) error {
+func (d *VCenterDriver) wrapOvfError(errContext string, err error, source string) error {
 	sanitizedSource := SanitizeOvfErrorMessage(source)
 	if strings.Contains(source, "://") {
 		sanitizedSource = SanitizeOvfURL(source)
 	}
 	sanitizedErr := SanitizeOvfErrorMessage(err.Error())
-	return fmt.Errorf("%s for OVF/OVA source '%s': %s", context, sanitizedSource, sanitizedErr)
+	return fmt.Errorf("%s for OVF/OVA source '%s': %s", errContext, sanitizedSource, sanitizedErr)
 }
 
 // validateOvfAccessibility reads and parses the OVF descriptor on the Packer

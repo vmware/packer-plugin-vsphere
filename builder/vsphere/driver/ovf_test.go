@@ -1520,14 +1520,14 @@ func TestCategorizeOvfImportError(t *testing.T) {
 func TestWrapOvfError(t *testing.T) {
 	driver := &VCenterDriver{}
 
-	context := "test operation failed"
+	errContext := "test operation failed"
 	err := fmt.Errorf("original error")
 	url := "https://testuser:testpass@packages.example.com/artifacts/example.ovf"
 
-	result := driver.wrapOvfError(context, err, url)
+	result := driver.wrapOvfError(errContext, err, url)
 
-	if !strings.Contains(result.Error(), context) {
-		t.Errorf("expected error to contain context %q", context)
+	if !strings.Contains(result.Error(), errContext) {
+		t.Errorf("expected error to contain context %q", errContext)
 	}
 
 	if strings.Contains(result.Error(), "password") || strings.Contains(result.Error(), "testpass") {

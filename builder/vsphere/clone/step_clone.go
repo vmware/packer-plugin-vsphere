@@ -573,9 +573,9 @@ func (s *StepCloneVM) validateOvfVAppProperties(_ context.Context, _ driver.Driv
 }
 
 // wrapStepError wraps errors with context and sanitizes sensitive information for step operations.
-func (s *StepCloneVM) wrapStepError(context string, err error, source string) error {
+func (s *StepCloneVM) wrapStepError(errContext string, err error, source string) error {
 	sanitizedErr := driver.SanitizeOvfErrorMessage(err.Error())
-	return fmt.Errorf("%s for OVF source '%s': %s", context, source, sanitizedErr)
+	return fmt.Errorf("%s for OVF source '%s': %s", errContext, source, sanitizedErr)
 }
 
 // Cleanup performs step cleanup.
