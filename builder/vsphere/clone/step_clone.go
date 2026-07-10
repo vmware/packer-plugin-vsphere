@@ -351,8 +351,8 @@ func (s *StepCloneVM) cloneFromTemplate(ctx context.Context, state multistep.Sta
 			if err != nil {
 				ui.Errorf("Warning: Failed to get Storage DRS recommendations: %s. Using primary datastore.", err)
 				if primaryDatastore != nil {
-					ref := primaryDatastore.Reference()
 					for i := 0; i < len(disks); i++ {
+						ref := primaryDatastore.Reference()
 						datastoreRefs = append(datastoreRefs, &ref)
 					}
 				}
