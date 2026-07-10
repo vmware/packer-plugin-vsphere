@@ -56,6 +56,12 @@ type Driver interface {
 	Cleanup() (error, error)
 }
 
+// DatastoreSelector is an optional driver capability for multi-disk datastore
+// placement from a datastore cluster.
+type DatastoreSelector interface {
+	SelectDatastoresForDisks(clusterName string, disks []Disk) ([]Datastore, string, error)
+}
+
 // VCenterDriver implements the Driver interface for vCenter operations.
 type VCenterDriver struct {
 	Ctx        context.Context

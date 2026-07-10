@@ -85,9 +85,10 @@ type VirtualMachineMock struct {
 	NetworkAdaptersList         object.VirtualDeviceList
 	RemoveNetworkAdaptersErr    error
 
-	CloneCalled bool
-	CloneConfig *CloneConfig
-	CloneError  error
+	CloneCalled    bool
+	CloneConfig    *CloneConfig
+	CloneError     error
+	CloneReturnNil bool
 }
 
 func (vm *VirtualMachineMock) Info(params ...string) (*mo.VirtualMachine, error) {
@@ -111,6 +112,9 @@ func (vm *VirtualMachineMock) CdromDevices() (object.VirtualDeviceList, error) {
 func (vm *VirtualMachineMock) Clone(ctx context.Context, config *CloneConfig) (VirtualMachine, error) {
 	vm.CloneCalled = true
 	vm.CloneConfig = config
+	if vm.CloneReturnNil {
+		return nil, vm.CloneError
+	}
 	return vm, vm.CloneError
 }
 

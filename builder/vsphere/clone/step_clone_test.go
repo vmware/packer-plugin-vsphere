@@ -350,6 +350,23 @@ func TestCloneConfig_Prepare(t *testing.T) {
 	}
 }
 
+func TestCloneConfig_Prepare_OvfPathWithUsernameOnly(t *testing.T) {
+	cfg := &CloneConfig{
+		OvfSource: &OvfSourceConfig{
+			Path:     createTempOvfFile(t),
+			Username: "user",
+		},
+	}
+
+	errs := cfg.Prepare()
+	if len(errs) != 1 {
+		t.Fatalf("expected 1 error, got %d: %v", len(errs), errs)
+	}
+	if !strings.Contains(errs[0].Error(), "'username' and 'password' are only applicable when 'url' is set") {
+		t.Fatalf("unexpected error: %s", errs[0])
+	}
+}
+
 func createTempOvfFile(t *testing.T) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "example.ovf")
@@ -406,6 +423,33 @@ func TestStepCreateVM_Run(t *testing.T) {
 	}
 	if vm != driverMock.VM {
 		t.Fatalf("unexpected result: expected '%s', but returned '%s'", driverMock.VM, vm)
+	}
+}
+
+func TestStepCreateVM_Run_nilCloneResult(t *testing.T) {
+	state := new(multistep.BasicStateBag)
+	state.Put("ui", &packersdk.BasicUi{
+		Reader: new(bytes.Buffer),
+		Writer: new(bytes.Buffer),
+	})
+	driverMock := driver.NewDriverMock()
+	state.Put("driver", driverMock)
+	step := basicStepCloneVM()
+	vmMock := new(driver.VirtualMachineMock)
+	vmMock.CloneReturnNil = true
+	driverMock.VM = vmMock
+
+	action := step.Run(context.Background(), state)
+	if action != multistep.ActionHalt {
+		t.Fatalf("expected ActionHalt, got %v", action)
+	}
+
+	err, ok := state.GetOk("error")
+	if !ok {
+		t.Fatal("expected error in state")
+	}
+	if !strings.Contains(err.(error).Error(), "clone operation returned no VM and no error") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

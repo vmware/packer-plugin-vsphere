@@ -262,11 +262,13 @@ func (c *CloneConfig) prepareOvfSource() []error {
 
 	hasUsername := c.OvfSource.Username != ""
 	hasPassword := c.OvfSource.Password != ""
-	if hasUsername && !hasPassword {
-		errs = append(errs, fmt.Errorf("'password' is required when 'username' is specified for OVF source"))
-	}
-	if hasPassword && !hasUsername {
-		errs = append(errs, fmt.Errorf("'username' is required when 'password' is specified for OVF source"))
+	if hasURL {
+		if hasUsername && !hasPassword {
+			errs = append(errs, fmt.Errorf("'password' is required when 'username' is specified for OVF source"))
+		}
+		if hasPassword && !hasUsername {
+			errs = append(errs, fmt.Errorf("'username' is required when 'password' is specified for OVF source"))
+		}
 	}
 
 	if c.DiskSize != 0 {
@@ -341,11 +343,11 @@ func (s *StepCloneVM) cloneFromTemplate(ctx context.Context, state multistep.Sta
 	// Handle multi-disk placement when using a datastore cluster.
 	var datastoreRefs []*types.ManagedObjectReference
 	if s.Location.DatastoreCluster != "" && len(disks) > 1 {
-		if vcDriver, ok := d.(*driver.VCenterDriver); ok {
+		if dsSelector, ok := d.(driver.DatastoreSelector); ok {
 			// Request Storage DRS recommendations for all disks at once for optimal placement.
 			ui.Sayf("Requesting Storage DRS recommendations for %d disks...", len(disks))
 
-			diskDatastores, method, err := vcDriver.SelectDatastoresForDisks(s.Location.DatastoreCluster, disks)
+			diskDatastores, method, err := dsSelector.SelectDatastoresForDisks(s.Location.DatastoreCluster, disks)
 			if err != nil {
 				ui.Errorf("Warning: Failed to get Storage DRS recommendations: %s. Using primary datastore.", err)
 				if primaryDatastore != nil {
@@ -397,6 +399,7 @@ func (s *StepCloneVM) cloneFromTemplate(ctx context.Context, state multistep.Sta
 		return multistep.ActionHalt
 	}
 	if vm == nil {
+		state.Put("error", fmt.Errorf("clone operation returned no VM and no error"))
 		return multistep.ActionHalt
 	}
 	if s.Config.Destroy {
@@ -504,13 +507,7 @@ func (s *StepCloneVM) validateOvfDeploymentOption(ctx context.Context, d driver.
 		return nil
 	}
 
-	locale := config.Locale
-	if locale == "" {
-		locale = "US"
-	}
-	optionsConfig := *config
-	optionsConfig.Locale = locale
-	options, err := d.GetOvfOptions(ctx, &optionsConfig)
+	options, err := d.GetOvfOptions(ctx, config)
 	if err != nil {
 		return fmt.Errorf("error retrieving OVF deployment options: %s", err)
 	}
