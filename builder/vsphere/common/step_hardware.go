@@ -107,6 +107,10 @@ type HardwareConfig struct {
 	Firmware string `mapstructure:"firmware"`
 	// Force entry into the BIOS setup screen during boot. Defaults to `false`.
 	ForceBIOSSetup bool `mapstructure:"force_bios_setup"`
+	// The delay in milliseconds before the virtual machine begins the boot
+	// sequence for the guest operating system. Must be between `0` and
+	// `10000` milliseconds. Defaults to `0`.
+	BootDelay int64 `mapstructure:"boot_delay"`
 	// Enable virtual trusted platform module (TPM) device for the virtual
 	// machine. Defaults to `false`.
 	VTPMEnabled bool `mapstructure:"vTPM"`
@@ -134,6 +138,10 @@ func (c *HardwareConfig) Prepare() []error {
 
 	if c.VirtualPrecisionClock != "" && c.VirtualPrecisionClock != "ptp" && c.VirtualPrecisionClock != "ntp" && c.VirtualPrecisionClock != "none" {
 		errs = append(errs, fmt.Errorf("'precision_clock' must be '', 'ptp', 'ntp', or 'none'"))
+	}
+
+	if c.BootDelay < 0 || c.BootDelay > 10000 {
+		errs = append(errs, fmt.Errorf("'boot_delay' must be between 0 and 10000 milliseconds"))
 	}
 
 	return errs
@@ -177,6 +185,7 @@ func (s *StepConfigureHardware) Run(_ context.Context, state multistep.StateBag)
 		VGPUProfile:           s.Config.VGPUProfile,
 		Firmware:              s.Config.Firmware,
 		ForceBIOSSetup:        s.Config.ForceBIOSSetup,
+		BootDelay:             s.Config.BootDelay,
 		VTPMEnabled:           s.Config.VTPMEnabled,
 		VirtualPrecisionClock: s.Config.VirtualPrecisionClock,
 	})
@@ -198,7 +207,7 @@ func (s *StepConfigureHardware) hasCustomHardwareConfig() bool {
 	hasDisplayConfig := c.VideoRAM != 0 || c.Displays != 0
 	hasNestedConfig := c.NestedHV
 	hasGpuConfig := c.VGPUProfile != ""
-	hasFirmwareConfig := c.Firmware != "" || c.ForceBIOSSetup || c.VTPMEnabled
+	hasFirmwareConfig := c.Firmware != "" || c.ForceBIOSSetup || c.BootDelay > 0 || c.VTPMEnabled
 	hasClockConfig := c.VirtualPrecisionClock != ""
 	hasDeviceConfig := len(c.AllowedDevices) > 0
 

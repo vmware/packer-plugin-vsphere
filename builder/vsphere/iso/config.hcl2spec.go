@@ -66,6 +66,7 @@ type FlatConfig struct {
 	NestedHV                        *bool                                       `mapstructure:"NestedHV" cty:"NestedHV" hcl:"NestedHV"`
 	Firmware                        *string                                     `mapstructure:"firmware" cty:"firmware" hcl:"firmware"`
 	ForceBIOSSetup                  *bool                                       `mapstructure:"force_bios_setup" cty:"force_bios_setup" hcl:"force_bios_setup"`
+	BootDelay                       *int64                                      `mapstructure:"boot_delay" cty:"boot_delay" hcl:"boot_delay"`
 	VTPMEnabled                     *bool                                       `mapstructure:"vTPM" cty:"vTPM" hcl:"vTPM"`
 	VirtualPrecisionClock           *string                                     `mapstructure:"precision_clock" cty:"precision_clock" hcl:"precision_clock"`
 	ConfigParams                    map[string]string                           `mapstructure:"configuration_parameters" cty:"configuration_parameters" hcl:"configuration_parameters"`
@@ -231,6 +232,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"NestedHV":                       &hcldec.AttrSpec{Name: "NestedHV", Type: cty.Bool, Required: false},
 		"firmware":                       &hcldec.AttrSpec{Name: "firmware", Type: cty.String, Required: false},
 		"force_bios_setup":               &hcldec.AttrSpec{Name: "force_bios_setup", Type: cty.Bool, Required: false},
+		"boot_delay":                     &hcldec.AttrSpec{Name: "boot_delay", Type: cty.Number, Required: false},
 		"vTPM":                           &hcldec.AttrSpec{Name: "vTPM", Type: cty.Bool, Required: false},
 		"precision_clock":                &hcldec.AttrSpec{Name: "precision_clock", Type: cty.String, Required: false},
 		"configuration_parameters":       &hcldec.AttrSpec{Name: "configuration_parameters", Type: cty.Map(cty.String), Required: false},

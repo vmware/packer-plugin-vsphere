@@ -17,14 +17,15 @@ import (
 )
 
 type RunConfig struct {
-	// The priority of boot devices. Defaults to `disk,cdrom`.
+	// The priority of boot devices.
 	//
 	// The available boot devices are: `floppy`, `cdrom`, `ethernet`, and
 	// `disk`.
 	//
-	// -> **Note:** If not set, the boot order is temporarily set to
-	// `disk,cdrom` for the duration of the build and then cleared upon
-	// build completion.
+	// -> **Note:** For `vsphere-iso`, if not set, the boot order is
+	// temporarily set to `disk,cdrom` for the duration of the build and then
+	// cleared upon build completion. For `vsphere-clone`, if not set, the
+	// boot order is inherited from the source.
 	BootOrder string `mapstructure:"boot_order"`
 }
 

@@ -269,6 +269,10 @@ wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/foo/bar/preseed.cfg
 
 - `force_bios_setup` (bool) - Force entry into the BIOS setup screen during boot. Defaults to `false`.
 
+- `boot_delay` (int64) - The delay in milliseconds before the virtual machine begins the boot
+  sequence for the guest operating system. Must be between `0` and
+  `10000` milliseconds. Defaults to `0`.
+
 - `vTPM` (bool) - Enable virtual trusted platform module (TPM) device for the virtual
   machine. Defaults to `false`.
 
@@ -1126,14 +1130,15 @@ JSON Example:
 
 <!-- Code generated from the comments of the RunConfig struct in builder/vsphere/common/step_run.go; DO NOT EDIT MANUALLY -->
 
-- `boot_order` (string) - The priority of boot devices. Defaults to `disk,cdrom`.
+- `boot_order` (string) - The priority of boot devices.
   
   The available boot devices are: `floppy`, `cdrom`, `ethernet`, and
   `disk`.
   
-  -> **Note:** If not set, the boot order is temporarily set to
-  `disk,cdrom` for the duration of the build and then cleared upon
-  build completion.
+  -> **Note:** For `vsphere-iso`, if not set, the boot order is
+  temporarily set to `disk,cdrom` for the duration of the build and then
+  cleared upon build completion. For `vsphere-clone`, if not set, the
+  boot order is inherited from the source.
 
 <!-- End of code generated from the comments of the RunConfig struct in builder/vsphere/common/step_run.go; -->
 
