@@ -10,10 +10,11 @@ import (
 // FlatDiskConfig is an auto-generated flat version of DiskConfig.
 // Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
 type FlatDiskConfig struct {
-	DiskSize            *int64 `mapstructure:"disk_size" required:"true" cty:"disk_size" hcl:"disk_size"`
-	DiskThinProvisioned *bool  `mapstructure:"disk_thin_provisioned" cty:"disk_thin_provisioned" hcl:"disk_thin_provisioned"`
-	DiskEagerlyScrub    *bool  `mapstructure:"disk_eagerly_scrub" cty:"disk_eagerly_scrub" hcl:"disk_eagerly_scrub"`
-	DiskControllerIndex *int   `mapstructure:"disk_controller_index" cty:"disk_controller_index" hcl:"disk_controller_index"`
+	DiskSize            *int64  `mapstructure:"disk_size" required:"true" cty:"disk_size" hcl:"disk_size"`
+	DiskThinProvisioned *bool   `mapstructure:"disk_thin_provisioned" cty:"disk_thin_provisioned" hcl:"disk_thin_provisioned"`
+	DiskEagerlyScrub    *bool   `mapstructure:"disk_eagerly_scrub" cty:"disk_eagerly_scrub" hcl:"disk_eagerly_scrub"`
+	DiskControllerIndex *int    `mapstructure:"disk_controller_index" cty:"disk_controller_index" hcl:"disk_controller_index"`
+	DiskControllerUnit  *string `mapstructure:"disk_controller_unit" cty:"disk_controller_unit" hcl:"disk_controller_unit"`
 }
 
 // FlatMapstructure returns a new FlatDiskConfig.
@@ -32,6 +33,7 @@ func (*FlatDiskConfig) HCL2Spec() map[string]hcldec.Spec {
 		"disk_thin_provisioned": &hcldec.AttrSpec{Name: "disk_thin_provisioned", Type: cty.Bool, Required: false},
 		"disk_eagerly_scrub":    &hcldec.AttrSpec{Name: "disk_eagerly_scrub", Type: cty.Bool, Required: false},
 		"disk_controller_index": &hcldec.AttrSpec{Name: "disk_controller_index", Type: cty.Number, Required: false},
+		"disk_controller_unit":  &hcldec.AttrSpec{Name: "disk_controller_unit", Type: cty.String, Required: false},
 	}
 	return s
 }

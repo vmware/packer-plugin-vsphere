@@ -99,13 +99,13 @@ func ResolveMultiDiskDatastoreRefs(
 	ui packersdk.Ui,
 	d driver.Driver,
 	datastoreCluster string,
-	disks []driver.Disk,
+	input driver.StoragePlacementInput,
 	primaryDatastore driver.Datastore,
 	datastoreName string,
 ) (string, []*types.ManagedObjectReference) {
 	// Single-disk and zero-disk cases rely on StepResolveDatastore; per-disk refs
 	// are only needed when multiple additional disks may land on different datastores.
-	if datastoreCluster == "" || len(disks) <= 1 {
+	if datastoreCluster == "" || len(input.StorageConfig.Storage) <= 1 {
 		return datastoreName, nil
 	}
 
@@ -114,17 +114,17 @@ func ResolveMultiDiskDatastoreRefs(
 		return datastoreName, nil
 	}
 
-	ui.Sayf("Requesting Storage DRS recommendations for %d disks...", len(disks))
+	ui.Sayf("Requesting Storage DRS recommendations for %d disks...", len(input.StorageConfig.Storage))
 
-	diskDatastores, method, err := dsSelector.SelectDatastoresForDisks(datastoreCluster, disks)
+	diskDatastores, method, err := dsSelector.SelectDatastoresForDisks(datastoreCluster, input)
 	if err != nil {
 		ui.Sayf("Warning: Failed to get Storage DRS recommendations: %s. Using primary datastore.", err)
 		if primaryDatastore == nil {
 			return datastoreName, nil
 		}
 
-		datastoreRefs := make([]*types.ManagedObjectReference, 0, len(disks))
-		for i := 0; i < len(disks); i++ {
+		datastoreRefs := make([]*types.ManagedObjectReference, 0, len(input.StorageConfig.Storage))
+		for i := 0; i < len(input.StorageConfig.Storage); i++ {
 			ref := primaryDatastore.Reference()
 			datastoreRefs = append(datastoreRefs, &ref)
 		}

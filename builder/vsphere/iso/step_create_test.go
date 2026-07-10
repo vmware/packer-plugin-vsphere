@@ -80,6 +80,21 @@ func TestCreateConfig_Prepare(t *testing.T) {
 			expectedErrMsg: "storage[0].'disk_controller_index' references an unknown disk controller",
 		},
 		{
+			name: "Storage rejects disk_controller_unit",
+			config: &CreateConfig{
+				StorageConfig: common.StorageConfig{
+					Storage: []common.DiskConfig{
+						{
+							DiskSize:           32768,
+							DiskControllerUnit: "scsi0:1",
+						},
+					},
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "storage[0]: 'disk_controller_unit' is only supported by the vsphere-clone builder",
+		},
+		{
 			name: "USBController validate 'usb' and 'xhci' can be set together",
 			config: &CreateConfig{
 				USBController: []string{"usb", "xhci"},

@@ -441,13 +441,7 @@ func (vm *VirtualMachineDriver) Clone(ctx context.Context, config *CloneConfig) 
 		configSpec.DeviceChange = append(configSpec.DeviceChange, deviceResizeSpec...)
 	}
 
-	virtualDisks := devices.SelectByType((*types.VirtualDisk)(nil))
-	virtualControllers := devices.SelectByType((*types.VirtualController)(nil))
-
-	// Use existing devices to avoid overlapping configuration.
-	existingDevices := object.VirtualDeviceList{}
-	existingDevices = append(existingDevices, virtualDisks...)
-	existingDevices = append(existingDevices, virtualControllers...)
+	existingDevices := StorageExistingDevices(devices)
 
 	storageConfigSpec, err := config.StorageConfig.AddStorageDevices(existingDevices)
 	if err != nil {

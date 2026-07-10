@@ -139,6 +139,12 @@ func (c *CreateConfig) Prepare() []error {
 	}
 	errs = append(errs, c.StorageConfig.Prepare()...)
 
+	for i, storage := range c.StorageConfig.Storage {
+		if storage.DiskControllerUnit != "" {
+			errs = append(errs, fmt.Errorf("storage[%d]: 'disk_controller_unit' is only supported by the vsphere-clone builder", i))
+		}
+	}
+
 	if c.GuestOSType == "" {
 		c.GuestOSType = "otherGuest"
 	}
@@ -224,8 +230,14 @@ func (s *StepCreateVM) Run(_ context.Context, state multistep.StateBag) multiste
 	}
 
 	// Handle multi-disk placement when using a datastore cluster.
+	placementInput := driver.StoragePlacementInput{
+		StorageConfig: driver.StorageConfig{
+			DiskControllerType: s.Config.StorageConfig.DiskControllerType,
+			Storage:            disks,
+		},
+	}
 	datastoreName, datastoreRefs := common.ResolveMultiDiskDatastoreRefs(
-		ui, d, s.Location.DatastoreCluster, disks, primaryDatastore, datastoreName,
+		ui, d, s.Location.DatastoreCluster, placementInput, primaryDatastore, datastoreName,
 	)
 
 	vm, err := d.CreateVM(&driver.CreateConfig{

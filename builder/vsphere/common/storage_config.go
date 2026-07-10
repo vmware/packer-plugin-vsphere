@@ -22,7 +22,14 @@ type DiskConfig struct {
 	DiskEagerlyScrub bool `mapstructure:"disk_eagerly_scrub"`
 	// The assigned disk controller for the disk.
 	// Defaults to the first controller, `(0)`.
+	// Mutually exclusive with `disk_controller_unit`.
 	DiskControllerIndex int `mapstructure:"disk_controller_index"`
+	// Explicit controller address for the disk when cloning from a `template`
+	// or deploying a VM template `content_library_source`.
+	// Format: `{type}{bus}:{unit}` such as `scsi0:1`, `nvme0:0`, or `sata0:2`.
+	// Only supported by the `vsphere-clone` builder. Mutually exclusive with
+	// `disk_controller_index`.
+	DiskControllerUnit string `mapstructure:"disk_controller_unit"`
 }
 
 // Disk layout depends on the builder and clone source. For `vsphere-clone`,
@@ -57,7 +64,7 @@ func (c *StorageConfig) Prepare() []error {
 			if storage.DiskSize == 0 {
 				errs = append(errs, fmt.Errorf("storage[%d].'disk_size' is required", i))
 			}
-			if storage.DiskControllerIndex >= len(c.DiskControllerType) {
+			if storage.DiskControllerUnit == "" && storage.DiskControllerIndex >= len(c.DiskControllerType) {
 				errs = append(errs, fmt.Errorf("storage[%d].'disk_controller_index' references an unknown disk controller", i))
 			}
 		}

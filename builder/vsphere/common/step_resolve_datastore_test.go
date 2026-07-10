@@ -5,12 +5,14 @@
 package common
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
+	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
 
@@ -167,6 +169,67 @@ func TestStepResolveDatastore_Cleanup(t *testing.T) {
 	step.Cleanup(state)
 }
 
+func TestResolveMultiDiskDatastoreRefs(t *testing.T) {
+	ui := &packersdk.BasicUi{
+		Reader: new(bytes.Buffer),
+		Writer: new(bytes.Buffer),
+	}
+
+	mock := NewVCenterDriverMock()
+	ds1 := &driver.DatastoreMock{NameReturn: "datastore-1"}
+	ds2 := &driver.DatastoreMock{NameReturn: "datastore-2"}
+	mock.SelectDatastoresForDisksReturn = []driver.Datastore{ds1, ds2}
+	mock.SelectDatastoresForDisksMethod = driver.SelectionMethodDRS
+
+	input := driver.StoragePlacementInput{
+		StorageConfig: driver.StorageConfig{
+			DiskControllerType: []string{"pvscsi"},
+			Storage: []driver.Disk{
+				{DiskSize: 4096, ControllerUnit: "scsi0:1"},
+				{DiskSize: 8192, ControllerUnit: "scsi0:2"},
+			},
+		},
+	}
+
+	datastoreName, refs := ResolveMultiDiskDatastoreRefs(
+		ui, mock, "test-cluster", input, ds1, "initial-datastore",
+	)
+
+	if !mock.SelectDatastoresForDisksCalled {
+		t.Fatal("expected SelectDatastoresForDisks to be called")
+	}
+	if len(mock.SelectDatastoresForDisksInput.StorageConfig.Storage) != 2 {
+		t.Fatalf("expected placement input with 2 disks, got %d", len(mock.SelectDatastoresForDisksInput.StorageConfig.Storage))
+	}
+	if datastoreName != "datastore-1" {
+		t.Fatalf("unexpected datastore name: %q", datastoreName)
+	}
+	if len(refs) != 2 {
+		t.Fatalf("expected 2 datastore refs, got %d", len(refs))
+	}
+}
+
+func TestResolveMultiDiskDatastoreRefsSkipsSingleDisk(t *testing.T) {
+	mock := NewVCenterDriverMock()
+	input := driver.StoragePlacementInput{
+		StorageConfig: driver.StorageConfig{
+			Storage: []driver.Disk{{DiskSize: 4096}},
+		},
+	}
+
+	_, refs := ResolveMultiDiskDatastoreRefs(
+		&packersdk.BasicUi{Reader: new(bytes.Buffer), Writer: new(bytes.Buffer)},
+		mock, "test-cluster", input, nil, "initial-datastore",
+	)
+
+	if mock.SelectDatastoresForDisksCalled {
+		t.Fatal("expected SelectDatastoresForDisks not to be called for single disk")
+	}
+	if refs != nil {
+		t.Fatal("expected nil datastore refs for single disk")
+	}
+}
+
 // VCenterDriverMock embeds DriverMock and adds VCenterDriver-specific methods for testing
 type VCenterDriverMock struct {
 	*driver.DriverMock
@@ -175,6 +238,12 @@ type VCenterDriverMock struct {
 	SelectDatastoreReturn driver.Datastore
 	SelectDatastoreMethod string
 	SelectDatastoreErr    error
+
+	SelectDatastoresForDisksCalled bool
+	SelectDatastoresForDisksInput  driver.StoragePlacementInput
+	SelectDatastoresForDisksReturn []driver.Datastore
+	SelectDatastoresForDisksMethod string
+	SelectDatastoresForDisksErr    error
 }
 
 // NewVCenterDriverMock creates a new VCenterDriverMock
@@ -188,4 +257,14 @@ func NewVCenterDriverMock() *VCenterDriverMock {
 func (d *VCenterDriverMock) SelectDatastoreFromCluster(clusterName string) (driver.Datastore, string, error) {
 	d.SelectDatastoreCalled = true
 	return d.SelectDatastoreReturn, d.SelectDatastoreMethod, d.SelectDatastoreErr
+}
+
+// SelectDatastoresForDisks mocks multi-disk Storage DRS placement.
+func (d *VCenterDriverMock) SelectDatastoresForDisks(clusterName string, input driver.StoragePlacementInput) ([]driver.Datastore, string, error) {
+	d.SelectDatastoresForDisksCalled = true
+	d.SelectDatastoresForDisksInput = input
+	if d.SelectDatastoresForDisksErr != nil {
+		return nil, "", d.SelectDatastoresForDisksErr
+	}
+	return d.SelectDatastoresForDisksReturn, d.SelectDatastoresForDisksMethod, nil
 }

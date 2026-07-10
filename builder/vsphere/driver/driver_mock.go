@@ -268,3 +268,8 @@ func (d *DriverMock) DeployContentLibraryItem(ctx context.Context, config *Conte
 func (d *DriverMock) Cleanup() (error, error) {
 	return nil, nil
 }
+
+// SelectDatastoresForDisks mocks multi-disk Storage DRS placement for testing.
+func (d *DriverMock) SelectDatastoresForDisks(clusterName string, input StoragePlacementInput) ([]Datastore, string, error) {
+	return nil, "", fmt.Errorf("SelectDatastoresForDisks not implemented in DriverMock")
+}

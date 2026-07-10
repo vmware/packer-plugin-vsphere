@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/mitchellh/mapstructure"
+	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vapi/library"
 	"github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
@@ -36,7 +37,7 @@ func TestCloneConfig_Prepare(t *testing.T) {
 			config: &CloneConfig{
 				Template: "template name",
 				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"test"},
+					DiskControllerType: []string{"pvscsi"},
 					Storage: []common.DiskConfig{
 						{
 							DiskSize: 0,
@@ -83,7 +84,7 @@ func TestCloneConfig_Prepare(t *testing.T) {
 			name: "Validate template is set",
 			config: &CloneConfig{
 				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"test"},
+					DiskControllerType: []string{"pvscsi"},
 					Storage: []common.DiskConfig{
 						{
 							DiskSize: 32768,
@@ -101,7 +102,7 @@ func TestCloneConfig_Prepare(t *testing.T) {
 				LinkedClone: true,
 				DiskSize:    32768,
 				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"test"},
+					DiskControllerType: []string{"pvscsi"},
 					Storage: []common.DiskConfig{
 						{
 							DiskSize: 32768,
@@ -118,7 +119,7 @@ func TestCloneConfig_Prepare(t *testing.T) {
 				Template:   "template name",
 				MacAddress: "some mac address",
 				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"test"},
+					DiskControllerType: []string{"pvscsi"},
 					Storage: []common.DiskConfig{
 						{
 							DiskSize: 32768,
@@ -169,7 +170,7 @@ func TestCloneConfig_Prepare(t *testing.T) {
 					URL: "https://packages.example.com/artifacts/example.ovf",
 				},
 				StorageConfig: common.StorageConfig{
-					DiskControllerType: []string{"test"},
+					DiskControllerType: []string{"pvscsi"},
 					Storage: []common.DiskConfig{
 						{
 							DiskSize: 32768,
@@ -245,6 +246,43 @@ func TestCloneConfig_Prepare(t *testing.T) {
 				ContentLibrarySource: &ContentLibrarySourceConfig{
 					Library: "Example Content Library",
 					Name:    "example-template",
+				},
+			},
+			fail: false,
+		},
+		{
+			name: "Validate disk_controller_unit format for content_library_source",
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-template",
+				},
+				StorageConfig: common.StorageConfig{
+					Storage: []common.DiskConfig{
+						{
+							DiskSize:           32768,
+							DiskControllerUnit: "not-a-valid-address",
+						},
+					},
+				},
+			},
+			fail:           true,
+			expectedErrMsg: "invalid disk_controller_unit",
+		},
+		{
+			name: "Valid disk_controller_unit for content_library_source",
+			config: &CloneConfig{
+				ContentLibrarySource: &ContentLibrarySourceConfig{
+					Library: "Example Content Library",
+					Name:    "example-template",
+				},
+				StorageConfig: common.StorageConfig{
+					Storage: []common.DiskConfig{
+						{
+							DiskSize:           32768,
+							DiskControllerUnit: "scsi0:1",
+						},
+					},
 				},
 			},
 			fail: false,
@@ -569,6 +607,87 @@ func TestStepCreateVM_Run_nilCloneResult(t *testing.T) {
 	}
 }
 
+func TestStepCloneVM_DatastoreClusterUsesTemplatePlacementInput(t *testing.T) {
+	state := new(multistep.BasicStateBag)
+	state.Put("ui", &packersdk.BasicUi{
+		Reader: new(bytes.Buffer),
+		Writer: new(bytes.Buffer),
+	})
+	driverMock := new(clonePlacementDriverMock)
+	state.Put("driver", driverMock)
+	state.Put("datastore", &driver.DatastoreMock{NameReturn: "primary-ds"})
+
+	templateDevices := object.VirtualDeviceList{}
+	controller, err := templateDevices.CreateSCSIController("pvscsi")
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	templateDevices = append(templateDevices, controller)
+
+	vmMock := new(driver.VirtualMachineMock)
+	vmMock.DevicesReturn = templateDevices
+	driverMock.VM = vmMock
+
+	ds1 := &driver.DatastoreMock{NameReturn: "drs-ds-1"}
+	ds2 := &driver.DatastoreMock{NameReturn: "drs-ds-2"}
+	driverMock.selectDatastoresForDisksReturn = []driver.Datastore{ds1, ds2}
+	driverMock.selectDatastoresForDisksMethod = driver.SelectionMethodDRS
+
+	location := basicLocationConfig()
+	location.DatastoreCluster = "test-cluster"
+
+	step := &StepCloneVM{
+		Config: &CloneConfig{
+			Template: "template",
+			DiskSize: 8192,
+			StorageConfig: common.StorageConfig{
+				Storage: []common.DiskConfig{
+					{DiskSize: 4096, DiskControllerUnit: "scsi0:1"},
+					{DiskSize: 4096, DiskControllerUnit: "scsi0:2"},
+				},
+			},
+		},
+		Location: location,
+		Force:    true,
+	}
+
+	action := step.Run(context.Background(), state)
+	if action != multistep.ActionContinue {
+		t.Fatalf("expected ActionContinue, got %v; error: %v", action, state.Get("error"))
+	}
+
+	if !driverMock.selectDatastoresForDisksCalled {
+		t.Fatal("expected SelectDatastoresForDisks to be called")
+	}
+	if driverMock.selectDatastoresForDisksInput.PrimaryDiskSize != 8192 {
+		t.Fatalf("expected primary disk resize in placement input, got %d", driverMock.selectDatastoresForDisksInput.PrimaryDiskSize)
+	}
+	if len(driverMock.selectDatastoresForDisksInput.ExistingDevices) == 0 {
+		t.Fatal("expected template devices in placement input")
+	}
+	if !vmMock.CloneCalled {
+		t.Fatal("expected clone to be called")
+	}
+	if len(vmMock.CloneConfig.StorageConfig.DatastoreRefs) != 2 {
+		t.Fatalf("expected 2 per-disk datastore refs, got %d", len(vmMock.CloneConfig.StorageConfig.DatastoreRefs))
+	}
+}
+
+type clonePlacementDriverMock struct {
+	driver.DriverMock
+
+	selectDatastoresForDisksCalled bool
+	selectDatastoresForDisksInput  driver.StoragePlacementInput
+	selectDatastoresForDisksReturn []driver.Datastore
+	selectDatastoresForDisksMethod string
+}
+
+func (m *clonePlacementDriverMock) SelectDatastoresForDisks(clusterName string, input driver.StoragePlacementInput) ([]driver.Datastore, string, error) {
+	m.selectDatastoresForDisksCalled = true
+	m.selectDatastoresForDisksInput = input
+	return m.selectDatastoresForDisksReturn, m.selectDatastoresForDisksMethod, nil
+}
+
 func basicStepCloneVM() *StepCloneVM {
 	step := &StepCloneVM{
 		Config:   createConfig(),
@@ -611,6 +730,7 @@ func driverCreateConfig(config *CloneConfig, location *common.LocationConfig) *d
 			DiskEagerlyScrub:    disk.DiskEagerlyScrub,
 			DiskThinProvisioned: disk.DiskThinProvisioned,
 			ControllerIndex:     disk.DiskControllerIndex,
+			ControllerUnit:      disk.DiskControllerUnit,
 		})
 	}
 
@@ -837,6 +957,61 @@ func TestStepCloneVM_ContentLibraryDeployConfigPassthrough(t *testing.T) {
 	}
 	if cfg.Datastore != "test-datastore" {
 		t.Fatalf("expected datastore %q, got %q", "test-datastore", cfg.Datastore)
+	}
+}
+
+// TestStepCloneVM_ContentLibraryDiskControllerUnitPassthrough guards against a
+// regression where disk_controller_unit was silently dropped when deploying
+// from a content_library_source VM template: the disk would fall back to
+// legacy disk_controller_index placement (index 0) with no error at all.
+func TestStepCloneVM_ContentLibraryDiskControllerUnitPassthrough(t *testing.T) {
+	state := new(multistep.BasicStateBag)
+	state.Put("ui", &packersdk.BasicUi{
+		Reader: new(bytes.Buffer),
+		Writer: new(bytes.Buffer),
+	})
+	driverMock := driver.NewDriverMock()
+	driverMock.ResolveContentLibraryItemResult = &library.Item{
+		Name: "example-template",
+		Type: library.ItemTypeVMTX,
+	}
+	driverMock.DeployContentLibraryItemVM = new(driver.VirtualMachineMock)
+	state.Put("driver", driverMock)
+
+	step := &StepCloneVM{
+		Config: &CloneConfig{
+			ContentLibrarySource: &ContentLibrarySourceConfig{
+				Library: "Example Content Library",
+				Name:    "example-template",
+			},
+			StorageConfig: common.StorageConfig{
+				DiskControllerType: []string{"pvscsi"},
+				Storage: []common.DiskConfig{
+					{
+						DiskSize:           32768,
+						DiskControllerUnit: "scsi0:1",
+					},
+				},
+			},
+		},
+		Location: basicLocationConfig(),
+		Force:    true,
+	}
+
+	action := step.Run(context.Background(), state)
+	if action != multistep.ActionContinue {
+		t.Fatalf("expected ActionContinue, got %v; error: %v", action, state.Get("error"))
+	}
+
+	cfg := driverMock.DeployContentLibraryItemConfig
+	if cfg == nil {
+		t.Fatal("expected DeployContentLibraryItemConfig to be set")
+	}
+	if len(cfg.StorageConfig.Storage) != 1 {
+		t.Fatalf("expected 1 storage entry, got %d", len(cfg.StorageConfig.Storage))
+	}
+	if got := cfg.StorageConfig.Storage[0].ControllerUnit; got != "scsi0:1" {
+		t.Fatalf("expected ControllerUnit %q to reach DeployContentLibraryItemConfig, got %q", "scsi0:1", got)
 	}
 }
 

@@ -8,5 +8,12 @@
 
 - `disk_controller_index` (int) - The assigned disk controller for the disk.
   Defaults to the first controller, `(0)`.
+  Mutually exclusive with `disk_controller_unit`.
+
+- `disk_controller_unit` (string) - Explicit controller address for the disk when cloning from a `template`
+  or deploying a VM template `content_library_source`.
+  Format: `{type}{bus}:{unit}` such as `scsi0:1`, `nvme0:0`, or `sata0:2`.
+  Only supported by the `vsphere-clone` builder. Mutually exclusive with
+  `disk_controller_index`.
 
 <!-- End of code generated from the comments of the DiskConfig struct in builder/vsphere/common/storage_config.go; -->

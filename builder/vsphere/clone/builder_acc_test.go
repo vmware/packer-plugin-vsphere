@@ -253,6 +253,38 @@ func checkFolderAndResourcePool(d driver.Driver, parent, resourcePool *types.Man
 	return nil
 }
 
+func checkDiskAtControllerUnit(vm driver.VirtualMachine, addr string, wantMiB int64) error {
+	devices, err := vm.Devices()
+	if err != nil {
+		return fmt.Errorf("cannot read devices: %v", err)
+	}
+
+	parsed, err := driver.ParseControllerUnit(addr)
+	if err != nil {
+		return fmt.Errorf("cannot parse controller address %q: %v", addr, err)
+	}
+
+	controller := driver.FindControllerByBus(devices, parsed.Kind, parsed.Bus)
+	if controller == nil {
+		return fmt.Errorf("controller for %q not found on cloned VM", addr)
+	}
+	controllerKey := controller.GetVirtualController().Key
+
+	for _, device := range devices.SelectByType((*types.VirtualDisk)(nil)) {
+		disk := device.(*types.VirtualDisk)
+		vd := disk.GetVirtualDevice()
+		if vd.ControllerKey != controllerKey || vd.UnitNumber == nil || int(*vd.UnitNumber) != parsed.Unit {
+			continue
+		}
+		wantKB := wantMiB * 1024
+		if disk.CapacityInKB != wantKB {
+			return fmt.Errorf("disk at %q: expected %d MiB (%d KB), got %d KB", addr, wantMiB, wantKB, disk.CapacityInKB)
+		}
+		return nil
+	}
+	return fmt.Errorf("no disk found at %q on cloned VM", addr)
+}
+
 func checkOvfSourcePlacement(name string, acc env.AccConfig, mac string) error {
 	d, vm, parent, rp, err := findVM(name)
 	if err != nil {
@@ -442,10 +474,54 @@ func checkMatrixC(name string, acc env.AccConfig) error {
 }
 
 // ---------------------------------------------------------------------------
-// Matrix D — Local OVF Source
+// Matrix D — Explicit Disk Controller Unit
 // ---------------------------------------------------------------------------
 
+// accDiskControllerUnit targets unit 1 on the template's existing primary SCSI
+// controller (scsi0). The template's boot disk is expected to occupy scsi0:0,
+// leaving scsi0:1 free without needing to know the controller's exact type
+// (LSI Logic vs. PVSCSI).
+const accDiskControllerUnit = "scsi0:1"
+
 func TestAccCloneBuilder_MatrixD(t *testing.T) {
+	acceptance.RequireAcceptance(t)
+	config := cloneExampleConfig()
+	vmName := config["vm_name"].(string)
+
+	config["storage"] = map[string]interface{}{
+		"disk_size":            accExtraMiB,
+		"disk_controller_unit": accDiskControllerUnit,
+	}
+
+	testCase := &acctest.PluginTestCase{
+		Name:     "vsphere-clone-matrix-d",
+		Template: acceptance.RenderConfig("vsphere-clone", config),
+		Teardown: func() error {
+			return teardownVM(vmName)
+		},
+		Check: func(buildCommand *exec.Cmd, logfile string) error {
+			if err := checkBuildSucceeded(buildCommand, logfile); err != nil {
+				return err
+			}
+			return checkMatrixD(vmName, accDiskControllerUnit, accExtraMiB)
+		},
+	}
+	acctest.TestPlugin(t, testCase)
+}
+
+func checkMatrixD(name, addr string, wantMiB int64) error {
+	_, vm, _, _, err := findVM(name)
+	if err != nil {
+		return err
+	}
+	return checkDiskAtControllerUnit(vm, addr, wantMiB)
+}
+
+// ---------------------------------------------------------------------------
+// Matrix E — Local OVF Source
+// ---------------------------------------------------------------------------
+
+func TestAccCloneBuilder_MatrixE(t *testing.T) {
 	acceptance.RequireAcceptance(t)
 	acc := env.AccFromEnv()
 	requireOVAURL(t, acc)
@@ -458,7 +534,7 @@ func TestAccCloneBuilder_MatrixD(t *testing.T) {
 	config["ovf_source"] = ovfSourceLocalPath(ovfPath)
 
 	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-clone-matrix-d",
+		Name:     "vsphere-clone-matrix-e",
 		Template: acceptance.RenderConfig("vsphere-clone", config),
 		Teardown: func() error {
 			return teardownVM(vmName)
@@ -474,10 +550,10 @@ func TestAccCloneBuilder_MatrixD(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Matrix E — Local OVA Source
+// Matrix F — Local OVA Source
 // ---------------------------------------------------------------------------
 
-func TestAccCloneBuilder_MatrixE(t *testing.T) {
+func TestAccCloneBuilder_MatrixF(t *testing.T) {
 	acceptance.RequireAcceptance(t)
 	acc := env.AccFromEnv()
 	requireOVAURL(t, acc)
@@ -490,7 +566,7 @@ func TestAccCloneBuilder_MatrixE(t *testing.T) {
 	config["ovf_source"] = ovfSourceLocalPath(ovaPath)
 
 	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-clone-matrix-e",
+		Name:     "vsphere-clone-matrix-f",
 		Template: acceptance.RenderConfig("vsphere-clone", config),
 		Teardown: func() error {
 			return teardownVM(vmName)
@@ -506,10 +582,10 @@ func TestAccCloneBuilder_MatrixE(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Matrix F — Remote HTTPS OVF Source
+// Matrix G — Remote HTTPS OVF Source
 // ---------------------------------------------------------------------------
 
-func TestAccCloneBuilder_MatrixF(t *testing.T) {
+func TestAccCloneBuilder_MatrixG(t *testing.T) {
 	acceptance.RequireAcceptance(t)
 	acc := env.AccFromEnv()
 	requireOVFURL(t, acc)
@@ -519,7 +595,7 @@ func TestAccCloneBuilder_MatrixF(t *testing.T) {
 	config["ovf_source"] = ovfSourceRemote(acc, acc.OVFURL)
 
 	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-clone-matrix-f",
+		Name:     "vsphere-clone-matrix-g",
 		Template: acceptance.RenderConfig("vsphere-clone", config),
 		Teardown: func() error {
 			return teardownVM(vmName)
@@ -535,10 +611,10 @@ func TestAccCloneBuilder_MatrixF(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Matrix G — Remote HTTPS OVA Source
+// Matrix H — Remote HTTPS OVA Source
 // ---------------------------------------------------------------------------
 
-func TestAccCloneBuilder_MatrixG(t *testing.T) {
+func TestAccCloneBuilder_MatrixH(t *testing.T) {
 	acceptance.RequireAcceptance(t)
 	acc := env.AccFromEnv()
 	requireOVAURL(t, acc)
@@ -548,7 +624,7 @@ func TestAccCloneBuilder_MatrixG(t *testing.T) {
 	config["ovf_source"] = ovfSourceRemote(acc, acc.OVAURL)
 
 	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-clone-matrix-g",
+		Name:     "vsphere-clone-matrix-h",
 		Template: acceptance.RenderConfig("vsphere-clone", config),
 		Teardown: func() error {
 			return teardownVM(vmName)
