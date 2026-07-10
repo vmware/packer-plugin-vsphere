@@ -82,7 +82,7 @@ This plugin supports the following configuration formats:
 <!-- End of code generated from the comments of the TagsConfig struct in builder/vsphere/common/tags_config.go; -->
 
 
-Tags consist of the following parts::
+Tags consist of the following parts:
 
 <!-- Code generated from the comments of the TagConfig struct in builder/vsphere/common/tags_config.go; DO NOT EDIT MANUALLY -->
 
