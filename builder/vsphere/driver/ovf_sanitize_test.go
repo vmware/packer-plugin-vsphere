@@ -21,6 +21,16 @@ func TestSanitizeOvfErrorMessage(t *testing.T) {
 			expected: "error accessing https://packages.example.com/artifacts/example.ovf",
 		},
 		{
+			name:     "URL with token-only userinfo",
+			input:    "error accessing https://token@packages.example.com/artifacts/example.ovf",
+			expected: "error accessing https://packages.example.com/artifacts/example.ovf",
+		},
+		{
+			name:     "URL with at-sign in query string",
+			input:    "see https://packages.example.com/path?email=user@domain.com for details",
+			expected: "see https://packages.example.com/path?email=user@domain.com for details",
+		},
+		{
 			name:     "Password in error message",
 			input:    "authentication failed: password=testpass",
 			expected: "authentication failed: password=[credentials removed]",
@@ -57,6 +67,11 @@ func TestSanitizeOvfURL(t *testing.T) {
 		{
 			name:     "URL with username and password",
 			input:    "https://testuser:testpass@packages.example.com/artifacts/example.ovf",
+			expected: "https://packages.example.com/artifacts/example.ovf",
+		},
+		{
+			name:     "URL with token-only userinfo",
+			input:    "https://token@packages.example.com/artifacts/example.ovf",
 			expected: "https://packages.example.com/artifacts/example.ovf",
 		},
 		{

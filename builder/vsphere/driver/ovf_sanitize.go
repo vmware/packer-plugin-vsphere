@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ovfURLWithCredentialsPattern = regexp.MustCompile(`https?://[^:]+:[^@]+@[^\s]+`)
+	ovfURLWithCredentialsPattern = regexp.MustCompile(`https?://[^/\s]+@[^\s]+`)
 	ovfCredentialPatterns        = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)(password[=:]\s*)[^\s&]+`),
 		regexp.MustCompile(`(?i)(passwd[=:]\s*)[^\s&]+`),
@@ -32,8 +32,14 @@ func SanitizeOvfURL(urlStr string) string {
 	return u.String()
 }
 
-// SanitizeOvfSource returns a safe label for an OVF source. HTTP(S) URLs have
-// credentials stripped; local filesystem paths are returned unchanged.
+// SanitizeOvfSource returns a safe label for an OVF source.
+// HTTP(S) URLs have embedded user credentials stripped.
+//
+// Local filesystem paths are returned unchanged by design; this assumes path
+// values are acceptable to log in the current threat model and do not embed
+// secrets in path components.
+// If both urlStr and pathStr are empty, this returns an empty string (via
+// SanitizeOvfURL("")).
 func SanitizeOvfSource(urlStr, pathStr string) string {
 	if pathStr != "" {
 		return pathStr
