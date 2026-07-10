@@ -49,6 +49,7 @@ EOF
   assert_contains "$output" $'exported.\n  For example' "example text in list item"
   assert_contains "$output" '=== "HCL"' "hcl example tab"
   assert_contains "$output" '=== "JSON"' "json example tab"
+  assert_contains "$output" '- `output_format` (string) - The output format.' "trailing output_format list item preserved"
 }
 
 main() {
