@@ -323,7 +323,13 @@ JSON Example:
 
 @include 'packer-plugin-sdk/communicator/SSH-not-required.mdx'
 
+@include 'packer-plugin-sdk/communicator/SSHTemporaryKeyPair-not-required.mdx'
+
+@include 'packer-plugin-sdk/communicator/SSH-Key-Pair-Name-not-required.mdx'
+
 @include 'packer-plugin-sdk/communicator/SSH-Private-Key-File-not-required.mdx'
+
+@include 'packer-plugin-sdk/communicator/SSH-Agent-Auth-not-required.mdx'
 
 -> **NOTE:** The builder uses vApp Options to inject SSH public keys to the virtual machine. The `temporary_key_pair_name`
 will only work if `vapp.properties` includes `public-keys`. If using `ssh_private_key_file`,
