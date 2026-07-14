@@ -32,11 +32,79 @@ func TestVirtualMachineDriver_Configure(t *testing.T) {
 		VGPUProfile:           "grid_m10-8q",
 		Firmware:              "efi-secure",
 		ForceBIOSSetup:        true,
+		BootDelay:             5000,
 		VTPMEnabled:           true,
 		VirtualPrecisionClock: "ntp",
 	}
 	if err = vm.Configure(hardwareConfig); err != nil {
 		t.Fatalf("unexpected error: '%s'", err)
+	}
+
+	props, err := vm.Properties(sim.driver.Ctx)
+	if err != nil {
+		t.Fatalf("unexpected error: '%s'", err)
+	}
+	if props.Config.BootOptions == nil {
+		t.Fatal("expected boot options to be set")
+	}
+	if props.Config.BootOptions.BootDelay != hardwareConfig.BootDelay {
+		t.Fatalf("unexpected boot delay: expected '%d', but returned '%d'", hardwareConfig.BootDelay, props.Config.BootOptions.BootDelay)
+	}
+}
+
+func TestVirtualMachineDriver_ConfigureBootDelayOnly(t *testing.T) {
+	sim, err := NewVCenterSimulator()
+	if err != nil {
+		t.Fatalf("unexpected error: '%s'", err)
+	}
+	defer sim.Close()
+
+	vm, _ := sim.ChooseSimulatorPreCreatedVM()
+
+	const bootDelay int64 = 5000
+	if err = vm.Configure(&HardwareConfig{BootDelay: bootDelay}); err != nil {
+		t.Fatalf("unexpected error: '%s'", err)
+	}
+
+	props, err := vm.Properties(sim.driver.Ctx)
+	if err != nil {
+		t.Fatalf("unexpected error: '%s'", err)
+	}
+	if props.Config.BootOptions == nil {
+		t.Fatal("expected boot options to be set")
+	}
+	if props.Config.BootOptions.BootDelay != bootDelay {
+		t.Fatalf("unexpected boot delay: expected '%d', but returned '%d'", bootDelay, props.Config.BootOptions.BootDelay)
+	}
+}
+
+func TestVirtualMachineDriver_SetBootOrderPreservesBootDelay(t *testing.T) {
+	sim, err := NewVCenterSimulator()
+	if err != nil {
+		t.Fatalf("unexpected error: '%s'", err)
+	}
+	defer sim.Close()
+
+	vm, _ := sim.ChooseSimulatorPreCreatedVM()
+
+	const bootDelay int64 = 5000
+	if err = vm.Configure(&HardwareConfig{BootDelay: bootDelay}); err != nil {
+		t.Fatalf("unexpected error: '%s'", err)
+	}
+
+	if err = vm.SetBootOrder([]string{"disk", "cdrom"}); err != nil {
+		t.Fatalf("unexpected error: '%s'", err)
+	}
+
+	props, err := vm.Properties(sim.driver.Ctx)
+	if err != nil {
+		t.Fatalf("unexpected error: '%s'", err)
+	}
+	if props.Config.BootOptions == nil {
+		t.Fatal("expected boot options to be set")
+	}
+	if props.Config.BootOptions.BootDelay != bootDelay {
+		t.Fatalf("unexpected boot delay: expected '%d', but returned '%d'", bootDelay, props.Config.BootOptions.BootDelay)
 	}
 }
 

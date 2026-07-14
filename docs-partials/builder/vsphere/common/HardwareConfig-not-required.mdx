@@ -47,6 +47,10 @@
 
 - `force_bios_setup` (bool) - Force entry into the BIOS setup screen during boot. Defaults to `false`.
 
+- `boot_delay` (int64) - The delay in milliseconds before the virtual machine begins the boot
+  sequence for the guest operating system. Must be between `0` and
+  `10000` milliseconds. Defaults to `0`.
+
 - `vTPM` (bool) - Enable virtual trusted platform module (TPM) device for the virtual
   machine. Defaults to `false`.
 

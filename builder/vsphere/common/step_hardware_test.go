@@ -113,6 +113,36 @@ func TestHardwareConfig_Prepare(t *testing.T) {
 			fail:           true,
 			expectedErrMsg: "'precision_clock' must be '', 'ptp', 'ntp', or 'none'",
 		},
+		{
+			name: "Validate boot_delay",
+			config: &HardwareConfig{
+				BootDelay: 5000,
+			},
+			fail: false,
+		},
+		{
+			name: "Validate maximum boot_delay",
+			config: &HardwareConfig{
+				BootDelay: 10000,
+			},
+			fail: false,
+		},
+		{
+			name: "Validate negative boot_delay",
+			config: &HardwareConfig{
+				BootDelay: -1,
+			},
+			fail:           true,
+			expectedErrMsg: "'boot_delay' must be between 0 and 10000 milliseconds",
+		},
+		{
+			name: "Validate boot_delay above maximum",
+			config: &HardwareConfig{
+				BootDelay: 10001,
+			},
+			fail:           true,
+			expectedErrMsg: "'boot_delay' must be between 0 and 10000 milliseconds",
+		},
 	}
 	for _, c := range tc {
 		t.Run(c.name, func(t *testing.T) {
@@ -252,6 +282,7 @@ func driverHardwareConfigFromConfig(config *HardwareConfig) *driver.HardwareConf
 		VGPUProfile:           config.VGPUProfile,
 		Firmware:              config.Firmware,
 		ForceBIOSSetup:        config.ForceBIOSSetup,
+		BootDelay:             config.BootDelay,
 		VTPMEnabled:           config.VTPMEnabled,
 		VirtualPrecisionClock: config.VirtualPrecisionClock,
 	}

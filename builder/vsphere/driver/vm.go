@@ -124,6 +124,7 @@ type HardwareConfig struct {
 	VGPUProfile           string
 	Firmware              string
 	ForceBIOSSetup        bool
+	BootDelay             int64
 	VTPMEnabled           bool
 	VirtualPrecisionClock string
 }
@@ -694,10 +695,11 @@ func (vm *VirtualMachineDriver) Configure(config *HardwareConfig) error {
 
 	confSpec.Firmware = firmware
 
-	if config.Firmware != "" || config.ForceBIOSSetup {
+	if config.Firmware != "" || config.ForceBIOSSetup || config.BootDelay > 0 {
 		confSpec.BootOptions = &types.VirtualMachineBootOptions{
 			EnterBIOSSetup:       types.NewBool(config.ForceBIOSSetup),
 			EfiSecureBootEnabled: types.NewBool(efiSecureBootEnabled),
+			BootDelay:            config.BootDelay,
 		}
 	}
 
@@ -1318,6 +1320,17 @@ func (vm *VirtualMachineDriver) SetBootOrder(order []string) error {
 
 	bootOptions := types.VirtualMachineBootOptions{
 		BootOrder: devices.BootOrder(order),
+	}
+
+	props, err := vm.Properties(vm.driver.Ctx)
+	if err != nil {
+		return err
+	}
+	if props.Config.BootOptions != nil {
+		current := props.Config.BootOptions
+		bootOptions.BootDelay = current.BootDelay
+		bootOptions.EnterBIOSSetup = current.EnterBIOSSetup
+		bootOptions.EfiSecureBootEnabled = current.EfiSecureBootEnabled
 	}
 
 	return vm.vm.SetBootOptions(vm.driver.Ctx, &bootOptions)
