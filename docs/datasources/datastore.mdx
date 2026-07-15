@@ -1,0 +1,128 @@
+---
+modeline: |
+  vim: set ft=pandoc:
+description: |
+  This data source retrieves information about existing datastores from vSphere
+  and returns the name, managed object ID, and summary capacity fields for a
+  datastore that matches all specified filters. The result can be used with the
+  builders to set `datastore`.
+page_title: vSphere Datastore - Data Source
+sidebar_title: vSphere Datastore
+---
+
+# Datastore Data Source
+
+Type: `vsphere-datastore`
+Artifact BuilderId: `vsphere.datastore`
+
+This data source retrieves information about existing datastores from vSphere
+and returns the name, managed object ID, and summary capacity fields for a
+datastore that matches all specified filters. The result can be used with the
+builders to set `datastore`.
+
+## Configuration Reference
+
+### Filters Configuration
+
+**Optional:**
+
+@include 'datasource/datastore/Config-not-required.mdx'
+
+### Tags Filter Configuration
+
+@include 'datasource/common/Tag.mdx'
+
+**Required:**
+
+@include 'datasource/common/Tag-required.mdx'
+
+### Connection Configuration
+
+**Optional:**
+
+@include 'builder/vsphere/common/ConnectConfig-not-required.mdx'
+
+## Output
+
+@include 'datasource/datastore/DatasourceOutput.mdx'
+
+### Summary
+
+@include 'datasource/datastore/Summary-not-required.mdx'
+
+## Example Usage
+
+### Select Datastore with Most Free Space
+
+This example finds the datastore with the most free space among those matching
+a name glob and uses it with the vSphere Clone builder.
+
+```hcl
+data "vsphere-datastore" "build" {
+  vcenter_server  = "vc01.example.com"
+  username        = "administrator@vsphere.local"
+  password        = "VMware1!"
+  datacenter      = "dc-01"
+  name            = "*-vsan"
+  most_free_space = true
+}
+
+source "vsphere-clone" "example" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  host           = "esx01.example.com"
+  datastore      = data.vsphere-datastore.build.name
+  template       = "alpine-template"
+  vm_name        = "alpine-from-ds"
+  communicator   = "none"
+}
+
+build {
+  sources = ["source.vsphere-clone.example"]
+}
+```
+
+### Filter by Tags
+
+```hcl
+data "vsphere-datastore" "build" {
+  vcenter_server  = "vc01.example.com"
+  username        = "administrator@vsphere.local"
+  password        = "VMware1!"
+  datacenter      = "dc-01"
+  most_free_space = true
+
+  tag {
+    category = "datastore-type"
+    name     = "vsan"
+  }
+}
+
+locals {
+  datastore_name = data.vsphere-datastore.build.name
+  free_bytes     = data.vsphere-datastore.build.summary.free
+}
+```
+
+### Filter by Host or Compute Cluster
+
+```hcl
+data "vsphere-datastore" "on_host" {
+  vcenter_server  = "vc01.example.com"
+  username        = "administrator@vsphere.local"
+  password        = "VMware1!"
+  datacenter      = "dc-01"
+  host            = "esx01.example.com"
+  most_free_space = true
+}
+
+data "vsphere-datastore" "on_cluster" {
+  vcenter_server  = "vc01.example.com"
+  username        = "administrator@vsphere.local"
+  password        = "VMware1!"
+  datacenter      = "dc-01"
+  cluster         = "cluster-01"
+  most_free_space = true
+}
+```

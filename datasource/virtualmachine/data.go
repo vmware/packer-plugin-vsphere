@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 //go:generate packer-sdc struct-markdown
-//go:generate packer-sdc mapstructure-to-hcl2 -type Config,Tag,DatasourceOutput
+//go:generate packer-sdc mapstructure-to-hcl2 -type Config,DatasourceOutput
 
 package virtualmachine
 
@@ -23,16 +23,8 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-type Tag struct {
-	// Name of the tag added to virtual machine which must pass the `tag`
-	// filter.
-	Name string `mapstructure:"name" required:"true"`
-	// Name of the tag category that contains the tag.
-	//
-	// -> **Note:** Both `name` and `category` must be specified in the `tag`
-	// filter.
-	Category string `mapstructure:"category" required:"true"`
-}
+// Tag is the HCL tag filter block; aliased so docs show Tag instead of dscommon.Tag.
+type Tag = dscommon.Tag
 
 type Config struct {
 	common.PackerConfig   `mapstructure:",squash"`
@@ -55,21 +47,8 @@ type Config struct {
 	Template bool `mapstructure:"template"`
 	// Filter to search virtual machines only on the specified ESX host.
 	Host string `mapstructure:"host"`
-	// Filter to return only the virtual machines that have attached all specified tags.
-	// Specify one or more `tag` blocks to define list of tags for the filter.
-	//
-	// HCL Example:
-	//
-	// ```hcl
-	//	tag {
-	//	  category = "team"
-	//	  name     = "operations"
-	//	}
-	//	tag {
-	//	  category = "sla"
-	//	  name     = "gold"
-	//	}
-	// ```
+	// Filter to return only the virtual machines that have all specified tags
+	// attached.
 	Tags []Tag `mapstructure:"tag"`
 	// This filter determines how to handle multiple virtual machines that were matched
 	// with all previous filters. Virtual machine creation time is being used to find
@@ -110,7 +89,7 @@ func (d *Datasource) Configure(raws ...interface{}) error {
 	if d.config.Password == "" {
 		errs = packersdk.MultiErrorAppend(errs, errors.New("'password' is required"))
 	}
-	if err := dscommon.ValidateTags(toCommonTags(d.config.Tags)); err != nil {
+	if err := dscommon.ValidateTags(d.config.Tags); err != nil {
 		errs = packersdk.MultiErrorAppend(errs, err)
 	}
 

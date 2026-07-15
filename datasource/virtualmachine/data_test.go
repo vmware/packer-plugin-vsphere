@@ -152,6 +152,14 @@ func TestDatasource_Execute(t *testing.T) {
 			},
 		},
 		{
+			name:          "invalid name_regex",
+			expectFailure: true,
+			expectVmName:  "",
+			config: Config{
+				NameRegex: "(",
+			},
+		},
+		{
 			name:          "found machine with defined set of tags, no error",
 			expectFailure: false,
 			expectVmName:  "second-vm",

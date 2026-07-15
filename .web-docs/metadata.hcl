@@ -39,4 +39,9 @@ integration {
     name = "vSphere Virtual Machine"
     slug = "vsphere-virtualmachine"
   }
+  component {
+    type = "data-source"
+    name = "vSphere Datastore"
+    slug = "vsphere-datastore"
+  }
 }

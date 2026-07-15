@@ -28,9 +28,11 @@ virtual machine can be used in the vSphere Clone builder to select a template.
 
 ### Tags Filter Configuration
 
+@include 'datasource/common/Tag.mdx'
+
 **Required:**
 
-@include 'datasource/virtualmachine/Tag-required.mdx'
+@include 'datasource/common/Tag-required.mdx'
 
 ### Connection Configuration
 
@@ -58,13 +60,8 @@ data "vsphere-virtualmachine" "example" {
   latest         = true
 
   tag {
-    category = "team"
-    name     = "operations"
-  }
-
-  tag {
-    category = "sla"
-    name     = "gold"
+    category = "environment"
+    name     = "production"
   }
 }
 
