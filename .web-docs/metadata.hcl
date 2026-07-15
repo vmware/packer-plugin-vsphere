@@ -44,4 +44,9 @@ integration {
     name = "vSphere Datastore"
     slug = "vsphere-datastore"
   }
+  component {
+    type = "data-source"
+    name = "vSphere Datastore Cluster"
+    slug = "vsphere-datastore-cluster"
+  }
 }

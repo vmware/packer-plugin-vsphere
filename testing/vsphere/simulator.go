@@ -42,6 +42,15 @@ type SimulatedDatastoreConfig struct {
 	Tags      []Tag
 }
 
+// SimulatedDatastoreClusterConfig configures an existing simulator storage pod
+// (datastore cluster) by DatastoreClusterList "*" order. MemberIndexes select
+// datastores by DatastoreList "*" order to move into the pod.
+type SimulatedDatastoreClusterConfig struct {
+	Name          string
+	MemberIndexes []int
+	Tags          []Tag
+}
+
 type simulatorContext struct {
 	Model      *simulator.Model
 	Server     *simulator.Server
@@ -219,6 +228,75 @@ func (sim *simulatorContext) ApplyDatastoreConfiguration(dsConfigs []SimulatedDa
 			}
 			if err := tagMan.AttachTag(sim.Ctx, tagID, ref); err != nil {
 				return fmt.Errorf("failed to attach tag to datastore: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// ApplyDatastoreClusterConfiguration renames simulator storage pods, moves
+// selected datastores into them, and attaches tags. MemberIndexes refer to the
+// DatastoreList "*" order used by ApplyDatastoreConfiguration.
+func (sim *simulatorContext) ApplyDatastoreClusterConfiguration(clusterConfigs []SimulatedDatastoreClusterConfig) error {
+	tagMan := tags.NewManager(sim.RestClient)
+
+	clusters, err := sim.Finder.DatastoreClusterList(sim.Ctx, "*")
+	if err != nil {
+		return fmt.Errorf("failed to list datastore clusters in simulator: %w", err)
+	}
+	if len(clusterConfigs) > len(clusters) {
+		return fmt.Errorf("requested %d datastore cluster configurations but simulator has %d", len(clusterConfigs), len(clusters))
+	}
+
+	datastores, err := sim.Finder.DatastoreList(sim.Ctx, "*")
+	if err != nil {
+		return fmt.Errorf("failed to list datastores in simulator: %w", err)
+	}
+
+	for i, cfg := range clusterConfigs {
+		cluster := clusters[i]
+		ref := cluster.Reference()
+		simPod, ok := sim.Model.Map().Get(ref).(*simulator.StoragePod)
+		if !ok || simPod == nil {
+			return fmt.Errorf("failed to resolve simulator storage pod for %s", ref.Value)
+		}
+
+		if cfg.Name != "" {
+			simPod.Name = cfg.Name
+			if simPod.Summary != nil {
+				simPod.Summary.Name = cfg.Name
+			}
+		}
+
+		if len(cfg.MemberIndexes) > 0 {
+			members := make([]types.ManagedObjectReference, 0, len(cfg.MemberIndexes))
+			for _, idx := range cfg.MemberIndexes {
+				if idx < 0 || idx >= len(datastores) {
+					return fmt.Errorf("datastore member index %d out of range (have %d)", idx, len(datastores))
+				}
+				members = append(members, datastores[idx].Reference())
+			}
+			task, err := cluster.MoveInto(sim.Ctx, members)
+			if err != nil {
+				return fmt.Errorf("failed to move datastores into cluster %s: %w", cluster.Name(), err)
+			}
+			if err := task.Wait(sim.Ctx); err != nil {
+				return fmt.Errorf("failed waiting to move datastores into cluster %s: %w", cluster.Name(), err)
+			}
+		}
+
+		for _, tag := range cfg.Tags {
+			catID, err := ensureCategory(sim.Ctx, tagMan, tag.Category)
+			if err != nil {
+				return fmt.Errorf("failed to ensure category exists: %w", err)
+			}
+			tagID, err := ensureTag(sim.Ctx, tagMan, catID, tag.Name)
+			if err != nil {
+				return fmt.Errorf("failed to ensure tag exists: %w", err)
+			}
+			if err := tagMan.AttachTag(sim.Ctx, tagID, ref); err != nil {
+				return fmt.Errorf("failed to attach tag to datastore cluster: %w", err)
 			}
 		}
 	}
