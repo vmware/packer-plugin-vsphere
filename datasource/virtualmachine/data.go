@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 //go:generate packer-sdc struct-markdown
-//go:generate packer-sdc mapstructure-to-hcl2 -type Config,DatasourceOutput
+//go:generate packer-sdc mapstructure-to-hcl2 -type Config,Tag,DatasourceOutput
 
 package virtualmachine
 
@@ -23,8 +23,11 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// Tag is the HCL tag filter block; aliased so docs show Tag instead of dscommon.Tag.
-type Tag = dscommon.Tag
+// Tag is the HCL `tag` filter block. Field docs live on datasource/common.Tag.
+type Tag struct {
+	Name     string `mapstructure:"name" required:"true"`
+	Category string `mapstructure:"category" required:"true"`
+}
 
 type Config struct {
 	common.PackerConfig   `mapstructure:",squash"`
@@ -89,7 +92,7 @@ func (d *Datasource) Configure(raws ...interface{}) error {
 	if d.config.Password == "" {
 		errs = packersdk.MultiErrorAppend(errs, errors.New("'password' is required"))
 	}
-	if err := dscommon.ValidateTags(d.config.Tags); err != nil {
+	if err := dscommon.ValidateTags(toCommonTags(d.config.Tags)); err != nil {
 		errs = packersdk.MultiErrorAppend(errs, err)
 	}
 

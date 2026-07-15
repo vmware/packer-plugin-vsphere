@@ -57,7 +57,7 @@ func filterVms(vmList []*object.VirtualMachine, c Config, d *driver.VCenterDrive
 	}
 
 	if c.Tags != nil {
-		matcher, err := dscommon.NewTagMatcher(d, c.Tags)
+		matcher, err := dscommon.NewTagMatcher(d, toCommonTags(c.Tags))
 		if err != nil {
 			return nil, err
 		}
@@ -122,4 +122,10 @@ func getHostVms(d *driver.VCenterDriver, hostName string) ([]mo.VirtualMachine, 
 		return nil, fmt.Errorf("failed to get properties for the virtual machine: %w", err)
 	}
 	return hostVms, nil
+}
+
+func toCommonTags(tagList []Tag) []dscommon.Tag {
+	return dscommon.MapTags(tagList, func(tag Tag) (string, string) {
+		return tag.Name, tag.Category
+	})
 }

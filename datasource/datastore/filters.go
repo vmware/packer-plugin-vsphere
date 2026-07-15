@@ -55,7 +55,7 @@ func filterDatastores(dsList []*object.Datastore, c Config, d *driver.VCenterDri
 	}
 
 	if c.Tags != nil {
-		matcher, err := dscommon.NewTagMatcher(d, c.Tags)
+		matcher, err := dscommon.NewTagMatcher(d, toCommonTags(c.Tags))
 		if err != nil {
 			return nil, err
 		}
@@ -131,4 +131,10 @@ func refSet(refs []types.ManagedObjectReference) map[string]struct{} {
 		out[ref.Value] = struct{}{}
 	}
 	return out
+}
+
+func toCommonTags(tagList []Tag) []dscommon.Tag {
+	return dscommon.MapTags(tagList, func(tag Tag) (string, string) {
+		return tag.Name, tag.Category
+	})
 }
