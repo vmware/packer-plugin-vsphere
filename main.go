@@ -11,6 +11,7 @@ import (
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/clone"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/iso"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/supervisor"
+	"github.com/vmware/packer-plugin-vsphere/datasource/computecluster"
 	"github.com/vmware/packer-plugin-vsphere/datasource/datastore"
 	"github.com/vmware/packer-plugin-vsphere/datasource/datastorecluster"
 	"github.com/vmware/packer-plugin-vsphere/datasource/host"
@@ -25,6 +26,7 @@ func main() {
 	pps.RegisterBuilder("iso", new(iso.Builder))
 	pps.RegisterBuilder("clone", new(clone.Builder))
 	pps.RegisterBuilder("supervisor", new(supervisor.Builder))
+	pps.RegisterDatasource("compute-cluster", new(computecluster.Datasource))
 	pps.RegisterDatasource("datastore", new(datastore.Datasource))
 	pps.RegisterDatasource("datastore-cluster", new(datastorecluster.Datasource))
 	pps.RegisterDatasource("host", new(host.Datasource))
