@@ -7,13 +7,12 @@ package virtualmachine
 import (
 	"fmt"
 	"regexp"
-	"time"
 
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/property"
-	"github.com/vmware/govmomi/vapi/tags"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
+	dscommon "github.com/vmware/packer-plugin-vsphere/datasource/common"
 )
 
 // filterVms removes virtual machines from vmList that do not match the datasource config filters.
@@ -55,12 +54,9 @@ func filterVms(vmList []*object.VirtualMachine, c Config, d *driver.VCenterDrive
 	}
 
 	if c.Tags != nil {
+		required := toCommonTags(c.Tags)
 		filterFuncs = append(filterFuncs, func(vm *object.VirtualMachine) (bool, error) {
-			result, err := configTagsMatchHostTags(d, vm, c.Tags)
-			if err != nil {
-				return false, err
-			}
-			return result, nil
+			return dscommon.ObjectHasAllTags(d, vm.Reference(), required)
 		})
 	}
 
@@ -89,22 +85,18 @@ func filterVms(vmList []*object.VirtualMachine, c Config, d *driver.VCenterDrive
 }
 
 // findLatestVM returns the most recently created virtual machine from vmList.
-func findLatestVM(d *driver.VCenterDriver, vmList []*object.VirtualMachine) ([]*object.VirtualMachine, error) {
-	var latestVM *object.VirtualMachine
-	var latestTimestamp time.Time
-	for _, elementVM := range vmList {
+func findLatestVM(d *driver.VCenterDriver, vmList []*object.VirtualMachine) (*object.VirtualMachine, error) {
+	return dscommon.SelectMax(vmList, func(elementVM *object.VirtualMachine) (int64, error) {
 		var vmConfig mo.VirtualMachine
 		err := elementVM.Properties(d.Ctx, elementVM.Reference(), []string{"config"}, &vmConfig)
 		if err != nil {
-			return nil, fmt.Errorf("error retrieving config properties for the virtual machine: %w", err)
+			return 0, fmt.Errorf("error retrieving config properties for the virtual machine: %w", err)
 		}
-		if vmConfig.Config.CreateDate.After(latestTimestamp) {
-			latestVM = elementVM
-			latestTimestamp = *vmConfig.Config.CreateDate
+		if vmConfig.Config == nil || vmConfig.Config.CreateDate == nil {
+			return 0, fmt.Errorf("virtual machine %s has no create date", elementVM.Name())
 		}
-	}
-	result := []*object.VirtualMachine{latestVM}
-	return result, nil
+		return vmConfig.Config.CreateDate.UnixNano(), nil
+	})
 }
 
 // getHostVms retrieves all virtual machines on the specified host.
@@ -129,38 +121,10 @@ func getHostVms(d *driver.VCenterDriver, hostName string) ([]mo.VirtualMachine, 
 	return hostVms, nil
 }
 
-// configTagsMatchHostTags returns true if the virtual machine has all tags specified in tagList.
-func configTagsMatchHostTags(d *driver.VCenterDriver, vm *object.VirtualMachine, tagList []Tag) (bool, error) {
-	err := d.RestClient.Login(d.Ctx)
-	if err != nil {
-		return false, fmt.Errorf("failed to login to REST API: %w", err)
+func toCommonTags(tagList []Tag) []dscommon.Tag {
+	out := make([]dscommon.Tag, len(tagList))
+	for i, tag := range tagList {
+		out[i] = dscommon.Tag{Name: tag.Name, Category: tag.Category}
 	}
-
-	tagMan := tags.NewManager(d.RestClient.Client())
-	realTagsList, err := tagMan.GetAttachedTags(d.Ctx, vm.Reference())
-	if err != nil {
-		return false, fmt.Errorf("failed return tags for the virtual machine: %w", err)
-	}
-	matchedTagsCount := 0
-	for _, configTag := range tagList {
-		configTagMatched := false
-		for _, realTag := range realTagsList {
-			if configTag.Name == realTag.Name {
-				category, err := tagMan.GetCategory(d.Ctx, realTag.CategoryID)
-				if err != nil {
-					return false, fmt.Errorf("failed to return tag category for tag: %w", err)
-				}
-				if configTag.Category == category.Name {
-					configTagMatched = true
-					break
-				}
-			}
-		}
-		if configTagMatched {
-			matchedTagsCount++
-		} else {
-			break
-		}
-	}
-	return matchedTagsCount == len(tagList), nil
+	return out
 }
