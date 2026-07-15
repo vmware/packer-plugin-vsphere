@@ -1,0 +1,21 @@
+<!-- Code generated from the comments of the Config struct in datasource/host/data.go; DO NOT EDIT MANUALLY -->
+
+- `name` (string) - Basic filter with glob support (e.g. `w01-cl01-esx01` or `*-esx*`).
+  Defaults to `*`. Using stricter globs does not reduce execution time
+  because the vSphere API returns the full inventory, but can improve
+  readability over regular expressions.
+
+- `name_regex` (string) - Extended name filter with regular expression support
+  (e.g. `^w01-cl[0-9]+-esx[0-9]+$`). Default is empty. The match is checked
+  by substring. Use `^` and `$` to define a full string. The expression
+  must use [Go Regex Syntax](https://pkg.go.dev/regexp/syntax).
+
+- `cluster` (string) - Filter to return only hosts that belong to the specified compute cluster.
+
+- `tag` ([]Tag) - Filter to return only hosts that have all specified tags attached.
+
+- `most_free_memory` (bool) - When more than one host matches the filters, select the host with the
+  most free memory (`summary.memory_free`). By default, multiple matches
+  result in an error.
+
+<!-- End of code generated from the comments of the Config struct in datasource/host/data.go; -->

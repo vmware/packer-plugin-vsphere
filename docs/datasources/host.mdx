@@ -1,0 +1,120 @@
+---
+modeline: |
+  vim: set ft=pandoc:
+description: |
+  This data source retrieves information about existing ESX hosts from vSphere
+  and returns the name, managed object ID, parent compute cluster, and summary
+  memory capacity fields for a host that matches all specified filters. The
+  result can be used with the builders to set `host`.
+page_title: vSphere Host - Data Source
+sidebar_title: vSphere Host
+---
+
+# Host Data Source
+
+Type: `vsphere-host`
+Artifact BuilderId: `vsphere.host`
+
+This data source retrieves information about existing ESX hosts from vSphere
+and returns the name, managed object ID, parent compute cluster, and summary
+memory capacity fields for a host that matches all specified filters. The
+result can be used with the builders to set `host`.
+
+## Configuration Reference
+
+### Filters Configuration
+
+**Optional:**
+
+@include 'datasource/host/Config-not-required.mdx'
+
+### Tags Filter Configuration
+
+@include 'datasource/common/Tag.mdx'
+
+**Required:**
+
+@include 'datasource/common/Tag-required.mdx'
+
+### Connection Configuration
+
+**Optional:**
+
+@include 'builder/vsphere/common/ConnectConfig-not-required.mdx'
+
+## Output
+
+@include 'datasource/host/DatasourceOutput.mdx'
+
+### Summary
+
+@include 'datasource/host/Summary-not-required.mdx'
+
+## Example Usage
+
+### Select Host with Most Free Memory
+
+This example finds the host with the most free memory among those matching a
+name glob and uses it with the vSphere Clone builder.
+
+```hcl
+data "vsphere-host" "build" {
+  vcenter_server   = "vc01.example.com"
+  username         = "administrator@vsphere.local"
+  password         = "VMware1!"
+  datacenter       = "dc-01"
+  name             = "*-esx*"
+  most_free_memory = true
+}
+
+source "vsphere-clone" "example" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  host           = data.vsphere-host.build.name
+  datastore      = "w01-cl01-vsan01"
+  template       = "alpine-template"
+  vm_name        = "alpine-from-host"
+  communicator   = "none"
+}
+
+build {
+  sources = ["source.vsphere-clone.example"]
+}
+```
+
+### Filter by Tags
+
+```hcl
+data "vsphere-host" "build" {
+  vcenter_server   = "vc01.example.com"
+  username         = "administrator@vsphere.local"
+  password         = "VMware1!"
+  datacenter       = "dc-01"
+  most_free_memory = true
+
+  tag {
+    category = "environment"
+    name     = "production"
+  }
+}
+
+locals {
+  host_name    = data.vsphere-host.build.name
+  cluster_name = data.vsphere-host.build.cluster
+  free_bytes   = data.vsphere-host.build.summary.memory_free
+}
+```
+
+### Filter by Compute Cluster
+
+```hcl
+data "vsphere-host" "on_cluster" {
+  vcenter_server   = "vc01.example.com"
+  username         = "administrator@vsphere.local"
+  password         = "VMware1!"
+  datacenter       = "dc-01"
+  cluster          = "cluster-01"
+  most_free_memory = true
+}
+```

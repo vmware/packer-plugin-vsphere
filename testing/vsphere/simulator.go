@@ -51,6 +51,15 @@ type SimulatedDatastoreClusterConfig struct {
 	Tags          []Tag
 }
 
+// SimulatedHostConfig configures an existing simulator host by HostSystemList
+// "*" order. MemoryCapacity is bytes; MemoryUsageMB is quickStats usage in MB.
+type SimulatedHostConfig struct {
+	Name           string
+	MemoryCapacity *int64 // bytes; nil leaves the simulator default
+	MemoryUsageMB  *int32 // MB; nil leaves the simulator default
+	Tags           []Tag
+}
+
 type simulatorContext struct {
 	Model      *simulator.Model
 	Server     *simulator.Server
@@ -297,6 +306,58 @@ func (sim *simulatorContext) ApplyDatastoreClusterConfiguration(clusterConfigs [
 			}
 			if err := tagMan.AttachTag(sim.Ctx, tagID, ref); err != nil {
 				return fmt.Errorf("failed to attach tag to datastore cluster: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// ApplyHostConfiguration updates existing simulator hosts according to the
+// provided configurations, matched by Finder.HostSystemList order.
+func (sim *simulatorContext) ApplyHostConfiguration(hostConfigs []SimulatedHostConfig) error {
+	tagMan := tags.NewManager(sim.RestClient)
+
+	hosts, err := sim.Finder.HostSystemList(sim.Ctx, "*")
+	if err != nil {
+		return fmt.Errorf("failed to list hosts in simulator: %w", err)
+	}
+	if len(hostConfigs) > len(hosts) {
+		return fmt.Errorf("requested %d host configurations but simulator has %d", len(hostConfigs), len(hosts))
+	}
+
+	for i, cfg := range hostConfigs {
+		ref := hosts[i].Reference()
+		simHost, ok := sim.Model.Map().Get(ref).(*simulator.HostSystem)
+		if !ok || simHost == nil {
+			return fmt.Errorf("failed to resolve simulator host for %s", ref.Value)
+		}
+
+		if cfg.Name != "" {
+			simHost.Name = cfg.Name
+			simHost.Summary.Config.Name = cfg.Name
+		}
+		if cfg.MemoryCapacity != nil {
+			if simHost.Summary.Hardware == nil {
+				simHost.Summary.Hardware = &types.HostHardwareSummary{}
+			}
+			simHost.Summary.Hardware.MemorySize = *cfg.MemoryCapacity
+		}
+		if cfg.MemoryUsageMB != nil {
+			simHost.Summary.QuickStats.OverallMemoryUsage = *cfg.MemoryUsageMB
+		}
+
+		for _, tag := range cfg.Tags {
+			catID, err := ensureCategory(sim.Ctx, tagMan, tag.Category)
+			if err != nil {
+				return fmt.Errorf("failed to ensure category exists: %w", err)
+			}
+			tagID, err := ensureTag(sim.Ctx, tagMan, catID, tag.Name)
+			if err != nil {
+				return fmt.Errorf("failed to ensure tag exists: %w", err)
+			}
+			if err := tagMan.AttachTag(sim.Ctx, tagID, ref); err != nil {
+				return fmt.Errorf("failed to attach tag to host: %w", err)
 			}
 		}
 	}

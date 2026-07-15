@@ -49,4 +49,9 @@ integration {
     name = "vSphere Datastore Cluster"
     slug = "vsphere-datastore-cluster"
   }
+  component {
+    type = "data-source"
+    name = "vSphere Host"
+    slug = "vsphere-host"
+  }
 }
