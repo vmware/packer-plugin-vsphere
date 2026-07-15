@@ -60,6 +60,13 @@ type SimulatedHostConfig struct {
 	Tags           []Tag
 }
 
+// SimulatedComputeClusterConfig configures an existing simulator compute
+// cluster by ClusterComputeResourceList "*" order.
+type SimulatedComputeClusterConfig struct {
+	Name string
+	Tags []Tag
+}
+
 type simulatorContext struct {
 	Model      *simulator.Model
 	Server     *simulator.Server
@@ -358,6 +365,49 @@ func (sim *simulatorContext) ApplyHostConfiguration(hostConfigs []SimulatedHostC
 			}
 			if err := tagMan.AttachTag(sim.Ctx, tagID, ref); err != nil {
 				return fmt.Errorf("failed to attach tag to host: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// ApplyComputeClusterConfiguration updates existing simulator compute clusters
+// according to the provided configurations, matched by
+// Finder.ClusterComputeResourceList order.
+func (sim *simulatorContext) ApplyComputeClusterConfiguration(clusterConfigs []SimulatedComputeClusterConfig) error {
+	tagMan := tags.NewManager(sim.RestClient)
+
+	clusters, err := sim.Finder.ClusterComputeResourceList(sim.Ctx, "*")
+	if err != nil {
+		return fmt.Errorf("failed to list compute clusters in simulator: %w", err)
+	}
+	if len(clusterConfigs) > len(clusters) {
+		return fmt.Errorf("requested %d compute cluster configurations but simulator has %d", len(clusterConfigs), len(clusters))
+	}
+
+	for i, cfg := range clusterConfigs {
+		ref := clusters[i].Reference()
+		simCluster, ok := sim.Model.Map().Get(ref).(*simulator.ClusterComputeResource)
+		if !ok || simCluster == nil {
+			return fmt.Errorf("failed to resolve simulator compute cluster for %s", ref.Value)
+		}
+
+		if cfg.Name != "" {
+			simCluster.Name = cfg.Name
+		}
+
+		for _, tag := range cfg.Tags {
+			catID, err := ensureCategory(sim.Ctx, tagMan, tag.Category)
+			if err != nil {
+				return fmt.Errorf("failed to ensure category exists: %w", err)
+			}
+			tagID, err := ensureTag(sim.Ctx, tagMan, catID, tag.Name)
+			if err != nil {
+				return fmt.Errorf("failed to ensure tag exists: %w", err)
+			}
+			if err := tagMan.AttachTag(sim.Ctx, tagID, ref); err != nil {
+				return fmt.Errorf("failed to attach tag to compute cluster: %w", err)
 			}
 		}
 	}

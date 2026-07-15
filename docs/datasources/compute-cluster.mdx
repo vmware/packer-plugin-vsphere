@@ -1,0 +1,100 @@
+---
+modeline: |
+  vim: set ft=pandoc:
+description: |
+  This data source retrieves information about existing compute clusters from
+  vSphere and returns the name, managed object ID, and root resource pool path
+  for a cluster that matches all specified filters. The result can be used with
+  the builders to set `cluster`.
+page_title: vSphere Compute Cluster - Data Source
+sidebar_title: vSphere Compute Cluster
+---
+
+# Compute Cluster Data Source
+
+Type: `vsphere-compute-cluster`
+Artifact BuilderId: `vsphere.compute-cluster`
+
+This data source retrieves information about existing compute clusters from
+vSphere and returns the name, managed object ID, and root resource pool path
+for a cluster that matches all specified filters. The result can be used with
+the builders to set `cluster`.
+
+~> **Note:** When more than one compute cluster matches the filters, the data
+source returns an error. Narrow the filters until exactly one cluster matches.
+
+## Configuration Reference
+
+### Filters Configuration
+
+**Optional:**
+
+@include 'datasource/computecluster/Config-not-required.mdx'
+
+### Tags Filter Configuration
+
+@include 'datasource/common/Tag.mdx'
+
+**Required:**
+
+@include 'datasource/common/Tag-required.mdx'
+
+### Connection Configuration
+
+**Optional:**
+
+@include 'builder/vsphere/common/ConnectConfig-not-required.mdx'
+
+## Output
+
+@include 'datasource/computecluster/DatasourceOutput.mdx'
+
+## Example Usage
+
+### Select Compute Cluster by Name
+
+```hcl
+data "vsphere-compute-cluster" "build" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  datacenter     = "dc-01"
+  name           = "w01-cl01"
+}
+
+source "vsphere-clone" "example" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  cluster        = data.vsphere-compute-cluster.build.name
+  datastore      = "w01-cl01-vsan01"
+  template       = "alpine-template"
+  vm_name        = "alpine-from-cluster"
+  communicator   = "none"
+}
+
+build {
+  sources = ["source.vsphere-clone.example"]
+}
+```
+
+### Filter by Tags
+
+```hcl
+data "vsphere-compute-cluster" "build" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  datacenter     = "dc-01"
+
+  tag {
+    category = "environment"
+    name     = "production"
+  }
+}
+
+locals {
+  cluster_name  = data.vsphere-compute-cluster.build.name
+  resource_pool = data.vsphere-compute-cluster.build.resource_pool
+}
+```

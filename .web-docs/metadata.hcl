@@ -54,4 +54,9 @@ integration {
     name = "vSphere Host"
     slug = "vsphere-host"
   }
+  component {
+    type = "data-source"
+    name = "vSphere Compute Cluster"
+    slug = "vsphere-compute-cluster"
+  }
 }
