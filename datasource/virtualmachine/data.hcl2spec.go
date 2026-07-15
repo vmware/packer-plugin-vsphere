@@ -27,7 +27,7 @@ type FlatConfig struct {
 	NameRegex           *string           `mapstructure:"name_regex" cty:"name_regex" hcl:"name_regex"`
 	Template            *bool             `mapstructure:"template" cty:"template" hcl:"template"`
 	Host                *string           `mapstructure:"host" cty:"host" hcl:"host"`
-	Tags                []Tag             `mapstructure:"tag" cty:"tag" hcl:"tag"`
+	Tags                []FlatTag         `mapstructure:"tag" cty:"tag" hcl:"tag"`
 	Latest              *bool             `mapstructure:"latest" cty:"latest" hcl:"latest"`
 }
 
@@ -60,7 +60,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"name_regex":                 &hcldec.AttrSpec{Name: "name_regex", Type: cty.String, Required: false},
 		"template":                   &hcldec.AttrSpec{Name: "template", Type: cty.Bool, Required: false},
 		"host":                       &hcldec.AttrSpec{Name: "host", Type: cty.String, Required: false},
-		"tag":                        &hcldec.AttrSpec{Name: "tag", Type: cty.Bool, Required: false}, /* TODO(azr): could not find type */
+		"tag":                        &hcldec.BlockListSpec{TypeName: "tag", Nested: hcldec.ObjectSpec((*FlatTag)(nil).HCL2Spec())},
 		"latest":                     &hcldec.AttrSpec{Name: "latest", Type: cty.Bool, Required: false},
 	}
 	return s
@@ -85,6 +85,31 @@ func (*DatasourceOutput) FlatMapstructure() interface{ HCL2Spec() map[string]hcl
 func (*FlatDatasourceOutput) HCL2Spec() map[string]hcldec.Spec {
 	s := map[string]hcldec.Spec{
 		"vm_name": &hcldec.AttrSpec{Name: "vm_name", Type: cty.String, Required: false},
+	}
+	return s
+}
+
+// FlatTag is an auto-generated flat version of Tag.
+// Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
+type FlatTag struct {
+	Name     *string `mapstructure:"name" required:"true" cty:"name" hcl:"name"`
+	Category *string `mapstructure:"category" required:"true" cty:"category" hcl:"category"`
+}
+
+// FlatMapstructure returns a new FlatTag.
+// FlatTag is an auto-generated flat version of Tag.
+// Where the contents a fields with a `mapstructure:,squash` tag are bubbled up.
+func (*Tag) FlatMapstructure() interface{ HCL2Spec() map[string]hcldec.Spec } {
+	return new(FlatTag)
+}
+
+// HCL2Spec returns the hcl spec of a Tag.
+// This spec is used by HCL to read the fields of Tag.
+// The decoded values from this spec will then be applied to a FlatTag.
+func (*FlatTag) HCL2Spec() map[string]hcldec.Spec {
+	s := map[string]hcldec.Spec{
+		"name":     &hcldec.AttrSpec{Name: "name", Type: cty.String, Required: false},
+		"category": &hcldec.AttrSpec{Name: "category", Type: cty.String, Required: false},
 	}
 	return s
 }

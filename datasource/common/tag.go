@@ -46,3 +46,13 @@ func ValidateTags(tagList []Tag) error {
 	}
 	return errs
 }
+
+// MapTags converts HCL tag values from another package into common.Tag values.
+func MapTags[T any](in []T, fields func(T) (name, category string)) []Tag {
+	out := make([]Tag, len(in))
+	for i, item := range in {
+		name, category := fields(item)
+		out[i] = Tag{Name: name, Category: category}
+	}
+	return out
+}
