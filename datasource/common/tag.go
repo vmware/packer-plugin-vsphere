@@ -2,21 +2,36 @@
 // The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 // SPDX-License-Identifier: MPL-2.0
 
+//go:generate packer-sdc struct-markdown
+//go:generate packer-sdc mapstructure-to-hcl2 -type Tag
+
 package common
 
 import (
 	"errors"
-	"fmt"
-
-	"github.com/vmware/govmomi/vapi/tags"
-	"github.com/vmware/govmomi/vim25/types"
-	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
 
 // Tag identifies a vSphere tag by name and category for datasource filters.
+// Specify one or more `tag` blocks; every listed tag must be attached.
+//
+// HCL Example:
+//
+// ```hcl
+//
+//	tag {
+//	  category = "environment"
+//	  name     = "production"
+//	}
+//
+// ```
 type Tag struct {
-	Name     string
-	Category string
+	// Name of the tag that must be attached to the object.
+	Name string `mapstructure:"name" required:"true"`
+	// Name of the tag category that contains the tag.
+	//
+	// -> **Note:** Both `name` and `category` must be specified in the `tag`
+	// filter.
+	Category string `mapstructure:"category" required:"true"`
 }
 
 // ValidateTags returns an error if any tag is missing name or category.
@@ -30,46 +45,4 @@ func ValidateTags(tagList []Tag) error {
 		}
 	}
 	return errs
-}
-
-// ObjectHasAllTags reports whether the object has all the required tags attached.
-func ObjectHasAllTags(d *driver.VCenterDriver, ref types.ManagedObjectReference, required []Tag) (bool, error) {
-	if len(required) == 0 {
-		return true, nil
-	}
-
-	err := d.RestClient.Login(d.Ctx)
-	if err != nil {
-		return false, fmt.Errorf("failed to login to REST API: %w", err)
-	}
-
-	tagMan := tags.NewManager(d.RestClient.Client())
-	attached, err := tagMan.GetAttachedTags(d.Ctx, ref)
-	if err != nil {
-		return false, fmt.Errorf("failed return tags for the object: %w", err)
-	}
-
-	matchedTagsCount := 0
-	for _, configTag := range required {
-		configTagMatched := false
-		for _, realTag := range attached {
-			if configTag.Name != realTag.Name {
-				continue
-			}
-			category, err := tagMan.GetCategory(d.Ctx, realTag.CategoryID)
-			if err != nil {
-				return false, fmt.Errorf("failed to return tag category for tag: %w", err)
-			}
-			if configTag.Category == category.Name {
-				configTagMatched = true
-				break
-			}
-		}
-		if configTagMatched {
-			matchedTagsCount++
-		} else {
-			break
-		}
-	}
-	return matchedTagsCount == len(required), nil
 }

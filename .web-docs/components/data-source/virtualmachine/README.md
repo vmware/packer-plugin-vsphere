@@ -30,21 +30,8 @@ virtual machine can be used in the vSphere Clone builder to select a template.
 
 - `host` (string) - Filter to search virtual machines only on the specified ESX host.
 
-- `tag` ([]Tag) - Filter to return only the virtual machines that have attached all specified tags.
-  Specify one or more `tag` blocks to define list of tags for the filter.
-  
-  HCL Example:
-  
-  ```hcl
-  	tag {
-  	  category = "team"
-  	  name     = "operations"
-  	}
-  	tag {
-  	  category = "sla"
-  	  name     = "gold"
-  	}
-  ```
+- `tag` ([]Tag) - Filter to return only the virtual machines that have all specified tags
+  attached.
 
 - `latest` (bool) - This filter determines how to handle multiple virtual machines that were matched
   with all previous filters. Virtual machine creation time is being used to find
@@ -55,19 +42,37 @@ virtual machine can be used in the vSphere Clone builder to select a template.
 
 ### Tags Filter Configuration
 
+<!-- Code generated from the comments of the Tag struct in datasource/common/tag.go; DO NOT EDIT MANUALLY -->
+
+Tag identifies a vSphere tag by name and category for datasource filters.
+Specify one or more `tag` blocks; every listed tag must be attached.
+
+HCL Example:
+
+```hcl
+
+	tag {
+	  category = "environment"
+	  name     = "production"
+	}
+
+```
+
+<!-- End of code generated from the comments of the Tag struct in datasource/common/tag.go; -->
+
+
 **Required:**
 
-<!-- Code generated from the comments of the Tag struct in datasource/virtualmachine/data.go; DO NOT EDIT MANUALLY -->
+<!-- Code generated from the comments of the Tag struct in datasource/common/tag.go; DO NOT EDIT MANUALLY -->
 
-- `name` (string) - Name of the tag added to virtual machine which must pass the `tag`
-  filter.
+- `name` (string) - Name of the tag that must be attached to the object.
 
 - `category` (string) - Name of the tag category that contains the tag.
   
   -> **Note:** Both `name` and `category` must be specified in the `tag`
   filter.
 
-<!-- End of code generated from the comments of the Tag struct in datasource/virtualmachine/data.go; -->
+<!-- End of code generated from the comments of the Tag struct in datasource/common/tag.go; -->
 
 
 ### Connection Configuration
@@ -121,13 +126,8 @@ data "vsphere-virtualmachine" "example" {
   latest         = true
 
   tag {
-    category = "team"
-    name     = "operations"
-  }
-
-  tag {
-    category = "sla"
-    name     = "gold"
+    category = "environment"
+    name     = "production"
   }
 }
 

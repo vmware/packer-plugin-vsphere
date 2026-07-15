@@ -17,21 +17,8 @@
 
 - `host` (string) - Filter to search virtual machines only on the specified ESX host.
 
-- `tag` ([]Tag) - Filter to return only the virtual machines that have attached all specified tags.
-  Specify one or more `tag` blocks to define list of tags for the filter.
-  
-  HCL Example:
-  
-  ```hcl
-  	tag {
-  	  category = "team"
-  	  name     = "operations"
-  	}
-  	tag {
-  	  category = "sla"
-  	  name     = "gold"
-  	}
-  ```
+- `tag` ([]Tag) - Filter to return only the virtual machines that have all specified tags
+  attached.
 
 - `latest` (bool) - This filter determines how to handle multiple virtual machines that were matched
   with all previous filters. Virtual machine creation time is being used to find

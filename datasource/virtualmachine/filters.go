@@ -20,7 +20,10 @@ func filterVms(vmList []*object.VirtualMachine, c Config, d *driver.VCenterDrive
 	filterFuncs := make([]func(*object.VirtualMachine) (bool, error), 0)
 
 	if c.NameRegex != "" {
-		re := regexp.MustCompile(c.NameRegex)
+		re, err := regexp.Compile(c.NameRegex)
+		if err != nil {
+			return nil, fmt.Errorf("invalid name_regex: %w", err)
+		}
 		filterFuncs = append(filterFuncs, func(vm *object.VirtualMachine) (bool, error) {
 			return re.MatchString(vm.Name()), nil
 		})
@@ -54,20 +57,20 @@ func filterVms(vmList []*object.VirtualMachine, c Config, d *driver.VCenterDrive
 	}
 
 	if c.Tags != nil {
-		required := toCommonTags(c.Tags)
+		matcher, err := dscommon.NewTagMatcher(d, c.Tags)
+		if err != nil {
+			return nil, err
+		}
 		filterFuncs = append(filterFuncs, func(vm *object.VirtualMachine) (bool, error) {
-			return dscommon.ObjectHasAllTags(d, vm.Reference(), required)
+			return matcher.HasAll(vm.Reference())
 		})
 	}
 
 	result := make([]*object.VirtualMachine, 0)
 	for _, vm := range vmList {
-		var ok bool
-		var err error
-		if len(filterFuncs) == 0 {
-			ok = true
-		}
+		ok := len(filterFuncs) == 0
 		for _, vmPassedFilter := range filterFuncs {
+			var err error
 			ok, err = vmPassedFilter(vm)
 			if err != nil {
 				return nil, fmt.Errorf("failed to filter vm: %w", err)
@@ -119,12 +122,4 @@ func getHostVms(d *driver.VCenterDriver, hostName string) ([]mo.VirtualMachine, 
 		return nil, fmt.Errorf("failed to get properties for the virtual machine: %w", err)
 	}
 	return hostVms, nil
-}
-
-func toCommonTags(tagList []Tag) []dscommon.Tag {
-	out := make([]dscommon.Tag, len(tagList))
-	for i, tag := range tagList {
-		out[i] = dscommon.Tag{Name: tag.Name, Category: tag.Category}
-	}
-	return out
 }

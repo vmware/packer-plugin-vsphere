@@ -33,6 +33,15 @@ type SimulatedVmConfig struct {
 	CreationTime time.Time
 }
 
+// SimulatedDatastoreConfig configures an existing simulator datastore by
+// inventory index (order returned by DatastoreList "*").
+type SimulatedDatastoreConfig struct {
+	Name      string
+	Capacity  *int64 // bytes; nil leaves the simulator default
+	FreeSpace *int64 // bytes; nil leaves the simulator default
+	Tags      []Tag
+}
+
 type simulatorContext struct {
 	Model      *simulator.Model
 	Server     *simulator.Server
@@ -156,6 +165,60 @@ func (sim *simulatorContext) ApplyVmConfiguration(vmsConfig []SimulatedVmConfig)
 				if err != nil {
 					return fmt.Errorf("failed to attach tag to virtual machine: %w", err)
 				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// ApplyDatastoreConfiguration updates existing simulator datastores according
+// to the provided configurations, matched by Finder.DatastoreList order.
+// Capacity and FreeSpace mutations update Summary and Info; do not call
+// simulator RefreshDatastore afterward or those values are reset.
+func (sim *simulatorContext) ApplyDatastoreConfiguration(dsConfigs []SimulatedDatastoreConfig) error {
+	tagMan := tags.NewManager(sim.RestClient)
+
+	datastores, err := sim.Finder.DatastoreList(sim.Ctx, "*")
+	if err != nil {
+		return fmt.Errorf("failed to list datastores in simulator: %w", err)
+	}
+	if len(dsConfigs) > len(datastores) {
+		return fmt.Errorf("requested %d datastore configurations but simulator has %d", len(dsConfigs), len(datastores))
+	}
+
+	for i, cfg := range dsConfigs {
+		ref := datastores[i].Reference()
+		simDs, ok := sim.Model.Map().Get(ref).(*simulator.Datastore)
+		if !ok || simDs == nil {
+			return fmt.Errorf("failed to resolve simulator datastore for %s", ref.Value)
+		}
+
+		if cfg.Name != "" {
+			simDs.Name = cfg.Name
+			simDs.Summary.Name = cfg.Name
+		}
+		if cfg.Capacity != nil {
+			simDs.Summary.Capacity = *cfg.Capacity
+		}
+		if cfg.FreeSpace != nil {
+			simDs.Summary.FreeSpace = *cfg.FreeSpace
+			if info := simDs.Info.GetDatastoreInfo(); info != nil {
+				info.FreeSpace = *cfg.FreeSpace
+			}
+		}
+
+		for _, tag := range cfg.Tags {
+			catID, err := ensureCategory(sim.Ctx, tagMan, tag.Category)
+			if err != nil {
+				return fmt.Errorf("failed to ensure category exists: %w", err)
+			}
+			tagID, err := ensureTag(sim.Ctx, tagMan, catID, tag.Name)
+			if err != nil {
+				return fmt.Errorf("failed to ensure tag exists: %w", err)
+			}
+			if err := tagMan.AttachTag(sim.Ctx, tagID, ref); err != nil {
+				return fmt.Errorf("failed to attach tag to datastore: %w", err)
 			}
 		}
 	}
