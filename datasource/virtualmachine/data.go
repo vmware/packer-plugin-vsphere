@@ -16,8 +16,10 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/hcl2helper"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
+	"github.com/vmware/govmomi/object"
 	vsphere "github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
+	dscommon "github.com/vmware/packer-plugin-vsphere/datasource/common"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -108,12 +110,8 @@ func (d *Datasource) Configure(raws ...interface{}) error {
 	if d.config.Password == "" {
 		errs = packersdk.MultiErrorAppend(errs, errors.New("'password' is required"))
 	}
-	if len(d.config.Tags) > 0 {
-		for _, tag := range d.config.Tags {
-			if tag.Name == "" || tag.Category == "" {
-				errs = packersdk.MultiErrorAppend(errs, errors.New("both name and category are required for tag"))
-			}
-		}
+	if err := dscommon.ValidateTags(toCommonTags(d.config.Tags)); err != nil {
+		errs = packersdk.MultiErrorAppend(errs, err)
 	}
 
 	return errs
@@ -149,23 +147,25 @@ func (d *Datasource) Execute() (cty.Value, error) {
 		return cty.NullVal(cty.EmptyObject), fmt.Errorf("failed to filter virtual machines: %w", err)
 	}
 
-	if len(filteredVms) == 0 {
-		return cty.NullVal(cty.EmptyObject), errors.New("no virtual machine matches the filters")
-	}
-
-	if len(filteredVms) > 1 {
-		if d.config.Latest {
-			filteredVms, err = findLatestVM(vcDriver, filteredVms)
+	selected, err := dscommon.ResolveOne(
+		filteredVms,
+		d.config.Latest,
+		func(vms []*object.VirtualMachine) (*object.VirtualMachine, error) {
+			vm, err := findLatestVM(vcDriver, vms)
 			if err != nil {
-				return cty.NullVal(cty.EmptyObject), fmt.Errorf("failed to find the latest virtual machine: %w", err)
+				return nil, fmt.Errorf("failed to find the latest virtual machine: %w", err)
 			}
-		} else {
-			return cty.NullVal(cty.EmptyObject), errors.New("more than one virtual machine matched the filters")
-		}
+			return vm, nil
+		},
+		"no virtual machine matches the filters",
+		"more than one virtual machine matched the filters",
+	)
+	if err != nil {
+		return cty.NullVal(cty.EmptyObject), err
 	}
 
 	output := DatasourceOutput{
-		VmName: filteredVms[0].Name(),
+		VmName: selected.Name(),
 	}
 
 	return hcl2helper.HCL2ValueFromConfig(output, d.OutputSpec()), nil
