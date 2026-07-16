@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/vmware/govmomi"
@@ -65,6 +66,16 @@ type SimulatedHostConfig struct {
 type SimulatedComputeClusterConfig struct {
 	Name string
 	Tags []Tag
+}
+
+// SimulatedResourcePoolConfig creates a nested resource pool under a compute
+// cluster root. Path is relative to the cluster Resources pool
+// (e.g. "rp-production" or "rp-production/rp-linux"). ClusterIndex selects
+// ClusterComputeResourceList "*" order.
+type SimulatedResourcePoolConfig struct {
+	Path         string
+	ClusterIndex int
+	Tags         []Tag
 }
 
 type simulatorContext struct {
@@ -413,4 +424,84 @@ func (sim *simulatorContext) ApplyComputeClusterConfiguration(clusterConfigs []S
 	}
 
 	return nil
+}
+
+// ApplyResourcePoolConfiguration creates nested resource pools under compute
+// cluster roots and attaches tags.
+func (sim *simulatorContext) ApplyResourcePoolConfiguration(poolConfigs []SimulatedResourcePoolConfig) error {
+	tagMan := tags.NewManager(sim.RestClient)
+
+	clusters, err := sim.Finder.ClusterComputeResourceList(sim.Ctx, "*")
+	if err != nil {
+		return fmt.Errorf("failed to list compute clusters in simulator: %w", err)
+	}
+
+	for _, cfg := range poolConfigs {
+		if cfg.Path == "" {
+			return fmt.Errorf("resource pool path is required")
+		}
+		if cfg.ClusterIndex < 0 || cfg.ClusterIndex >= len(clusters) {
+			return fmt.Errorf("cluster index %d out of range (have %d)", cfg.ClusterIndex, len(clusters))
+		}
+
+		root, err := clusters[cfg.ClusterIndex].ResourcePool(sim.Ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get root resource pool for cluster index %d: %w", cfg.ClusterIndex, err)
+		}
+
+		parent := root
+		segments := strings.Split(cfg.Path, "/")
+		var current *object.ResourcePool
+		for _, segment := range segments {
+			if segment == "" || segment == "." {
+				return fmt.Errorf("invalid resource pool path %q", cfg.Path)
+			}
+			current, err = ensureChildResourcePool(sim, parent, segment)
+			if err != nil {
+				return err
+			}
+			parent = current
+		}
+
+		ref := current.Reference()
+		for _, tag := range cfg.Tags {
+			catID, err := ensureCategory(sim.Ctx, tagMan, tag.Category)
+			if err != nil {
+				return fmt.Errorf("failed to ensure category exists: %w", err)
+			}
+			tagID, err := ensureTag(sim.Ctx, tagMan, catID, tag.Name)
+			if err != nil {
+				return fmt.Errorf("failed to ensure tag exists: %w", err)
+			}
+			if err := tagMan.AttachTag(sim.Ctx, tagID, ref); err != nil {
+				return fmt.Errorf("failed to attach tag to resource pool: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func ensureChildResourcePool(sim *simulatorContext, parent *object.ResourcePool, name string) (*object.ResourcePool, error) {
+	parentPath := parent.InventoryPath
+	if parentPath == "" {
+		element, err := sim.Finder.Element(sim.Ctx, parent.Reference())
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve inventory path for parent resource pool: %w", err)
+		}
+		parentPath = element.Path
+	}
+
+	searchPath := parentPath + "/" + name
+	existing, err := sim.Finder.ResourcePool(sim.Ctx, searchPath)
+	if err == nil {
+		return existing, nil
+	}
+
+	created, err := parent.Create(sim.Ctx, name, types.DefaultResourceConfigSpec())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create resource pool %q under %s: %w", name, parentPath, err)
+	}
+	created.InventoryPath = searchPath
+	return created, nil
 }

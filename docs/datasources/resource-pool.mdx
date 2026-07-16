@@ -1,0 +1,104 @@
+---
+modeline: |
+  vim: set ft=pandoc:
+description: |
+  This data source retrieves information about existing resource pools from
+  vSphere and returns the name, managed object ID, and builder-ready nested path
+  for a pool that matches all specified filters. The result can be used with the
+  builders and post-processors to set `resource_pool`.
+page_title: vSphere Resource Pool - Data Source
+sidebar_title: vSphere Resource Pool
+---
+
+# Resource Pool Data Source
+
+Type: `vsphere-resource-pool`
+Artifact BuilderId: `vsphere.resource-pool`
+
+This data source retrieves information about existing resource pools from
+vSphere and returns the name, managed object ID, and builder-ready nested path
+for a pool that matches all specified filters. The result can be used with the
+builders and post-processors to set `resource_pool`.
+
+~> **Note:** When more than one resource pool matches the filters, the data
+source returns an error. Narrow the filters (for example with `cluster` or
+`host`) until exactly one pool matches.
+
+## Configuration Reference
+
+### Filters Configuration
+
+**Optional:**
+
+@include 'datasource/resourcepool/Config-not-required.mdx'
+
+### Tags Filter Configuration
+
+@include 'datasource/common/Tag.mdx'
+
+**Required:**
+
+@include 'datasource/common/Tag-required.mdx'
+
+### Connection Configuration
+
+**Optional:**
+
+@include 'builder/vsphere/common/ConnectConfig-not-required.mdx'
+
+## Output
+
+@include 'datasource/resourcepool/DatasourceOutput.mdx'
+
+## Example Usage
+
+### Select Resource Pool by Name and Cluster
+
+```hcl
+data "vsphere-resource-pool" "build" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  datacenter     = "dc-01"
+  cluster        = "w01-cl01"
+  name           = "rp-packer*"
+}
+
+source "vsphere-clone" "example" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  cluster        = "w01-cl01"
+  resource_pool  = data.vsphere-resource-pool.build.path
+  datastore      = "w01-cl01-vsan01"
+  template       = "alpine-template"
+  vm_name        = "alpine-from-rp"
+  communicator   = "none"
+}
+
+build {
+  sources = ["source.vsphere-clone.example"]
+}
+```
+
+### Filter by Tags
+
+```hcl
+data "vsphere-resource-pool" "build" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  datacenter     = "dc-01"
+  cluster        = "w01-cl01"
+
+  tag {
+    category = "environment"
+    name     = "production"
+  }
+}
+
+locals {
+  pool_name = data.vsphere-resource-pool.build.name
+  pool_path = data.vsphere-resource-pool.build.path
+}
+```
