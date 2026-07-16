@@ -1,0 +1,88 @@
+---
+modeline: |
+  vim: set ft=pandoc:
+description: |
+  This data source retrieves information about an existing content library from
+  vSphere and returns the name and unique identifier for a library that matches
+  all specified filters.
+page_title: vSphere Content Library - Data Source
+sidebar_title: vSphere Content Library
+---
+
+# Content Library Data Source
+
+Type: `vsphere-content-library`
+Artifact BuilderId: `vsphere.content-library`
+
+This data source retrieves information about an existing content library from
+vSphere and returns the name and unique identifier for a library that matches
+all specified filters.
+
+~> **Note:** When more than one content library matches the filters, the data
+source returns an error. Narrow the filters (for example with `name` or `tag`)
+until exactly one library matches.
+
+## Configuration Reference
+
+### Filters Configuration
+
+**Optional:**
+
+@include 'datasource/contentlibrary/Config-not-required.mdx'
+
+### Tags Filter Configuration
+
+@include 'datasource/common/Tag.mdx'
+
+**Required:**
+
+@include 'datasource/common/Tag-required.mdx'
+
+### Connection Configuration
+
+**Optional:**
+
+@include 'builder/vsphere/common/ConnectConfig-not-required.mdx'
+
+## Output
+
+@include 'datasource/contentlibrary/DatasourceOutput.mdx'
+
+## Example Usage
+
+### Select Content Library by Name
+
+```hcl
+data "vsphere-content-library" "build" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  datacenter     = "dc-01"
+  name           = "lib01"
+}
+
+locals {
+  content_library    = data.vsphere-content-library.build.name
+  content_library_id = data.vsphere-content-library.build.id
+}
+```
+
+### Filter by Tags
+
+```hcl
+data "vsphere-content-library" "build" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  datacenter     = "dc-01"
+
+  tag {
+    category = "environment"
+    name     = "production"
+  }
+}
+
+locals {
+  content_library = data.vsphere-content-library.build.name
+}
+```

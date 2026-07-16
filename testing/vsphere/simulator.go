@@ -16,6 +16,7 @@ import (
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/simulator"
+	"github.com/vmware/govmomi/vapi/library"
 	"github.com/vmware/govmomi/vapi/rest"
 	_ "github.com/vmware/govmomi/vapi/simulator"
 	"github.com/vmware/govmomi/vapi/tags"
@@ -85,6 +86,14 @@ type SimulatedResourcePoolConfig struct {
 type SimulatedNetworkConfig struct {
 	Name string
 	Tags []Tag
+}
+
+// SimulatedContentLibraryConfig creates a local content library backed by the
+// datastore at DatastoreIndex (DatastoreList "*" order) and attaches tags.
+type SimulatedContentLibraryConfig struct {
+	Name           string
+	DatastoreIndex int
+	Tags           []Tag
 }
 
 type simulatorContext struct {
@@ -551,6 +560,59 @@ func (sim *simulatorContext) ApplyNetworkConfiguration(networkConfigs []Simulate
 			}
 			if err := tagMan.AttachTag(sim.Ctx, tagID, ref); err != nil {
 				return fmt.Errorf("failed to attach tag to network: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// ApplyContentLibraryConfiguration creates local content libraries backed by
+// simulator datastores and attaches tags.
+func (sim *simulatorContext) ApplyContentLibraryConfiguration(libraryConfigs []SimulatedContentLibraryConfig) error {
+	tagMan := tags.NewManager(sim.RestClient)
+	libMan := library.NewManager(sim.RestClient)
+
+	datastores, err := sim.Finder.DatastoreList(sim.Ctx, "*")
+	if err != nil {
+		return fmt.Errorf("failed to list datastores in simulator: %w", err)
+	}
+	if len(datastores) == 0 {
+		return fmt.Errorf("simulator has no datastores to back a content library")
+	}
+
+	for _, cfg := range libraryConfigs {
+		if cfg.Name == "" {
+			return fmt.Errorf("content library name is required")
+		}
+		if cfg.DatastoreIndex < 0 || cfg.DatastoreIndex >= len(datastores) {
+			return fmt.Errorf("datastore index %d out of range (have %d)", cfg.DatastoreIndex, len(datastores))
+		}
+
+		id, err := libMan.CreateLibrary(sim.Ctx, library.Library{
+			Name: cfg.Name,
+			Type: "LOCAL",
+			Storage: []library.StorageBacking{{
+				DatastoreID: datastores[cfg.DatastoreIndex].Reference().Value,
+				Type:        "DATASTORE",
+			}},
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create content library %q: %w", cfg.Name, err)
+		}
+
+		ref := types.ManagedObjectReference{Type: "com.vmware.content.Library", Value: id}
+		for _, tag := range cfg.Tags {
+			catID, err := ensureCategory(sim.Ctx, tagMan, tag.Category)
+			if err != nil {
+				return fmt.Errorf("failed to ensure category exists: %w", err)
+			}
+			tagID, err := ensureTag(sim.Ctx, tagMan, catID, tag.Name)
+			if err != nil {
+				return fmt.Errorf("failed to ensure tag exists: %w", err)
+			}
+			if err := tagMan.AttachTag(sim.Ctx, tagID, ref); err != nil {
+				return fmt.Errorf("failed to attach tag to content library: %w", err)
 			}
 		}
 	}

@@ -69,4 +69,9 @@ integration {
     name = "vSphere Network"
     slug = "vsphere-network"
   }
+  component {
+    type = "data-source"
+    name = "vSphere Content Library"
+    slug = "vsphere-content-library"
+  }
 }
