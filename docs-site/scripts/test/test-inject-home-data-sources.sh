@@ -55,13 +55,13 @@ assert_contains "$content" "builders, post-processors, and data sources" \
   "updates components intro when data sources exist"
 assert_contains "$content" "#### Data Sources" \
   "adds Data Sources heading"
-assert_contains "$content" "[virtualmachine](data-sources/virtualmachine/)" \
-  "lists data source with site-relative link"
+assert_contains "$content" "[Virtual Machine](data-sources/virtualmachine/)" \
+  "lists data source with friendly name and site-relative link"
 assert_contains "$content" "retrieves information about existing virtual machines" \
   "includes data source summary"
 assert_contains "$content" $'#### Post-Processors\n\n- [vsphere]' \
   "preserves post-processors section"
-assert_contains "$content" $'#### Data Sources\n\n- [virtualmachine]' \
+assert_contains "$content" $'#### Data Sources\n\n- [Virtual Machine]' \
   "places data sources after post-processors"
 
 WEB_DOCS_DIR="${tmpdir}/.web-docs-empty"

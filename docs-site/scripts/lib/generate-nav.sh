@@ -19,6 +19,14 @@ component_display_name() {
     vsphere) echo "vSphere" ;;
     vsphere-template) echo "vSphere Template" ;;
     virtualmachine) echo "Virtual Machine" ;;
+    datastore) echo "Datastore" ;;
+    datastore-cluster) echo "Datastore Cluster" ;;
+    host) echo "Host" ;;
+    compute-cluster) echo "Compute Cluster" ;;
+    resource-pool) echo "Resource Pool" ;;
+    network) echo "Network" ;;
+    content-library) echo "Content Library" ;;
+    content-library-item) echo "Content Library Item" ;;
     *) echo "$1" ;;
   esac
 }
