@@ -47,7 +47,7 @@ inject_home_data_sources() {
     [[ "$type" == "data-sources" ]] || continue
     readme="${WEB_DOCS_DIR}/components/data-source/${slug}/README.md"
     summary="$(component_home_summary "$readme")"
-    section_lines+=("- [${slug}](data-sources/${slug}/) -")
+    section_lines+=("- [${title}](data-sources/${slug}/) -")
     if [[ -n "$summary" ]]; then
       section_lines+=("  ${summary}")
     fi

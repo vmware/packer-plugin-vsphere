@@ -19,7 +19,9 @@ trap 'rm -rf "$tmpdir"' EXIT
 
 WEB_DOCS_DIR="${tmpdir}/.web-docs"
 mkdir -p "${WEB_DOCS_DIR}/components/builder/vsphere-iso"
+mkdir -p "${WEB_DOCS_DIR}/components/data-source/content-library-item"
 printf '%s\n' '# Builder' >"${WEB_DOCS_DIR}/components/builder/vsphere-iso/README.md"
+printf '%s\n' '# Data Source' >"${WEB_DOCS_DIR}/components/data-source/content-library-item/README.md"
 
 INCLUDE_EXTRA=true generate_nav >"${tmpdir}/with-extra.toml"
 INCLUDE_EXTRA=false generate_nav >"${tmpdir}/without-extra.toml"
@@ -33,5 +35,7 @@ assert_not_contains "$without_extra" '"builders/index.md"' \
   "omits builders index when INCLUDE_EXTRA=false"
 assert_not_contains "$without_extra" "Community" \
   "omits community nav when INCLUDE_EXTRA=false"
+assert_contains "$with_extra" '"Content Library Item" = "data-sources/content-library-item.md"' \
+  "uses friendly display name for data sources"
 
 echo "All generate-nav tests passed."
