@@ -74,4 +74,9 @@ integration {
     name = "vSphere Content Library"
     slug = "vsphere-content-library"
   }
+  component {
+    type = "data-source"
+    name = "vSphere Content Library Item"
+    slug = "vsphere-content-library-item"
+  }
 }

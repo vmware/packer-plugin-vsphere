@@ -1,0 +1,122 @@
+---
+modeline: |
+  vim: set ft=pandoc:
+description: |
+  This data source retrieves information about an existing item in a content
+  library from vSphere and returns the name, unique identifier, library, type,
+  and content library path for an item that matches all specified filters.
+page_title: vSphere Content Library Item - Data Source
+sidebar_title: vSphere Content Library Item
+---
+
+# Content Library Item Data Source
+
+Type: `vsphere-content-library-item`
+Artifact BuilderId: `vsphere.content-library-item`
+
+This data source retrieves information about an existing item in a content
+library from vSphere and returns the name, unique identifier, library, type,
+and content library path for an item that matches all specified filters.
+
+The `path` output is returned in the `<library>/<item>/<file>` form used by the
+`iso_paths` option of the `vsphere-iso` builder, so an ISO stored in a content
+library can be selected dynamically and attached at build time.
+
+~> **Note:** When more than one item matches the filters, the data source
+returns an error unless `latest` is set to `true`, in which case the item with
+the most recent last modified time is returned. Narrow the filters (for example
+with `name`, `name_regex`, `type`, or `tag`) until exactly one item matches.
+
+## Configuration Reference
+
+### Filters Configuration
+
+**Required:**
+
+@include 'datasource/contentlibraryitem/Config-required.mdx'
+
+**Optional:**
+
+@include 'datasource/contentlibraryitem/Config-not-required.mdx'
+
+### Tags Filter Configuration
+
+@include 'datasource/common/Tag.mdx'
+
+**Required:**
+
+@include 'datasource/common/Tag-required.mdx'
+
+### Connection Configuration
+
+**Optional:**
+
+@include 'builder/vsphere/common/ConnectConfig-not-required.mdx'
+
+## Output
+
+@include 'datasource/contentlibraryitem/DatasourceOutput.mdx'
+
+## Example Usage
+
+### Select an ISO for the `vsphere-iso` Builder
+
+```hcl
+data "vsphere-content-library-item" "iso" {
+  vcenter_server  = "vc01.example.com"
+  username        = "administrator@vsphere.local"
+  password        = "VMware1!"
+  datacenter      = "dc-01"
+  content_library = "lib01"
+  name            = "linux-debian-13*-amd64"
+  type            = "iso"
+  latest          = true
+}
+
+source "vsphere-iso" "example" {
+  iso_paths = [data.vsphere-content-library-item.iso.path]
+  # ...
+}
+```
+
+### Filter by Tags
+
+```hcl
+data "vsphere-content-library-item" "iso" {
+  vcenter_server  = "vc01.example.com"
+  username        = "administrator@vsphere.local"
+  password        = "VMware1!"
+  datacenter      = "dc-01"
+  content_library = "lib01"
+  name            = "linux-debian-13*-amd64"
+  type            = "iso"
+
+  tag {
+    category = "environment"
+    name     = "production"
+  }
+}
+
+locals {
+  content_library_item = data.vsphere-content-library-item.iso.name
+}
+```
+
+### Select an Item by Regular Expression
+
+```hcl
+data "vsphere-content-library-item" "iso" {
+  vcenter_server  = "vc01.example.com"
+  username        = "administrator@vsphere.local"
+  password        = "VMware1!"
+  datacenter      = "dc-01"
+  content_library = "lib01"
+  name_regex      = "^linux-debian-13\\.[0-9]+\\.[0-9]+-amd64$"
+  type            = "iso"
+  latest          = true
+}
+
+locals {
+  content_library_item = data.vsphere-content-library-item.iso.name
+}
+```
