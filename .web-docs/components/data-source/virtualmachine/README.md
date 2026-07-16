@@ -163,7 +163,7 @@ data "vsphere-virtualmachine" "example" {
   username       = "administrator@vsphere.local"
   password       = "VMware1!"
   datacenter     = "dc-01"
-  name           = "linux-debian-13-*"
+  name           = "linux-debian-*"
   latest         = true
 }
 
@@ -183,7 +183,7 @@ data "vsphere-virtualmachine" "example" {
   username       = "administrator@vsphere.local"
   password       = "VMware1!"
   datacenter     = "dc-01"
-  name_regex     = "^linux-debian-[0-9]+-.+$"
+  name_regex     = "^linux-debian-.+$"
   latest         = true
 }
 
@@ -203,7 +203,7 @@ data "vsphere-virtualmachine" "example" {
   username       = "administrator@vsphere.local"
   password       = "VMware1!"
   datacenter     = "dc-01"
-  name           = "linux-debian-13-*"
+  name           = "linux-debian-*"
   template       = true
 }
 
@@ -224,7 +224,7 @@ data "vsphere-virtualmachine" "example" {
   password       = "VMware1!"
   datacenter     = "dc-01"
   host           = "esx01.example.com"
-  name           = "linux-debian-13-*"
+  name           = "linux-debian-*"
   latest         = true
 }
 
