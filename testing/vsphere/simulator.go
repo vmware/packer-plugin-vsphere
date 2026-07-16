@@ -19,6 +19,7 @@ import (
 	"github.com/vmware/govmomi/vapi/rest"
 	_ "github.com/vmware/govmomi/vapi/simulator"
 	"github.com/vmware/govmomi/vapi/tags"
+	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
 )
 
@@ -76,6 +77,14 @@ type SimulatedResourcePoolConfig struct {
 	Path         string
 	ClusterIndex int
 	Tags         []Tag
+}
+
+// SimulatedNetworkConfig configures an existing simulator network by supported
+// NetworkList order (Network, DistributedVirtualPortgroup, OpaqueNetwork —
+// DistributedVirtualSwitch entries are skipped).
+type SimulatedNetworkConfig struct {
+	Name string
+	Tags []Tag
 }
 
 type simulatorContext struct {
@@ -475,6 +484,73 @@ func (sim *simulatorContext) ApplyResourcePoolConfiguration(poolConfigs []Simula
 			}
 			if err := tagMan.AttachTag(sim.Ctx, tagID, ref); err != nil {
 				return fmt.Errorf("failed to attach tag to resource pool: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// ApplyNetworkConfiguration updates existing simulator networks according to
+// the provided configurations, matched by supported NetworkList order.
+func (sim *simulatorContext) ApplyNetworkConfiguration(networkConfigs []SimulatedNetworkConfig) error {
+	tagMan := tags.NewManager(sim.RestClient)
+
+	all, err := sim.Finder.NetworkList(sim.Ctx, "*")
+	if err != nil {
+		return fmt.Errorf("failed to list networks in simulator: %w", err)
+	}
+
+	networks := make([]object.NetworkReference, 0, len(all))
+	for _, n := range all {
+		switch n.Reference().Type {
+		case "Network", "DistributedVirtualPortgroup", "OpaqueNetwork":
+			networks = append(networks, n)
+		}
+	}
+
+	if len(networkConfigs) > len(networks) {
+		return fmt.Errorf("requested %d network configurations but simulator has %d supported networks", len(networkConfigs), len(networks))
+	}
+
+	for i, cfg := range networkConfigs {
+		ref := networks[i].Reference()
+		obj := sim.Model.Map().Get(ref)
+		if obj == nil {
+			return fmt.Errorf("failed to resolve simulator network for %s", ref.Value)
+		}
+
+		if cfg.Name != "" {
+			switch net := obj.(type) {
+			case *mo.Network:
+				net.Name = cfg.Name
+				if s, ok := net.Summary.(*types.NetworkSummary); ok && s != nil {
+					s.Name = cfg.Name
+				}
+			case *simulator.DistributedVirtualPortgroup:
+				net.Name = cfg.Name
+				net.Config.Name = cfg.Name
+			case *mo.OpaqueNetwork:
+				net.Name = cfg.Name
+				if s, ok := net.Summary.(*types.OpaqueNetworkSummary); ok && s != nil {
+					s.Name = cfg.Name
+				}
+			default:
+				return fmt.Errorf("unsupported simulator network type %T for %s", obj, ref.Value)
+			}
+		}
+
+		for _, tag := range cfg.Tags {
+			catID, err := ensureCategory(sim.Ctx, tagMan, tag.Category)
+			if err != nil {
+				return fmt.Errorf("failed to ensure category exists: %w", err)
+			}
+			tagID, err := ensureTag(sim.Ctx, tagMan, catID, tag.Name)
+			if err != nil {
+				return fmt.Errorf("failed to ensure tag exists: %w", err)
+			}
+			if err := tagMan.AttachTag(sim.Ctx, tagID, ref); err != nil {
+				return fmt.Errorf("failed to attach tag to network: %w", err)
 			}
 		}
 	}

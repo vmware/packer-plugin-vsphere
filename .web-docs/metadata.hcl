@@ -64,4 +64,9 @@ integration {
     name = "vSphere Resource Pool"
     slug = "vsphere-resource-pool"
   }
+  component {
+    type = "data-source"
+    name = "vSphere Network"
+    slug = "vsphere-network"
+  }
 }

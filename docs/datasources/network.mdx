@@ -1,0 +1,110 @@
+---
+modeline: |
+  vim: set ft=pandoc:
+description: |
+  This data source retrieves information about existing networks from vSphere
+  and returns the name, managed object ID, and API managed-object type for a
+  network that matches all specified filters. The result can be used with the
+  builders to set `network`.
+page_title: vSphere Network - Data Source
+sidebar_title: vSphere Network
+---
+
+# Network Data Source
+
+Type: `vsphere-network`
+Artifact BuilderId: `vsphere.network`
+
+This data source retrieves information about existing networks from vSphere
+and returns the name, managed object ID, and API managed-object type for a
+network that matches all specified filters. The result can be used with the
+builders to set `network`.
+
+Looks up standard port groups, distributed port groups, and NSX segments (plus
+other opaque networks).
+
+~> **Note:** Distributed virtual switches are not returned.
+
+~> **Note:** When more than one network matches the filters, the data source
+returns an error. Narrow the filters (for example with `type`, `cluster`, `host`,
+or `tag`) until exactly one network matches.
+
+## Configuration Reference
+
+### Filters Configuration
+
+**Optional:**
+
+@include 'datasource/network/Config-not-required.mdx'
+
+### Tags Filter Configuration
+
+@include 'datasource/common/Tag.mdx'
+
+**Required:**
+
+@include 'datasource/common/Tag-required.mdx'
+
+### Connection Configuration
+
+**Optional:**
+
+@include 'builder/vsphere/common/ConnectConfig-not-required.mdx'
+
+## Output
+
+@include 'datasource/network/DatasourceOutput.mdx'
+
+## Example Usage
+
+### Select Distributed Port Group by Name and Type
+
+```hcl
+data "vsphere-network" "build" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  datacenter     = "dc-01"
+  cluster        = "w01-cl01"
+  name           = "pg-prod*"
+  type           = "distributed-port-group"
+}
+
+source "vsphere-iso" "example" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  cluster        = "w01-cl01"
+  datastore      = "w01-cl01-vsan01"
+  network        = data.vsphere-network.build.id
+  vm_name        = "linux-debian-from-network"
+  guest_os_type  = "otherGuest64"
+  communicator   = "none"
+}
+
+build {
+  sources = ["source.vsphere-iso.example"]
+}
+```
+
+### Filter by Tags
+
+```hcl
+data "vsphere-network" "build" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  datacenter     = "dc-01"
+  type           = "distributed-port-group"
+
+  tag {
+    category = "environment"
+    name     = "production"
+  }
+}
+
+locals {
+  network_name = data.vsphere-network.build.name
+  network_type = data.vsphere-network.build.type
+}
+```

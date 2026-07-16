@@ -71,8 +71,8 @@ source "vsphere-clone" "example" {
   cluster        = "w01-cl01"
   resource_pool  = data.vsphere-resource-pool.build.path
   datastore      = "w01-cl01-vsan01"
-  template       = "alpine-template"
-  vm_name        = "alpine-from-rp"
+  template       = "linux-debian"
+  vm_name        = "linux-debian-from-rp"
   communicator   = "none"
 }
 

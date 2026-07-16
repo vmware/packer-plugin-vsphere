@@ -1,0 +1,14 @@
+<!-- Code generated from the comments of the DatasourceOutput struct in datasource/network/data.go; DO NOT EDIT MANUALLY -->
+
+- `name` (string) - Name of the found network.
+
+- `id` (string) - Managed object ID of the found network.
+  
+  ~> **Note:** When using the data source result in a builder's `network` option,
+  use `data.vsphere-network.build.id` instead of `data.vsphere-network.build.name`
+  if the inventory contains more than one network with the same display name.
+
+- `type` (string) - API managed-object type of the found network (`Network`,
+  `DistributedVirtualPortgroup`, or `OpaqueNetwork`).
+
+<!-- End of code generated from the comments of the DatasourceOutput struct in datasource/network/data.go; -->

@@ -1,0 +1,28 @@
+<!-- Code generated from the comments of the Config struct in datasource/network/data.go; DO NOT EDIT MANUALLY -->
+
+- `name` (string) - Basic filter with glob support on the network name (e.g. `pg-prod*` or
+  `VM Network`). Defaults to `*`.
+
+- `name_regex` (string) - Extended name filter with regular expression support matched against the
+  network name (e.g. `^pg-prod[0-9]*$`). Default is empty. The match is
+  checked by substring. Use `^` and `$` to define a full string. The
+  expression must use [Go Regex Syntax](https://pkg.go.dev/regexp/syntax).
+
+- `cluster` (string) - Filter to return only networks available to the specified compute
+  cluster.
+
+- `host` (string) - Filter to return only networks available to the specified ESX host.
+
+- `type` (string) - Optional filter by type. Use one of: `standard-port-group`,
+  `distributed-port-group`, or `nsx-segment`. Default is empty (any
+  supported type).
+  
+  -> **Note:** The corresponding API managed-object types are also
+  accepted: `standard-port-group` = `Network`, `distributed-port-group` =
+  `DistributedVirtualPortgroup`, and `nsx-segment` = `OpaqueNetwork`.
+  
+  -> **Note:** `nsx-segment` matches all opaque networks, not only NSX.
+
+- `tag` ([]Tag) - Filter to return only networks that have all specified tags attached.
+
+<!-- End of code generated from the comments of the Config struct in datasource/network/data.go; -->

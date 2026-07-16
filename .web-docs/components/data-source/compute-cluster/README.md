@@ -128,8 +128,8 @@ source "vsphere-clone" "example" {
   password       = "VMware1!"
   cluster        = data.vsphere-compute-cluster.build.name
   datastore      = "w01-cl01-vsan01"
-  template       = "alpine-template"
-  vm_name        = "alpine-from-cluster"
+  template       = "linux-debian"
+  vm_name        = "linux-debian-from-cluster"
   communicator   = "none"
 }
 

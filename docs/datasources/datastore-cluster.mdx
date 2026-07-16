@@ -70,8 +70,8 @@ source "vsphere-clone" "example" {
   password          = "VMware1!"
   host              = "esx01.example.com"
   datastore_cluster = data.vsphere-datastore-cluster.build.name
-  template          = "alpine-template"
-  vm_name           = "alpine-from-dsc"
+  template          = "linux-debian"
+  vm_name           = "linux-debian-from-dsc"
   communicator      = "none"
 }
 
