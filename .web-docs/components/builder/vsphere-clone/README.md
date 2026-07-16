@@ -2,8 +2,9 @@ Type: `vsphere-clone`
 
 Artifact BuilderId: `vmware.vsphere`
 
-This builder creates a virtual machine from an existing template or an OVF/OVA source,
-modifies the image, and saves the result as a new template using the vSphere API.
+This builder creates a virtual machine from an existing template, an OVF/OVA source,
+or a vSphere content library item, modifies the image, and saves the result as a new
+template using the vSphere API.
 
 -> **Note:** This builder is developed to maintain compatibility with VMware vSphere versions until
 their respective End of General Support dates. For detailed information, refer to the
@@ -43,7 +44,7 @@ references, which are necessary for a build to succeed and can be found further 
 
 - `content_library_destination` (\*common.ContentLibraryDestinationConfig) - The configuration for importing a VM template or OVF template to a
   content library. The template will not be imported if no
-  [content library import configuration](#content-library-import-configuration)
+  [content library destination configuration](#content-library-destination-configuration)
   is specified. If set, `convert_to_template` must be set to `false`.
 
 - `customize` (\*CustomizeConfig) - The customization options for the virtual machine.
@@ -55,31 +56,59 @@ references, which are necessary for a build to succeed and can be found further 
 
 ### Clone Configuration
 
+Sources fall into two groups:
+
+- **Template-backed:** `template`, or a `content_library_source` VM template
+- **OVF-backed:** `ovf_source`, or a `content_library_source` OVF template
+
+#### Source Compatibility
+
+| Option                   | Template-backed       | OVF-backed |
+| ------------------------ | --------------------- | ---------- |
+| `linked_clone`           | Yes (`template` only) | No         |
+| `disk_size`              | Yes                   | No         |
+| `storage`                | Yes                   | No         |
+| `disk_controller_type`   | Yes                   | No         |
+| `network`                | Yes                   | Yes        |
+| `mac_address`            | Yes                   | Yes        |
+| `vapp.properties`        | Yes (if present)      | Yes        |
+| `vapp.deployment_option` | No                    | Yes        |
+
+~> **Note:** Specify exactly one of `template`, `ovf_source`, or `content_library_source`.
+
+-> **Note:** Unsupported options are rejected during configuration validation, except for
+`disk_size`, `storage`, and `disk_controller_type` with a `content_library_source` OVF template.
+Those require the library item type and are rejected when the item is resolved at deploy time.
+
+-> **Note:** For `ovf_source`, the plugin reads the OVF/OVA and uploads it to vSphere. For a
+`content_library_source` OVF template, vCenter deploys the item from the content library; the plugin
+does not read those files.
+
 **Optional:**
 
 <!-- Code generated from the comments of the CloneConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
-- `template` (string) - The name of the source virtual machine template to clone. Specify either
-  `template` or `ovf_source`, but not both.
+- `template` (string) - The name of the source virtual machine template to clone.
 
 - `ovf_source` (\*OvfSourceConfig) - Configuration for deploying from an OVF/OVA source. Specify either a
-  local `path` or a remote `url`. Conflicts with `template`. Refer to the
-  [OVF source configuration](#ovf-source-configuration) section for available
-  fields.
+  local `path` or a remote `url`. Refer to the [OVF source configuration](#ovf-source-configuration)
+  section for available fields.
+
+- `content_library_source` (\*ContentLibrarySourceConfig) - Configuration for deploying from a vSphere content library item. Refer to
+  the [content library source configuration](#content-library-source-configuration)
+  section for available fields.
 
 - `disk_size` (int64) - The size of the primary disk in MiB. Conflicts with `linked_clone`.
   
   -> **Note:** Only the primary disk size can be specified. Additional disks
   are configured with [`storage`](#storage-configuration).
   
-  ~> **Note:** Applies only when cloning from a `template`; rejected when
-  `ovf_source` is set.
+  -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
 
 - `linked_clone` (bool) - Create the virtual machine as a linked clone from the latest snapshot.
   Defaults to `false`. Conflicts with `disk_size`.
   
-  ~> **Note:** Applies only when cloning from a `template`; rejected when
-  `ovf_source` is set.
+  -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
 
 - `network` (string) - The network to which the virtual machine will connect.
   
@@ -92,18 +121,28 @@ references, which are necessary for a build to succeed and can be found further 
   - Logical Switch UUID: `<uuid>`
   - Segment ID: `/infra/segments/<SegmentID>`
   
+  -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
+  
   ~> **Note:** If more than one network resolves to the same name, either
   the inventory path to network or an ID must be provided.
   
   ~> **Note:** If no network is specified, provide `host` to allow the
   plugin to search for an available network.
   
-  ~> **Note:** When deploying from an OVF/OVA source, each network
-  defined in the OVF descriptor is mapped to this network. If the OVF
-  defines multiple networks, they all use this same mapping.
+  -> **Note:** For `ovf_source` and `content_library_source` OVF templates,
+  every network in the OVF descriptor maps to this network.
+  
+  -> **Note:** For `template` and `content_library_source` VM templates, this
+  is applied to the primary network adapter.
 
 - `mac_address` (string) - The network card MAC address. For example `00:50:56:00:00:00`.
-  If set, the `network` must be also specified.
+  If set, the `network` must be also specified when cloning from `template`
+  or a `content_library_source` VM template.
+  
+  -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
+  
+  -> **Note:** For `ovf_source` and `content_library_source` OVF templates,
+  `mac_address` can be set without `network`.
 
 - `notes` (string) - The annotations for the virtual machine.
 
@@ -119,15 +158,14 @@ references, which are necessary for a build to succeed and can be found further 
 - `storage` ([]DiskConfig) - Additional disks to attach to the virtual machine, and optional
   disk controllers. Does not resize the primary disk; use [`disk_size`](#clone-configuration) for that.
   For more information, refer to the [Storage Configuration](#storage-configuration) section.
+  Refer to the [Source Compatibility](#source-compatibility) section.
 
 ### OVF Source Configuration
 
-<!-- Code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
+Deploy from an `ovf_source` OVF or OVA.
 
-Specify either a local `path` or a remote `url`.
-
-<!-- End of code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; -->
-
+Refer to the [Source Compatibility](#source-compatibility) section for which
+clone options apply when deploying from `ovf_source`.
 
 **Optional:**
 
@@ -221,24 +259,56 @@ Specify either a local `path` or a remote `url`.
 <!-- End of code generated from the comments of the OvfSourceConfig struct in builder/vsphere/clone/step_clone.go; -->
 
 
+### Content Library Source Configuration
+
+Deploy from a `content_library_source` VM template or OVF template.
+
+Refer to the [Source Compatibility](#source-compatibility) section for which
+clone options apply when deploying from a `content_library_source`.
+
+**Optional:**
+
+<!-- Code generated from the comments of the ContentLibrarySourceConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
+
+- `library` (string) - The name of the content library containing the source item.
+
+- `name` (string) - The name of the content library item. Must be unique within the content
+  library.
+  
+  HCL Example:
+  
+  ```hcl
+  content_library_source {
+    library = "Example Content Library"
+    name    = "example-template"
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "content_library_source": {
+    "library": "Example Content Library",
+    "name": "example-template"
+  }
+  ```
+
+<!-- End of code generated from the comments of the ContentLibrarySourceConfig struct in builder/vsphere/clone/step_clone.go; -->
+
+
 ### Storage Configuration
 
 <!-- Code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; DO NOT EDIT MANUALLY -->
 
-When cloning from a `template`, the resulting virtual machine contains the
-source template's disks plus any newly configured disks and controllers.
-`storage {}`, `disk_controller_type`, and `disk_size` apply in this mode.
+Disk layout depends on the builder and clone source. For `vsphere-clone`,
+refer to the [Source Compatibility](#source-compatibility) section.
 
-When deploying from `ovf_source` from either an HTTP(S) `url` or a local
-filesystem `path`, the source OVF/OVA descriptor defines the configured disks
-and controllers. When the descriptor offers multiple deployment sizes,
-use `vapp.deployment_option` to select one. For more information, refer to
-the [vApp Options Configuration](#vapp-options-configuration) section.
+When the source is an OVF descriptor (`ovf_source` or a
+`content_library_source` OVF template) and multiple deployment sizes are
+offered, use `vapp.deployment_option`. For more information, refer to the
+[vApp Options Configuration](#vapp-options-configuration) section.
 
-~> **Note:** `storage {}`, `disk_controller_type`, and `disk_size` cannot be
-used with `ovf_source`.
-
-~> **Note:** Use `datastore` or `datastore_cluster` in the
+-> **Note:** Use `datastore` or `datastore_cluster` in the
 [Location Configuration](#location-configuration) to choose where imported
 disks are stored.
 
@@ -257,7 +327,7 @@ disks are stored.
 
 - `storage` ([]DiskConfig) - Additional disks to attach to the virtual machine. Each `storage` block
   defines one disk. Does not resize the primary disk; use `disk_size` for
-  that when cloning from a `template`.
+  that.
 
 <!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->
 
@@ -372,11 +442,13 @@ JSON Example:
 **Optional:**
 
 - `properties` (map[string]string) - The values for the available vApp properties. These are used to supply
-  configuration parameters to a virtual machine. This machine is cloned from a template that originated
-  from an imported OVF or OVA file.
+  configuration parameters to a virtual machine.
+
+  -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
 
   -> **Note:** The only supported usage path for vApp properties is for existing user-configurable keys.
-  These generally come from an existing template that was created from an imported OVF or OVA file.
+  These generally come from a source that defines vApp properties in its OVF descriptor or vApp
+  configuration.
 
   You cannot set values for vApp properties on virtual machines created from scratch, on virtual machines
   that lack a vApp configuration, or on property keys that do not exist.
@@ -412,9 +484,11 @@ JSON Example:
   export USERDATA=$(gzip -c9 <userdata.yaml | { base64 -w0 2>/dev/null || base64; })
   ```
 
-- `deployment_option` (string) - The deployment configuration to use when deploying from an OVF/OVA file.
+- `deployment_option` (string) - The deployment configuration to use when deploying from an OVF/OVA file or
+  an OVF template from `ovf_source` or `content_library_source`.
   This corresponds to deployment configurations defined in an OVF descriptor.
-  -> **Note:** Only applicable when using OVF/OVA sources.
+
+  -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
 
 
 ### Extra Configuration Parameters
@@ -1798,7 +1872,7 @@ The above configuration would create the following files:
 <!-- End of code generated from the comments of the OutputConfig struct in builder/vsphere/common/output_config.go; -->
 
 
-### Content Library Configuration
+### Content Library Destination Configuration
 
 <!-- Code generated from the comments of the ContentLibraryDestinationConfig struct in builder/vsphere/common/step_import_to_content_library.go; DO NOT EDIT MANUALLY -->
 
@@ -1878,29 +1952,49 @@ The template is stored in an existing or newly created library item.
   to VM templates. For OVF templates, existing items are always updated.
   When enabled for VM templates, the existing item will be deleted before
   creating the new one. Defaults to `false`.
+  
+  **VM Template**
+  
+  HCL Example:
+  
+  ```hcl
+  content_library_destination {
+    library = "Example Content Library"
+    overwrite = true
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "content_library_destination": {
+    "library": "Example Content Library",
+    "overwrite": true
+  }
+  ```
+  
+  **OVF Template**
+  
+  HCL Example:
+  
+  ```hcl
+  content_library_destination {
+    library = "Example Content Library"
+    ovf     = true
+  }
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "content_library_destination": {
+    "library": "Example Content Library",
+    "ovf": true
+  }
+  ```
 
 <!-- End of code generated from the comments of the ContentLibraryDestinationConfig struct in builder/vsphere/common/step_import_to_content_library.go; -->
 
-
-HCL Example:
-
-```hcl
-source "vsphere-clone" "example" {
-  # ... other configuration ...
-  content_library_destination {
-    library = "Example Content Library"
-  }
-  # ... other configuration ...
-}
-```
-
-JSON Example:
-
-```json
-  "content_library_destination" : {
-    "library": "Example Content Library"
-    }
-```
 
 ### Tags Configuration
 
@@ -2068,26 +2162,28 @@ Clone the default **Read-Only** vSphere role and add the following privileges:
 | ------------------------ | --------------------------------------------------- | -------------------------------------------------- |
 | Content Library          | Add library item                                    | `ContentLibrary.AddLibraryItem`                    |
 | ...                      | Update library item                                 | `ContentLibrary.UpdateLibraryItem`                 |
+| ...                      | Download files                                       | `ContentLibrary.DownloadSession`                   |
 | Cryptographic Operations | Direct access                                       | `Cryptographer.Access`                             |
 | ...                      | Encrypt                                             | `Cryptographer.Encrypt`                            |
 | Datastore                | Allocate space                                      | `Datastore.AllocateSpace`                          |
 | ...                      | Browse datastore                                    | `Datastore.Browse`                                 |
-| ...                      | Low level file operations                           | `Datastore.FileManagement`                         |
+| ...                      | Low level file operations                            | `Datastore.FileManagement`                         |
 | Network                  | Assign network                                      | `Network.Assign`                                   |
 | Resource                 | Assign virtual machine to resource pool             | `Resource.AssignVMToPool`                          |
 | vApp                     | Export                                              | `vApp.Export`                                      |
-| Virtual Machine          | Configuration > Add new disk                        | `VirtualMachine.Config.AddNewDisk`                 |
-| ...                      | Configuration > Add or remove device                | `VirtualMachine.Config.AddRemoveDevice`            |
-| ...                      | Configuration > Advanced configuration              | `VirtualMachine.Config.AdvancedConfig`             |
-| ...                      | Configuration > Change CPU count                    | `VirtualMachine.Config.CPUCount`                   |
-| ...                      | Configuration > Change memory                       | `VirtualMachine.Config.Memory`                     |
-| ...                      | Configuration > Change settings                     | `VirtualMachine.Config.Settings`                   |
-| ...                      | Configuration > Change Resource                     | `VirtualMachine.Config.Resource`                   |
-| ...                      | Configuration > Set annotation                      | `VirtualMachine.Config.Annotation`                 |
+| ...                      | Import                                              | `vApp.Import`                                      |
+| Virtual Machine          | Configuration > Add new disk                         | `VirtualMachine.Config.AddNewDisk`                  |
+| ...                      | Configuration > Add or remove device                 | `VirtualMachine.Config.AddRemoveDevice`             |
+| ...                      | Configuration > Advanced configuration                | `VirtualMachine.Config.AdvancedConfig`               |
+| ...                      | Configuration > Change CPU count                     | `VirtualMachine.Config.CPUCount`                    |
+| ...                      | Configuration > Change memory                        | `VirtualMachine.Config.Memory`                      |
+| ...                      | Configuration > Change settings                      | `VirtualMachine.Config.Settings`                    |
+| ...                      | Configuration > Change Resource                      | `VirtualMachine.Config.Resource`                    |
+| ...                      | Configuration > Set annotation                       | `VirtualMachine.Config.Annotation`                  |
 | ...                      | Edit Inventory > Create from existing               | `VirtualMachine.Inventory.CreateFromExisting`      |
 | ...                      | Edit Inventory > Remove                             | `VirtualMachine.Inventory.Delete`                  |
-| ...                      | Interaction > Configure CD media                    | `VirtualMachine.Interact.SetCDMedia`               |
-| ...                      | Interaction > Configure floppy media                | `VirtualMachine.Interact.SetFloppyMedia`           |
+| ...                      | Interaction > Configure CD media                     | `VirtualMachine.Interact.SetCDMedia`               |
+| ...                      | Interaction > Configure floppy media                  | `VirtualMachine.Interact.SetFloppyMedia`           |
 | ...                      | Interaction > Connect devices                       | `VirtualMachine.Interact.DeviceConnection`         |
 | ...                      | Interaction > Inject USB HID scan codes             | `VirtualMachine.Interact.PutUsbScanCodes`          |
 | ...                      | Interaction > Power off                             | `VirtualMachine.Interact.PowerOff`                 |
@@ -2100,7 +2196,7 @@ Clone the default **Read-Only** vSphere role and add the following privileges:
 | ...                      | Provisioning > Mark as virtual machine              | `VirtualMachine.Provisioning.MarkAsVM`             |
 | ...                      | Snapshot Management > Create snapshot               | `VirtualMachine.State.CreateSnapshot`              |
 
-Global permissions **[are required](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-security-8-0/vsphere-permissions-and-user-management-tasks/understanding-authorization-in-vsphere.html)** for the content library based on the hierarchical inheritance of permissions. Once the custom vSphere role is created, assign **Global Permissions** in vSphere to the accounts or groups used for the Packer to vSphere integration, if using the content library.
+Global permissions **[are required](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-security-8-0/vsphere-permissions-and-user-management-tasks/understanding-authorization-in-vsphere.html)** for the content library based on the hierarchical inheritance of permissions. Once the custom vSphere role is created, assign **Global Permissions** in vSphere to the accounts or groups used for the Packer to vSphere integration, if using the content library as a [source](#content-library-source-configuration) or [destination](#content-library-destination-configuration).
 
 For example:
 

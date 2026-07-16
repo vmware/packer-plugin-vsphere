@@ -1,9 +1,11 @@
 - `properties` (map[string]string) - The values for the available vApp properties. These are used to supply
-  configuration parameters to a virtual machine. This machine is cloned from a template that originated
-  from an imported OVF or OVA file.
+  configuration parameters to a virtual machine.
+
+  -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
 
   -> **Note:** The only supported usage path for vApp properties is for existing user-configurable keys.
-  These generally come from an existing template that was created from an imported OVF or OVA file.
+  These generally come from a source that defines vApp properties in its OVF descriptor or vApp
+  configuration.
 
   You cannot set values for vApp properties on virtual machines created from scratch, on virtual machines
   that lack a vApp configuration, or on property keys that do not exist.
@@ -39,6 +41,8 @@
   export USERDATA=$(gzip -c9 <userdata.yaml | { base64 -w0 2>/dev/null || base64; })
   ```
 
-- `deployment_option` (string) - The deployment configuration to use when deploying from an OVF/OVA file.
+- `deployment_option` (string) - The deployment configuration to use when deploying from an OVF/OVA file or
+  an OVF template from `ovf_source` or `content_library_source`.
   This corresponds to deployment configurations defined in an OVF descriptor.
-  -> **Note:** Only applicable when using OVF/OVA sources.
+
+  -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.

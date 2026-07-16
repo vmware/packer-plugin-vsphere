@@ -53,6 +53,8 @@ type Driver interface {
 	DeleteContentLibraryItem(itemID string) error
 	DeployOvf(ctx context.Context, config *OvfDeployConfig, ui packersdk.Ui) (VirtualMachine, error)
 	GetOvfOptions(ctx context.Context, config *OvfDeployConfig) ([]types.OvfOptionInfo, error)
+	ResolveContentLibraryItem(libraryName, itemName string) (*library.Item, error)
+	DeployContentLibraryItem(ctx context.Context, config *ContentLibraryDeployConfig, ui packersdk.Ui) (VirtualMachine, error)
 	Cleanup() (error, error)
 }
 

@@ -183,7 +183,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				"ssh_password":   "VMw@re1!",
 			},
 			expectError:    true,
-			expectedErrMsg: "either 'template' or 'ovf_source' must be specified",
+			expectedErrMsg: "clone source is required - specify either 'template', 'ovf_source', or 'content_library_source'",
 		},
 		{
 			name: "Invalid: ovf_source URL is empty",
@@ -404,6 +404,96 @@ func TestCloneConfig_OvfSourceMutualExclusivity(t *testing.T) {
 				if err != nil {
 					t.Errorf("unexpected error: %s", err)
 				}
+			}
+		})
+	}
+}
+
+// TestCloneConfig_ContentLibrarySourceValidation tests content library source validation.
+func TestCloneConfig_ContentLibrarySourceValidation(t *testing.T) {
+	testCases := []struct {
+		name           string
+		config         map[string]interface{}
+		expectError    bool
+		expectedErrMsg string
+	}{
+		{
+			name: "Valid content library source",
+			config: map[string]interface{}{
+				"vcenter_server": "vcenter.example.com",
+				"username":       "administrator@vsphere.local",
+				"password":       "VMw@re1!",
+				"vm_name":        "vm-01",
+				"host":           "esxi-01.example.com",
+				"ssh_username":   "root",
+				"ssh_password":   "VMw@re1!",
+				"content_library_source": map[string]interface{}{
+					"library": "Example Content Library",
+					"name":    "example-template",
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "Invalid: linked_clone with content library source",
+			config: map[string]interface{}{
+				"vcenter_server": "vcenter.example.com",
+				"username":       "administrator@vsphere.local",
+				"password":       "VMw@re1!",
+				"vm_name":        "vm-01",
+				"host":           "esxi-01.example.com",
+				"ssh_username":   "root",
+				"ssh_password":   "VMw@re1!",
+				"linked_clone":   true,
+				"content_library_source": map[string]interface{}{
+					"library": "Example Content Library",
+					"name":    "example-template",
+				},
+			},
+			expectError:    true,
+			expectedErrMsg: "'linked_clone' cannot be used with 'content_library_source'",
+		},
+		{
+			name: "Invalid: ovf_source and content_library_source mutual exclusivity",
+			config: map[string]interface{}{
+				"vcenter_server": "vcenter.example.com",
+				"username":       "administrator@vsphere.local",
+				"password":       "VMw@re1!",
+				"vm_name":        "vm-01",
+				"host":           "esxi-01.example.com",
+				"ssh_username":   "root",
+				"ssh_password":   "VMw@re1!",
+				"ovf_source": map[string]interface{}{
+					"url": "https://packages.example.com/artifacts/example.ovf",
+				},
+				"content_library_source": map[string]interface{}{
+					"library": "Example Content Library",
+					"name":    "example-template",
+				},
+			},
+			expectError:    true,
+			expectedErrMsg: "cannot specify both 'ovf_source' and 'content_library_source' - choose one source type",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := new(Config)
+			warns, err := c.Prepare(tc.config)
+			if tc.expectError {
+				if err == nil {
+					t.Fatal("expected error but got none")
+				}
+				if !strings.Contains(err.Error(), tc.expectedErrMsg) {
+					t.Fatalf("expected error containing %q, got %q", tc.expectedErrMsg, err.Error())
+				}
+				return
+			}
+			if len(warns) > 0 {
+				t.Fatalf("unexpected warnings: %#v", warns)
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %s", err)
 			}
 		})
 	}

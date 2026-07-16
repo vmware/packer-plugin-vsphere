@@ -1,26 +1,26 @@
 <!-- Code generated from the comments of the CloneConfig struct in builder/vsphere/clone/step_clone.go; DO NOT EDIT MANUALLY -->
 
-- `template` (string) - The name of the source virtual machine template to clone. Specify either
-  `template` or `ovf_source`, but not both.
+- `template` (string) - The name of the source virtual machine template to clone.
 
 - `ovf_source` (\*OvfSourceConfig) - Configuration for deploying from an OVF/OVA source. Specify either a
-  local `path` or a remote `url`. Conflicts with `template`. Refer to the
-  [OVF source configuration](#ovf-source-configuration) section for available
-  fields.
+  local `path` or a remote `url`. Refer to the [OVF source configuration](#ovf-source-configuration)
+  section for available fields.
+
+- `content_library_source` (\*ContentLibrarySourceConfig) - Configuration for deploying from a vSphere content library item. Refer to
+  the [content library source configuration](#content-library-source-configuration)
+  section for available fields.
 
 - `disk_size` (int64) - The size of the primary disk in MiB. Conflicts with `linked_clone`.
   
   -> **Note:** Only the primary disk size can be specified. Additional disks
   are configured with [`storage`](#storage-configuration).
   
-  ~> **Note:** Applies only when cloning from a `template`; rejected when
-  `ovf_source` is set.
+  -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
 
 - `linked_clone` (bool) - Create the virtual machine as a linked clone from the latest snapshot.
   Defaults to `false`. Conflicts with `disk_size`.
   
-  ~> **Note:** Applies only when cloning from a `template`; rejected when
-  `ovf_source` is set.
+  -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
 
 - `network` (string) - The network to which the virtual machine will connect.
   
@@ -33,18 +33,28 @@
   - Logical Switch UUID: `<uuid>`
   - Segment ID: `/infra/segments/<SegmentID>`
   
+  -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
+  
   ~> **Note:** If more than one network resolves to the same name, either
   the inventory path to network or an ID must be provided.
   
   ~> **Note:** If no network is specified, provide `host` to allow the
   plugin to search for an available network.
   
-  ~> **Note:** When deploying from an OVF/OVA source, each network
-  defined in the OVF descriptor is mapped to this network. If the OVF
-  defines multiple networks, they all use this same mapping.
+  -> **Note:** For `ovf_source` and `content_library_source` OVF templates,
+  every network in the OVF descriptor maps to this network.
+  
+  -> **Note:** For `template` and `content_library_source` VM templates, this
+  is applied to the primary network adapter.
 
 - `mac_address` (string) - The network card MAC address. For example `00:50:56:00:00:00`.
-  If set, the `network` must be also specified.
+  If set, the `network` must be also specified when cloning from `template`
+  or a `content_library_source` VM template.
+  
+  -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
+  
+  -> **Note:** For `ovf_source` and `content_library_source` OVF templates,
+  `mac_address` can be set without `network`.
 
 - `notes` (string) - The annotations for the virtual machine.
 

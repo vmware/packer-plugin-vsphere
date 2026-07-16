@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 //go:generate packer-sdc struct-markdown
-//go:generate packer-sdc mapstructure-to-hcl2 -type Config,OvfSourceConfig
+//go:generate packer-sdc mapstructure-to-hcl2 -type Config,OvfSourceConfig,ContentLibrarySourceConfig
 
 package clone
 
@@ -57,7 +57,7 @@ type Config struct {
 	Export *common.ExportConfig `mapstructure:"export"`
 	// The configuration for importing a VM template or OVF template to a
 	// content library. The template will not be imported if no
-	// [content library import configuration](#content-library-import-configuration)
+	// [content library destination configuration](#content-library-destination-configuration)
 	// is specified. If set, `convert_to_template` must be set to `false`.
 	ContentLibraryDestinationConfig *common.ContentLibraryDestinationConfig `mapstructure:"content_library_destination"`
 	// The customization options for the virtual machine.

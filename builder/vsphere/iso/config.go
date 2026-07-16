@@ -61,8 +61,9 @@ type Config struct {
 	// The virtual machine is not exported if [export configuration](#export-configuration) is not specified.
 	Export *common.ExportConfig `mapstructure:"export"`
 	// Import the virtual machine as a VM template or OVF template to a content library.
-	// The template will not be imported if no [content library import configuration](#content-library-import-configuration) is specified.
-	// If set, `convert_to_template` must be set to `false`.
+	// The template will not be imported if no
+	// [content library destination configuration](#content-library-destination-configuration)
+	// is specified. If set, `convert_to_template` must be set to `false`.
 	ContentLibraryDestinationConfig *common.ContentLibraryDestinationConfig `mapstructure:"content_library_destination"`
 	// Overwrite files in the local cache if they already exist.
 	// Defaults to `false`.

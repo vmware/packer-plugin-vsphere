@@ -14,7 +14,8 @@ fix_internal_links() {
   printf '%s' "$content" | perl -pe '
     BEGIN {
       %anchor_fix = (
-        "content-library-import-configuration" => "content-library-configuration",
+        "content-library-import-configuration" => "content-library-destination-configuration",
+        "content-library-configuration" => "content-library-destination-configuration",
         "customization-example" => "linux-customization-settings",
         "linux-options" => "linux-customization-settings",
         "windows-options" => "windows-customization-settings",
@@ -30,8 +31,8 @@ fix_internal_links() {
         "cluster" => "location-configuration",
         "host" => "location-configuration",
         "resource_pool" => "location-configuration",
-        "overwrite" => "content-library-configuration",
-        "ovf" => "content-library-configuration",
+        "overwrite" => "content-library-destination-configuration",
+        "ovf" => "content-library-destination-configuration",
         "storage" => "storage-configuration",
         "disk_size" => "clone-configuration",
       );

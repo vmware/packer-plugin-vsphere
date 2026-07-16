@@ -87,6 +87,46 @@ type ContentLibraryDestinationConfig struct {
 	// to VM templates. For OVF templates, existing items are always updated.
 	// When enabled for VM templates, the existing item will be deleted before
 	// creating the new one. Defaults to `false`.
+	//
+	// **VM Template**
+	//
+	// HCL Example:
+	//
+	// ```hcl
+	// content_library_destination {
+	//   library = "Example Content Library"
+	//   overwrite = true
+	// }
+	// ```
+	//
+	// JSON Example:
+	//
+	// ```json
+	// "content_library_destination": {
+	//   "library": "Example Content Library",
+	//   "overwrite": true
+	// }
+	// ```
+	//
+	// **OVF Template**
+	//
+	// HCL Example:
+	//
+	// ```hcl
+	// content_library_destination {
+	//   library = "Example Content Library"
+	//   ovf     = true
+	// }
+	// ```
+	//
+	// JSON Example:
+	//
+	// ```json
+	// "content_library_destination": {
+	//   "library": "Example Content Library",
+	//   "ovf": true
+	// }
+	// ```
 	Overwrite bool `mapstructure:"overwrite"`
 }
 

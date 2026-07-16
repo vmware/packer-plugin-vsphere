@@ -359,59 +359,13 @@ provide the public key using the `configuration_parameters` or [vApp Options Con
 
 @include 'builder/vsphere/common/OutputConfig-not-required.mdx'
 
-### Content Library Configuration
+### Content Library Destination Configuration
 
 @include 'builder/vsphere/common/ContentLibraryDestinationConfig.mdx'
 
 **Optional**:
 
 @include 'builder/vsphere/common/ContentLibraryDestinationConfig-not-required.mdx'
-
-**VM Template**
-
-HCL Example:
-
-```hcl
-source "vsphere-iso" "example" {
-  # ... other configuration ...
-  content_library_destination {
-    library = "Example Content Library"
-  }
-  # ... other configuration ...
-}
-```
-
-JSON Example:
-
-```json
-  "content_library_destination" : {
-    "library": "Example Content Library"
-    }
-```
-
-**OVF Template**
-
-HCL Example:
-
-```hcl
-source "vsphere-iso" "example" {
-  # ... other configuration ...
-  content_library_destination {
-    library = "Example Content Library"
-    ovf = true
-  }
-  # ... other configuration ...
-}
-```
-
-JSON Example:
-
-```json
-  "content_library_destination" : {
-    "library": "Example Content Library",
-    "ovf": true
-  }
-```
 
 ### Extra Configuration
 

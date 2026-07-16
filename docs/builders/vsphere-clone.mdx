@@ -2,8 +2,9 @@
 modeline: |
   vim: set ft=pandoc:
 description: >
-  This builder creates a virtual machine from an existing template or an OVF/OVA source,
-  modifies the image, and saves the result as a new template using the vSphere API.
+  This builder creates a virtual machine from an existing template, an OVF/OVA source,
+  or a vSphere content library item, modifies the image, and saves the result as a new
+  template using the vSphere API.
 page_title: vSphere Clone - Builders
 sidebar_title: Clone
 ---
@@ -14,8 +15,9 @@ Type: `vsphere-clone`
 
 Artifact BuilderId: `vmware.vsphere`
 
-This builder creates a virtual machine from an existing template or an OVF/OVA source,
-modifies the image, and saves the result as a new template using the vSphere API.
+This builder creates a virtual machine from an existing template, an OVF/OVA source,
+or a vSphere content library item, modifies the image, and saves the result as a new
+template using the vSphere API.
 
 -> **Note:** This builder is developed to maintain compatibility with VMware vSphere versions until
 their respective End of General Support dates. For detailed information, refer to the
@@ -40,6 +42,34 @@ references, which are necessary for a build to succeed and can be found further 
 
 ### Clone Configuration
 
+Sources fall into two groups:
+
+- **Template-backed:** `template`, or a `content_library_source` VM template
+- **OVF-backed:** `ovf_source`, or a `content_library_source` OVF template
+
+#### Source Compatibility
+
+| Option                   | Template-backed       | OVF-backed |
+| ------------------------ | --------------------- | ---------- |
+| `linked_clone`           | Yes (`template` only) | No         |
+| `disk_size`              | Yes                   | No         |
+| `storage`                | Yes                   | No         |
+| `disk_controller_type`   | Yes                   | No         |
+| `network`                | Yes                   | Yes        |
+| `mac_address`            | Yes                   | Yes        |
+| `vapp.properties`        | Yes (if present)      | Yes        |
+| `vapp.deployment_option` | No                    | Yes        |
+
+~> **Note:** Specify exactly one of `template`, `ovf_source`, or `content_library_source`.
+
+-> **Note:** Unsupported options are rejected during configuration validation, except for
+`disk_size`, `storage`, and `disk_controller_type` with a `content_library_source` OVF template.
+Those require the library item type and are rejected when the item is resolved at deploy time.
+
+-> **Note:** For `ovf_source`, the plugin reads the OVF/OVA and uploads it to vSphere. For a
+`content_library_source` OVF template, vCenter deploys the item from the content library; the plugin
+does not read those files.
+
 **Optional:**
 
 @include 'builder/vsphere/clone/CloneConfig-not-required.mdx'
@@ -47,14 +77,29 @@ references, which are necessary for a build to succeed and can be found further 
 - `storage` ([]DiskConfig) - Additional disks to attach to the virtual machine, and optional
   disk controllers. Does not resize the primary disk; use [`disk_size`](#clone-configuration) for that.
   For more information, refer to the [Storage Configuration](#storage-configuration) section.
+  Refer to the [Source Compatibility](#source-compatibility) section.
 
 ### OVF Source Configuration
 
-@include 'builder/vsphere/clone/OvfSourceConfig.mdx'
+Deploy from an `ovf_source` OVF or OVA.
+
+Refer to the [Source Compatibility](#source-compatibility) section for which
+clone options apply when deploying from `ovf_source`.
 
 **Optional:**
 
 @include 'builder/vsphere/clone/OvfSourceConfig-not-required.mdx'
+
+### Content Library Source Configuration
+
+Deploy from a `content_library_source` VM template or OVF template.
+
+Refer to the [Source Compatibility](#source-compatibility) section for which
+clone options apply when deploying from a `content_library_source`.
+
+**Optional:**
+
+@include 'builder/vsphere/clone/ContentLibrarySourceConfig-not-required.mdx'
 
 ### Storage Configuration
 
@@ -425,33 +470,13 @@ Refer to the [VMware](https://docs.cloud-init.io/en/latest/reference/datasources
 
 @include 'builder/vsphere/common/OutputConfig-not-required.mdx'
 
-### Content Library Configuration
+### Content Library Destination Configuration
 
 @include 'builder/vsphere/common/ContentLibraryDestinationConfig.mdx'
 
 **Optional:**
 
 @include 'builder/vsphere/common/ContentLibraryDestinationConfig-not-required.mdx'
-
-HCL Example:
-
-```hcl
-source "vsphere-clone" "example" {
-  # ... other configuration ...
-  content_library_destination {
-    library = "Example Content Library"
-  }
-  # ... other configuration ...
-}
-```
-
-JSON Example:
-
-```json
-  "content_library_destination" : {
-    "library": "Example Content Library"
-    }
-```
 
 ### Tags Configuration
 
@@ -603,26 +628,28 @@ Clone the default **Read-Only** vSphere role and add the following privileges:
 | ------------------------ | --------------------------------------------------- | -------------------------------------------------- |
 | Content Library          | Add library item                                    | `ContentLibrary.AddLibraryItem`                    |
 | ...                      | Update library item                                 | `ContentLibrary.UpdateLibraryItem`                 |
+| ...                      | Download files                                       | `ContentLibrary.DownloadSession`                   |
 | Cryptographic Operations | Direct access                                       | `Cryptographer.Access`                             |
 | ...                      | Encrypt                                             | `Cryptographer.Encrypt`                            |
 | Datastore                | Allocate space                                      | `Datastore.AllocateSpace`                          |
 | ...                      | Browse datastore                                    | `Datastore.Browse`                                 |
-| ...                      | Low level file operations                           | `Datastore.FileManagement`                         |
+| ...                      | Low level file operations                            | `Datastore.FileManagement`                         |
 | Network                  | Assign network                                      | `Network.Assign`                                   |
 | Resource                 | Assign virtual machine to resource pool             | `Resource.AssignVMToPool`                          |
 | vApp                     | Export                                              | `vApp.Export`                                      |
-| Virtual Machine          | Configuration > Add new disk                        | `VirtualMachine.Config.AddNewDisk`                 |
-| ...                      | Configuration > Add or remove device                | `VirtualMachine.Config.AddRemoveDevice`            |
-| ...                      | Configuration > Advanced configuration              | `VirtualMachine.Config.AdvancedConfig`             |
-| ...                      | Configuration > Change CPU count                    | `VirtualMachine.Config.CPUCount`                   |
-| ...                      | Configuration > Change memory                       | `VirtualMachine.Config.Memory`                     |
-| ...                      | Configuration > Change settings                     | `VirtualMachine.Config.Settings`                   |
-| ...                      | Configuration > Change Resource                     | `VirtualMachine.Config.Resource`                   |
-| ...                      | Configuration > Set annotation                      | `VirtualMachine.Config.Annotation`                 |
+| ...                      | Import                                              | `vApp.Import`                                      |
+| Virtual Machine          | Configuration > Add new disk                         | `VirtualMachine.Config.AddNewDisk`                  |
+| ...                      | Configuration > Add or remove device                 | `VirtualMachine.Config.AddRemoveDevice`             |
+| ...                      | Configuration > Advanced configuration                | `VirtualMachine.Config.AdvancedConfig`               |
+| ...                      | Configuration > Change CPU count                     | `VirtualMachine.Config.CPUCount`                    |
+| ...                      | Configuration > Change memory                        | `VirtualMachine.Config.Memory`                      |
+| ...                      | Configuration > Change settings                      | `VirtualMachine.Config.Settings`                    |
+| ...                      | Configuration > Change Resource                      | `VirtualMachine.Config.Resource`                    |
+| ...                      | Configuration > Set annotation                       | `VirtualMachine.Config.Annotation`                  |
 | ...                      | Edit Inventory > Create from existing               | `VirtualMachine.Inventory.CreateFromExisting`      |
 | ...                      | Edit Inventory > Remove                             | `VirtualMachine.Inventory.Delete`                  |
-| ...                      | Interaction > Configure CD media                    | `VirtualMachine.Interact.SetCDMedia`               |
-| ...                      | Interaction > Configure floppy media                | `VirtualMachine.Interact.SetFloppyMedia`           |
+| ...                      | Interaction > Configure CD media                     | `VirtualMachine.Interact.SetCDMedia`               |
+| ...                      | Interaction > Configure floppy media                  | `VirtualMachine.Interact.SetFloppyMedia`           |
 | ...                      | Interaction > Connect devices                       | `VirtualMachine.Interact.DeviceConnection`         |
 | ...                      | Interaction > Inject USB HID scan codes             | `VirtualMachine.Interact.PutUsbScanCodes`          |
 | ...                      | Interaction > Power off                             | `VirtualMachine.Interact.PowerOff`                 |
@@ -635,7 +662,7 @@ Clone the default **Read-Only** vSphere role and add the following privileges:
 | ...                      | Provisioning > Mark as virtual machine              | `VirtualMachine.Provisioning.MarkAsVM`             |
 | ...                      | Snapshot Management > Create snapshot               | `VirtualMachine.State.CreateSnapshot`              |
 
-Global permissions **[are required](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-security-8-0/vsphere-permissions-and-user-management-tasks/understanding-authorization-in-vsphere.html)** for the content library based on the hierarchical inheritance of permissions. Once the custom vSphere role is created, assign **Global Permissions** in vSphere to the accounts or groups used for the Packer to vSphere integration, if using the content library.
+Global permissions **[are required](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-security-8-0/vsphere-permissions-and-user-management-tasks/understanding-authorization-in-vsphere.html)** for the content library based on the hierarchical inheritance of permissions. Once the custom vSphere role is created, assign **Global Permissions** in vSphere to the accounts or groups used for the Packer to vSphere integration, if using the content library as a [source](#content-library-source-configuration) or [destination](#content-library-destination-configuration).
 
 For example:
 

@@ -191,8 +191,9 @@ wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/foo/bar/preseed.cfg
   The virtual machine is not exported if [export configuration](#export-configuration) is not specified.
 
 - `content_library_destination` (\*common.ContentLibraryDestinationConfig) - Import the virtual machine as a VM template or OVF template to a content library.
-  The template will not be imported if no [content library import configuration](#content-library-import-configuration) is specified.
-  If set, `convert_to_template` must be set to `false`.
+  The template will not be imported if no
+  [content library destination configuration](#content-library-destination-configuration)
+  is specified. If set, `convert_to_template` must be set to `false`.
 
 - `local_cache_overwrite` (bool) - Overwrite files in the local cache if they already exist.
   Defaults to `false`.
@@ -828,7 +829,7 @@ JSON Example:
 
 - `storage` ([]DiskConfig) - Additional disks to attach to the virtual machine. Each `storage` block
   defines one disk. Does not resize the primary disk; use `disk_size` for
-  that when cloning from a `template`.
+  that.
 
 <!-- End of code generated from the comments of the StorageConfig struct in builder/vsphere/common/storage_config.go; -->
 
@@ -1595,7 +1596,7 @@ The above configuration would create the following files:
 <!-- End of code generated from the comments of the OutputConfig struct in builder/vsphere/common/output_config.go; -->
 
 
-### Content Library Configuration
+### Content Library Destination Configuration
 
 <!-- Code generated from the comments of the ContentLibraryDestinationConfig struct in builder/vsphere/common/step_import_to_content_library.go; DO NOT EDIT MANUALLY -->
 
@@ -1675,55 +1676,49 @@ The template is stored in an existing or newly created library item.
   to VM templates. For OVF templates, existing items are always updated.
   When enabled for VM templates, the existing item will be deleted before
   creating the new one. Defaults to `false`.
-
-<!-- End of code generated from the comments of the ContentLibraryDestinationConfig struct in builder/vsphere/common/step_import_to_content_library.go; -->
-
-
-**VM Template**
-
-HCL Example:
-
-```hcl
-source "vsphere-iso" "example" {
-  # ... other configuration ...
+  
+  **VM Template**
+  
+  HCL Example:
+  
+  ```hcl
   content_library_destination {
     library = "Example Content Library"
+    overwrite = true
   }
-  # ... other configuration ...
-}
-```
-
-JSON Example:
-
-```json
-  "content_library_destination" : {
-    "library": "Example Content Library"
-    }
-```
-
-**OVF Template**
-
-HCL Example:
-
-```hcl
-source "vsphere-iso" "example" {
-  # ... other configuration ...
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "content_library_destination": {
+    "library": "Example Content Library",
+    "overwrite": true
+  }
+  ```
+  
+  **OVF Template**
+  
+  HCL Example:
+  
+  ```hcl
   content_library_destination {
     library = "Example Content Library"
-    ovf = true
+    ovf     = true
   }
-  # ... other configuration ...
-}
-```
-
-JSON Example:
-
-```json
-  "content_library_destination" : {
+  ```
+  
+  JSON Example:
+  
+  ```json
+  "content_library_destination": {
     "library": "Example Content Library",
     "ovf": true
   }
-```
+  ```
+
+<!-- End of code generated from the comments of the ContentLibraryDestinationConfig struct in builder/vsphere/common/step_import_to_content_library.go; -->
+
 
 ### Extra Configuration
 

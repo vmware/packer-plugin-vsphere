@@ -20,6 +20,8 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/packerbuilderdata"
+	"github.com/vmware/govmomi/vapi/library"
+	"github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
@@ -113,28 +115,54 @@ type OvfSourceConfig struct {
 	SkipTlsVerify bool `mapstructure:"skip_tls_verify"`
 }
 
+type ContentLibrarySourceConfig struct {
+	// The name of the content library containing the source item.
+	Library string `mapstructure:"library"`
+	// The name of the content library item. Must be unique within the content
+	// library.
+	//
+	// HCL Example:
+	//
+	// ```hcl
+	// content_library_source {
+	//   library = "Example Content Library"
+	//   name    = "example-template"
+	// }
+	// ```
+	//
+	// JSON Example:
+	//
+	// ```json
+	// "content_library_source": {
+	//   "library": "Example Content Library",
+	//   "name": "example-template"
+	// }
+	// ```
+	Name string `mapstructure:"name"`
+}
+
 type CloneConfig struct {
-	// The name of the source virtual machine template to clone. Specify either
-	// `template` or `ovf_source`, but not both.
+	// The name of the source virtual machine template to clone.
 	Template string `mapstructure:"template"`
 	// Configuration for deploying from an OVF/OVA source. Specify either a
-	// local `path` or a remote `url`. Conflicts with `template`. Refer to the
-	// [OVF source configuration](#ovf-source-configuration) section for available
-	// fields.
+	// local `path` or a remote `url`. Refer to the [OVF source configuration](#ovf-source-configuration)
+	// section for available fields.
 	OvfSource *OvfSourceConfig `mapstructure:"ovf_source"`
+	// Configuration for deploying from a vSphere content library item. Refer to
+	// the [content library source configuration](#content-library-source-configuration)
+	// section for available fields.
+	ContentLibrarySource *ContentLibrarySourceConfig `mapstructure:"content_library_source"`
 	// The size of the primary disk in MiB. Conflicts with `linked_clone`.
 	//
 	// -> **Note:** Only the primary disk size can be specified. Additional disks
 	// are configured with [`storage`](#storage-configuration).
 	//
-	// ~> **Note:** Applies only when cloning from a `template`; rejected when
-	// `ovf_source` is set.
+	// -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
 	DiskSize int64 `mapstructure:"disk_size"`
 	// Create the virtual machine as a linked clone from the latest snapshot.
 	// Defaults to `false`. Conflicts with `disk_size`.
 	//
-	// ~> **Note:** Applies only when cloning from a `template`; rejected when
-	// `ovf_source` is set.
+	// -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
 	LinkedClone bool `mapstructure:"linked_clone"`
 	// The network to which the virtual machine will connect.
 	//
@@ -147,18 +175,28 @@ type CloneConfig struct {
 	// - Logical Switch UUID: `<uuid>`
 	// - Segment ID: `/infra/segments/<SegmentID>`
 	//
+	// -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
+	//
 	// ~> **Note:** If more than one network resolves to the same name, either
 	// the inventory path to network or an ID must be provided.
 	//
 	// ~> **Note:** If no network is specified, provide `host` to allow the
 	// plugin to search for an available network.
 	//
-	// ~> **Note:** When deploying from an OVF/OVA source, each network
-	// defined in the OVF descriptor is mapped to this network. If the OVF
-	// defines multiple networks, they all use this same mapping.
+	// -> **Note:** For `ovf_source` and `content_library_source` OVF templates,
+	// every network in the OVF descriptor maps to this network.
+	//
+	// -> **Note:** For `template` and `content_library_source` VM templates, this
+	// is applied to the primary network adapter.
 	Network string `mapstructure:"network"`
 	// The network card MAC address. For example `00:50:56:00:00:00`.
-	// If set, the `network` must be also specified.
+	// If set, the `network` must be also specified when cloning from `template`
+	// or a `content_library_source` VM template.
+	//
+	// -> **Note:** Refer to the [Source Compatibility](#source-compatibility) section.
+	//
+	// -> **Note:** For `ovf_source` and `content_library_source` OVF templates,
+	// `mac_address` can be set without `network`.
 	MacAddress string `mapstructure:"mac_address"`
 	// The annotations for the virtual machine.
 	Notes string `mapstructure:"notes"`
@@ -177,19 +215,42 @@ type CloneConfig struct {
 func (c *CloneConfig) Prepare() []error {
 	var errs []error
 
-	hasTemplate := c.Template != ""
-	hasOvfSource := c.OvfSource != nil
-
-	if !hasTemplate && !hasOvfSource {
-		errs = append(errs, fmt.Errorf("either 'template' or 'ovf_source' must be specified"))
+	sources := []struct {
+		name string
+		used bool
+	}{
+		{"template", c.Template != ""},
+		{"ovf_source", c.OvfSource != nil},
+		{"content_library_source", c.ContentLibrarySource != nil},
 	}
 
-	if hasTemplate && hasOvfSource {
-		errs = append(errs, fmt.Errorf("cannot specify both 'template' and 'ovf_source' - choose one source type"))
+	usedSources := make([]string, 0, len(sources))
+	for _, source := range sources {
+		if source.used {
+			usedSources = append(usedSources, source.name)
+		}
 	}
 
-	if hasOvfSource {
+	switch len(usedSources) {
+	case 0:
+		errs = append(errs, fmt.Errorf("clone source is required - specify either 'template', 'ovf_source', or 'content_library_source'"))
+	case 1:
+		// valid
+	default:
+		errs = append(errs, fmt.Errorf("cannot specify both '%s' and '%s' - choose one source type", usedSources[0], usedSources[1]))
+		if len(usedSources) > 2 {
+			for i := 1; i < len(usedSources)-1; i++ {
+				errs = append(errs, fmt.Errorf("cannot specify both '%s' and '%s' - choose one source type", usedSources[i], usedSources[i+1]))
+			}
+		}
+	}
+
+	if c.OvfSource != nil {
 		errs = append(errs, c.prepareOvfSource()...)
+	}
+
+	if c.ContentLibrarySource != nil {
+		errs = append(errs, c.prepareContentLibrarySource()...)
 	}
 
 	errs = append(errs, c.StorageConfig.Prepare()...)
@@ -198,8 +259,28 @@ func (c *CloneConfig) Prepare() []error {
 		errs = append(errs, fmt.Errorf("'linked_clone' and 'disk_size' cannot be used together"))
 	}
 
-	if c.MacAddress != "" && c.Network == "" {
+	if c.MacAddress != "" && c.Network == "" && c.OvfSource == nil && c.ContentLibrarySource == nil {
 		errs = append(errs, fmt.Errorf("'network' is required when 'mac_address' is specified"))
+	}
+
+	if c.Template != "" && c.VAppConfig.DeploymentOption != "" {
+		errs = append(errs, fmt.Errorf("'vapp.deployment_option' cannot be used with 'template'"))
+	}
+
+	return errs
+}
+
+func (c *CloneConfig) prepareContentLibrarySource() []error {
+	var errs []error
+
+	if c.ContentLibrarySource.Library == "" {
+		errs = append(errs, fmt.Errorf("'library' is required when using 'content_library_source'"))
+	}
+	if c.ContentLibrarySource.Name == "" {
+		errs = append(errs, fmt.Errorf("'name' is required when using 'content_library_source'"))
+	}
+	if c.LinkedClone {
+		errs = append(errs, fmt.Errorf("'linked_clone' cannot be used with 'content_library_source'"))
 	}
 
 	return errs
@@ -295,10 +376,14 @@ type StepCloneVM struct {
 
 // Run executes the clone VM step by detecting the source type and delegating to the appropriate method.
 func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {
-	if s.Config.OvfSource != nil {
+	switch {
+	case s.Config.ContentLibrarySource != nil:
+		return s.deployFromContentLibrary(ctx, state)
+	case s.Config.OvfSource != nil:
 		return s.deployFromOvf(ctx, state)
+	default:
+		return s.cloneFromTemplate(ctx, state)
 	}
-	return s.cloneFromTemplate(ctx, state)
 }
 
 // cloneFromTemplate handles traditional template-based cloning for backward compatibility.
@@ -376,6 +461,156 @@ func (s *StepCloneVM) cloneFromTemplate(ctx context.Context, state multistep.Sta
 	}
 	state.Put("vm", vm)
 	return multistep.ActionContinue
+}
+
+// deployFromContentLibrary handles deployment from a vSphere content library item.
+// vCenter deploys the item directly; Packer does not read OVF files from the library.
+func (s *StepCloneVM) deployFromContentLibrary(ctx context.Context, state multistep.StateBag) multistep.StepAction {
+	ui := state.Get("ui").(packersdk.Ui)
+	d := state.Get("driver").(driver.Driver)
+	vmPath := path.Join(s.Location.Folder, s.Location.VMName)
+	source := s.Config.ContentLibrarySource
+
+	err := d.PreCleanVM(ui, vmPath, s.Force, s.Location.Cluster, s.Location.Host, s.Location.ResourcePool)
+	if err != nil {
+		state.Put("error", err)
+		return multistep.ActionHalt
+	}
+
+	datastoreName, primaryDatastore := s.resolveDatastore(state)
+	if datastoreName == "" && s.Location.DatastoreCluster == "" {
+		state.Put("error", fmt.Errorf("no datastore specified and no datastore resolved from cluster"))
+		return multistep.ActionHalt
+	}
+
+	item, err := d.ResolveContentLibraryItem(source.Library, source.Name)
+	if err != nil {
+		state.Put("error", fmt.Errorf("error resolving content library source: %s", err))
+		return multistep.ActionHalt
+	}
+
+	if err := s.validateContentLibrarySourceOptions(item); err != nil {
+		state.Put("error", err)
+		return multistep.ActionHalt
+	}
+
+	var disks []driver.Disk
+	for _, disk := range s.Config.StorageConfig.Storage {
+		disks = append(disks, driver.Disk{
+			DiskSize:            disk.DiskSize,
+			DiskEagerlyScrub:    disk.DiskEagerlyScrub,
+			DiskThinProvisioned: disk.DiskThinProvisioned,
+			ControllerIndex:     disk.DiskControllerIndex,
+		})
+	}
+
+	var datastoreRefs []*types.ManagedObjectReference
+	if item.Type == library.ItemTypeVMTX && s.Location.DatastoreCluster != "" && len(disks) > 1 {
+		if vcDriver, ok := d.(*driver.VCenterDriver); ok {
+			ui.Sayf("Requesting Storage DRS recommendations for %d disks...", len(disks))
+
+			diskDatastores, method, err := vcDriver.SelectDatastoresForDisks(s.Location.DatastoreCluster, disks)
+			if err != nil {
+				ui.Errorf("Warning: Failed to get Storage DRS recommendations: %s. Using primary datastore.", err)
+				if primaryDatastore != nil {
+					ref := primaryDatastore.Reference()
+					for i := 0; i < len(disks); i++ {
+						datastoreRefs = append(datastoreRefs, &ref)
+					}
+				}
+			} else {
+				if len(diskDatastores) > 0 {
+					datastoreName = diskDatastores[0].Name()
+				}
+
+				for i, ds := range diskDatastores {
+					ref := ds.Reference()
+					if method == driver.SelectionMethodDRS {
+						log.Printf("[INFO] Disk %d: Storage DRS selected datastore '%s'", i+1, ds.Name())
+					} else {
+						log.Printf("[INFO] Disk %d: Using first available datastore '%s'", i+1, ds.Name())
+					}
+					datastoreRefs = append(datastoreRefs, &ref)
+				}
+			}
+		}
+	}
+
+	deployConfig := &driver.ContentLibraryDeployConfig{
+		Item:             item,
+		Name:             s.Location.VMName,
+		Folder:           s.Location.Folder,
+		Cluster:          s.Location.Cluster,
+		Host:             s.Location.Host,
+		ResourcePool:     s.Location.ResourcePool,
+		Datastore:        datastoreName,
+		Network:          s.Config.Network,
+		MacAddress:       strings.ToLower(s.Config.MacAddress),
+		Annotation:       s.Config.Notes,
+		VAppProperties:   s.Config.VAppConfig.Properties,
+		DeploymentOption: s.Config.VAppConfig.DeploymentOption,
+		PrimaryDiskSize:  s.Config.DiskSize,
+		StorageConfig: driver.StorageConfig{
+			DiskControllerType: s.Config.StorageConfig.DiskControllerType,
+			Storage:            disks,
+			DatastoreRefs:      datastoreRefs,
+		},
+	}
+
+	vm, err := d.DeployContentLibraryItem(ctx, deployConfig, ui)
+	if err != nil {
+		state.Put("error", fmt.Errorf("content library deployment failed for '%s/%s': %s",
+			source.Library, source.Name, err))
+		return multistep.ActionHalt
+	}
+
+	if vm == nil {
+		state.Put("error", fmt.Errorf("content library deployment completed but returned no virtual machine reference"))
+		return multistep.ActionHalt
+	}
+
+	ui.Say("Successfully deployed virtual machine from content library source")
+
+	if s.Config.Destroy {
+		state.Put("destroy_vm", s.Config.Destroy)
+	}
+	state.Put("vm", vm)
+	return multistep.ActionContinue
+}
+
+func (s *StepCloneVM) validateContentLibrarySourceOptions(item *library.Item) error {
+	if item.Type == library.ItemTypeVMTX {
+		if s.Config.MacAddress != "" && s.Config.Network == "" {
+			return fmt.Errorf("'network' is required when 'mac_address' is specified")
+		}
+		if s.Config.VAppConfig.DeploymentOption != "" {
+			return fmt.Errorf("'vapp.deployment_option' cannot be used with VM template content library items")
+		}
+		return nil
+	}
+
+	if item.Type != library.ItemTypeOVF {
+		return nil
+	}
+
+	var errs []error
+	if s.Config.DiskSize != 0 {
+		errs = append(errs, fmt.Errorf("'disk_size' cannot be used with OVF content library items"))
+	}
+	if len(s.Config.StorageConfig.DiskControllerType) > 0 {
+		errs = append(errs, fmt.Errorf("'disk_controller_type' cannot be used with OVF content library items"))
+	}
+	if len(s.Config.StorageConfig.Storage) > 0 {
+		errs = append(errs, fmt.Errorf("'storage' cannot be used with OVF content library items"))
+	}
+
+	if len(errs) == 0 {
+		return nil
+	}
+	if len(errs) == 1 {
+		return errs[0]
+	}
+	return fmt.Errorf("%s (and %d more errors)", errs[0], len(errs)-1)
 }
 
 // deployFromOvf handles deployment from OVF/OVA sources. The

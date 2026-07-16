@@ -113,10 +113,16 @@ group_example_tabs() {
       my ($lines, $idx, $lang) = @_;
       my @blocks;
       while ($$idx < @$lines) {
+        # Preserve trailing blanks after the last fence so callers can emit
+        # them; without this, the next heading collapses into the list.
+        my $before_skip = $$idx;
         skip_blank_lines($lines, $idx);
         last unless $$idx < @$lines;
         my $block = read_fence_block($lines, $idx);
-        last unless $block && fence_lang($block) eq $lang;
+        unless ($block && fence_lang($block) eq $lang) {
+          $$idx = $before_skip;
+          last;
+        }
         push @blocks, $block;
       }
       return @blocks;
