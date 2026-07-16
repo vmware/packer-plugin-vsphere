@@ -5,6 +5,7 @@
 package vsphere
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"fmt"
@@ -21,6 +22,7 @@ import (
 	_ "github.com/vmware/govmomi/vapi/simulator"
 	"github.com/vmware/govmomi/vapi/tags"
 	"github.com/vmware/govmomi/vim25/mo"
+	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
 )
 
@@ -94,6 +96,18 @@ type SimulatedContentLibraryConfig struct {
 	Name           string
 	DatastoreIndex int
 	Tags           []Tag
+}
+
+// SimulatedContentLibraryItemConfig creates a content library item in an
+// existing content library (matched by Library name) and optionally uploads
+// files so the item resolves to a content library path. Items are created in
+// slice order, giving later items a more recent last modified time.
+type SimulatedContentLibraryItemConfig struct {
+	Library string
+	Name    string
+	Type    string
+	Files   []string
+	Tags    []Tag
 }
 
 type simulatorContext struct {
@@ -614,6 +628,89 @@ func (sim *simulatorContext) ApplyContentLibraryConfiguration(libraryConfigs []S
 			if err := tagMan.AttachTag(sim.Ctx, tagID, ref); err != nil {
 				return fmt.Errorf("failed to attach tag to content library: %w", err)
 			}
+		}
+	}
+
+	return nil
+}
+
+// ApplyContentLibraryItemConfiguration creates content library items in
+// existing content libraries, attaches tags, and uploads any requested files.
+func (sim *simulatorContext) ApplyContentLibraryItemConfiguration(itemConfigs []SimulatedContentLibraryItemConfig) error {
+	tagMan := tags.NewManager(sim.RestClient)
+	libMan := library.NewManager(sim.RestClient)
+
+	for _, cfg := range itemConfigs {
+		if cfg.Library == "" {
+			return fmt.Errorf("content library item requires a library name")
+		}
+		if cfg.Name == "" {
+			return fmt.Errorf("content library item name is required")
+		}
+
+		lib, err := libMan.GetLibraryByName(sim.Ctx, cfg.Library)
+		if err != nil {
+			return fmt.Errorf("failed to find content library %q: %w", cfg.Library, err)
+		}
+
+		itemID, err := libMan.CreateLibraryItem(sim.Ctx, library.Item{
+			Name:      cfg.Name,
+			Type:      cfg.Type,
+			LibraryID: lib.ID,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create content library item %q: %w", cfg.Name, err)
+		}
+
+		ref := types.ManagedObjectReference{Type: "com.vmware.content.library.Item", Value: itemID}
+		for _, tag := range cfg.Tags {
+			catID, err := ensureCategory(sim.Ctx, tagMan, tag.Category)
+			if err != nil {
+				return fmt.Errorf("failed to ensure category exists: %w", err)
+			}
+			tagID, err := ensureTag(sim.Ctx, tagMan, catID, tag.Name)
+			if err != nil {
+				return fmt.Errorf("failed to ensure tag exists: %w", err)
+			}
+			if err := tagMan.AttachTag(sim.Ctx, tagID, ref); err != nil {
+				return fmt.Errorf("failed to attach tag to content library item: %w", err)
+			}
+		}
+
+		if len(cfg.Files) == 0 {
+			continue
+		}
+
+		sessionID, err := libMan.CreateLibraryItemUpdateSession(sim.Ctx, library.Session{LibraryItemID: itemID})
+		if err != nil {
+			return fmt.Errorf("failed to create update session for item %q: %w", cfg.Name, err)
+		}
+
+		for _, fileName := range cfg.Files {
+			content := []byte(fmt.Sprintf("simulated content for %s/%s", cfg.Name, fileName))
+			update, err := libMan.AddLibraryItemFile(sim.Ctx, sessionID, library.UpdateFile{
+				Name:       fileName,
+				SourceType: "PUSH",
+				Size:       int64(len(content)),
+			})
+			if err != nil {
+				return fmt.Errorf("failed to add file %q to item %q: %w", fileName, cfg.Name, err)
+			}
+
+			u, err := url.Parse(update.UploadEndpoint.URI)
+			if err != nil {
+				return fmt.Errorf("failed to parse upload endpoint for %q: %w", fileName, err)
+			}
+
+			p := soap.DefaultUpload
+			p.ContentLength = int64(len(content))
+			if err := libMan.Upload(sim.Ctx, bytes.NewReader(content), u, &p); err != nil {
+				return fmt.Errorf("failed to upload file %q to item %q: %w", fileName, cfg.Name, err)
+			}
+		}
+
+		if err := libMan.CompleteLibraryItemUpdateSession(sim.Ctx, sessionID); err != nil {
+			return fmt.Errorf("failed to complete update session for item %q: %w", cfg.Name, err)
 		}
 	}
 

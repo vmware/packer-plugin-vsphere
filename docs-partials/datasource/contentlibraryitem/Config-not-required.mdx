@@ -1,0 +1,21 @@
+<!-- Code generated from the comments of the Config struct in datasource/contentlibraryitem/data.go; DO NOT EDIT MANUALLY -->
+
+- `name` (string) - Basic filter with glob support on the item name (e.g.
+  `linux-debian-13*-amd64` or `linux-debian-13`). Defaults to `*`.
+
+- `name_regex` (string) - Extended name filter with regular expression support matched against the
+  item name (e.g. `^linux-debian-13\.[0-9]+\.[0-9]+-amd64$`). Default is
+  empty. The match is checked by substring. Use `^` and `$` to define a
+  full string. The expression must use
+  [Go Regex Syntax](https://pkg.go.dev/regexp/syntax).
+
+- `type` (string) - Filter to return only items of the specified type. One of `iso`, `ovf`,
+  or `vm-template`. Default is empty and returns items of any type.
+
+- `tag` ([]Tag) - Filter to return only items that have all specified tags attached.
+
+- `latest` (bool) - This filter determines how to handle multiple items that were matched
+  with all previous filters. The item last modified time is used to find
+  the latest. By default, multiple matching items results in an error.
+
+<!-- End of code generated from the comments of the Config struct in datasource/contentlibraryitem/data.go; -->
