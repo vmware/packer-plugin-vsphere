@@ -23,7 +23,6 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// Tag is the HCL `tag` filter block. Field docs live on datasource/common.Tag.
 type Tag struct {
 	Name     string `mapstructure:"name" required:"true"`
 	Category string `mapstructure:"category" required:"true"`

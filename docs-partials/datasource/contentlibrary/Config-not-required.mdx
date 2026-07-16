@@ -1,0 +1,14 @@
+<!-- Code generated from the comments of the Config struct in datasource/contentlibrary/data.go; DO NOT EDIT MANUALLY -->
+
+- `name` (string) - Basic filter with glob support on the content library name (e.g.
+  `lib*` or `lib01`). Defaults to `*`.
+
+- `name_regex` (string) - Extended name filter with regular expression support matched against the
+  content library name (e.g. `^lib0[0-9]+$`). Default is empty. The
+  match is checked by substring. Use `^` and `$` to define a full string.
+  The expression must use [Go Regex Syntax](https://pkg.go.dev/regexp/syntax).
+
+- `tag` ([]Tag) - Filter to return only content libraries that have all specified tags
+  attached.
+
+<!-- End of code generated from the comments of the Config struct in datasource/contentlibrary/data.go; -->
