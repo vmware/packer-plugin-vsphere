@@ -59,4 +59,9 @@ integration {
     name = "vSphere Compute Cluster"
     slug = "vsphere-compute-cluster"
   }
+  component {
+    type = "data-source"
+    name = "vSphere Resource Pool"
+    slug = "vsphere-resource-pool"
+  }
 }

@@ -1,0 +1,21 @@
+<!-- Code generated from the comments of the Config struct in datasource/resourcepool/data.go; DO NOT EDIT MANUALLY -->
+
+- `name` (string) - Basic filter with glob support on the resource pool leaf name
+  (e.g. `rp-production*` or `rp-development`). Paths containing `/` are
+  passed to the inventory finder (e.g. `*/Resources/rp-production`).
+  Defaults to `*`.
+
+- `name_regex` (string) - Extended name filter with regular expression support matched against the
+  pool name (e.g. `^rp-production[0-9]*$`). Default is empty. The match is
+  checked by substring. Use `^` and `$` to define a full string. The
+  expression must use [Go Regex Syntax](https://pkg.go.dev/regexp/syntax).
+
+- `cluster` (string) - Filter to return only resource pools under the specified compute cluster.
+
+- `host` (string) - Filter to return only resource pools available to the specified ESX host
+  (pools owned by the host's parent compute resource / cluster).
+
+- `tag` ([]Tag) - Filter to return only resource pools that have all specified tags
+  attached.
+
+<!-- End of code generated from the comments of the Config struct in datasource/resourcepool/data.go; -->
