@@ -10,8 +10,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common/utils"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
+	"github.com/vmware/packer-plugin-vsphere/testing/env"
 )
 
 func NewVmName() string {
@@ -34,9 +34,9 @@ func RenderConfig(builderType string, config map[string]interface{}) string {
 }
 
 func TestConn() (driver.Driver, error) {
-	vcenter := utils.GetenvOrDefault(utils.EnvVcenterServer, utils.DefaultVcenterServer)
-	username := utils.GetenvOrDefault(utils.EnvVsphereUsername, utils.DefaultVsphereUsername)
-	password := utils.GetenvOrDefault(utils.EnvVspherePassword, utils.DefaultVspherePassword)
+	vcenter := env.GetenvOrDefault(env.EnvVcenterServer, env.DefaultVcenterServer)
+	username := env.GetenvOrDefault(env.EnvVsphereUsername, env.DefaultVsphereUsername)
+	password := env.GetenvOrDefault(env.EnvVspherePassword, env.DefaultVspherePassword)
 
 	d, err := driver.NewDriver(&driver.ConnectConfig{
 		VCenterServer:      vcenter,

@@ -2,11 +2,9 @@
 // The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 // SPDX-License-Identifier: MPL-2.0
 
-package utils
+package env
 
-import (
-	"os"
-)
+import "os"
 
 const (
 	DefaultVcenterServer   = "vc01.example.com"
@@ -20,6 +18,8 @@ const (
 	EnvVsphereHost     = "VSPHERE_HOST"
 )
 
+// GetenvOrDefault returns the value of the environment variable named by key,
+// or defaultValue when the variable is unset or empty.
 func GetenvOrDefault(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value

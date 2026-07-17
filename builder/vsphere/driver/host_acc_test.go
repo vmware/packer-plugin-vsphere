@@ -7,13 +7,13 @@ package driver
 import (
 	"testing"
 
-	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common/utils"
+	"github.com/vmware/packer-plugin-vsphere/testing/env"
 )
 
 func TestHostAcc(t *testing.T) {
 	t.Skip("Acceptance tests not configured yet.")
 	d := newTestDriver(t)
-	host, err := d.FindHost(utils.DefaultVsphereHost)
+	host, err := d.FindHost(env.DefaultVsphereHost)
 	if err != nil {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
@@ -22,7 +22,7 @@ func TestHostAcc(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
-	if info.Name != utils.DefaultVsphereHost {
-		t.Errorf("unexpected result: expected '%s', but returned '%s'", utils.DefaultVsphereHost, info.Name)
+	if info.Name != env.DefaultVsphereHost {
+		t.Errorf("unexpected result: expected '%s', but returned '%s'", env.DefaultVsphereHost, info.Name)
 	}
 }
