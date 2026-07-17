@@ -10,19 +10,19 @@ import (
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/govmomi/units"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
-	"github.com/vmware/packer-plugin-vsphere/testing/vsphere"
+	"github.com/vmware/packer-plugin-vsphere/testing/vcsim"
 )
 
 func int64Ptr(v int64) *int64 { return &v }
 func int32Ptr(v int32) *int32 { return &v }
 
 func TestDatasource_Execute(t *testing.T) {
-	hostsToPrepare := []vsphere.SimulatedHostConfig{
+	hostsToPrepare := []vcsim.SimulatedHostConfig{
 		{
 			Name:           "w01-cl01-esx01",
 			MemoryCapacity: int64Ptr(int64(64 * units.GB)),
 			MemoryUsageMB:  int32Ptr(int32(32 * 1024)), // 32 GiB used → 32 GiB free
-			Tags: []vsphere.Tag{
+			Tags: []vcsim.Tag{
 				{Category: "env", Name: "Packer"},
 			},
 		},
@@ -30,7 +30,7 @@ func TestDatasource_Execute(t *testing.T) {
 			Name:           "w01-cl01-esx02",
 			MemoryCapacity: int64Ptr(int64(128 * units.GB)),
 			MemoryUsageMB:  int32Ptr(int32(16 * 1024)), // 16 GiB used → 112 GiB free
-			Tags: []vsphere.Tag{
+			Tags: []vcsim.Tag{
 				{Category: "env", Name: "Packer"},
 				{Category: "tier", Name: "gold"},
 			},
@@ -39,7 +39,7 @@ func TestDatasource_Execute(t *testing.T) {
 			Name:           "w01-cl01-esx03",
 			MemoryCapacity: int64Ptr(int64(64 * units.GB)),
 			MemoryUsageMB:  int32Ptr(int32(60 * 1024)), // 60 GiB used → 4 GiB free
-			Tags: []vsphere.Tag{
+			Tags: []vcsim.Tag{
 				{Category: "tier", Name: "bronze"},
 			},
 		},
@@ -50,7 +50,7 @@ func TestDatasource_Execute(t *testing.T) {
 	model.Cluster = 1
 	model.ClusterHost = len(hostsToPrepare)
 
-	vcSim, err := vsphere.NewSimulator(model)
+	vcSim, err := vcsim.NewSimulator(model)
 	if err != nil {
 		t.Fatalf("error creating vCenter simulator: %s", err)
 	}

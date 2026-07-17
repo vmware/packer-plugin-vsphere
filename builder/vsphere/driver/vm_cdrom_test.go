@@ -13,15 +13,11 @@ import (
 )
 
 func TestVirtualMachineDriver_FindAndAddSATAController(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	vm, _ := sim.ChooseSimulatorPreCreatedVM()
+	vm, _ := mustPreCreatedVM(t, sim)
 
-	_, err = vm.FindSATAController()
+	_, err := vm.FindSATAController()
 	if err != nil && !strings.Contains(err.Error(), "no available SATA controller") {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
@@ -43,13 +39,9 @@ func TestVirtualMachineDriver_FindAndAddSATAController(t *testing.T) {
 }
 
 func TestVirtualMachineDriver_CreateAndRemoveCdrom(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	vm, _ := sim.ChooseSimulatorPreCreatedVM()
+	vm, _ := mustPreCreatedVM(t, sim)
 
 	// Add the SATA controller.
 	if err := vm.AddSATAController(); err != nil {
@@ -100,13 +92,9 @@ func TestVirtualMachineDriver_CreateAndRemoveCdrom(t *testing.T) {
 }
 
 func TestVirtualMachineDriver_EjectCdrom(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	vm, _ := sim.ChooseSimulatorPreCreatedVM()
+	vm, _ := mustPreCreatedVM(t, sim)
 
 	// Add the SATA controller.
 	if err := vm.AddSATAController(); err != nil {

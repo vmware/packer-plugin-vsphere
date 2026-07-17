@@ -16,19 +16,15 @@ import (
 )
 
 func TestArtifactHCPPackerMetadata(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	vm, vmSim := sim.ChooseSimulatorPreCreatedVM()
+	vm, vmSim := mustPreCreatedVM(t, sim)
 	confSpec := types.VirtualMachineConfigSpec{Annotation: "simple vm description"}
 	if err := vm.Reconfigure(confSpec); err != nil {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
-	datastore := sim.model.Service.Context.Map.Any("Datastore").(*simulator.Datastore)
-	host := sim.model.Service.Context.Map.Get(*vmSim.Runtime.Host).(*simulator.HostSystem)
+	datastore := sim.Model.Service.Context.Map.Any("Datastore").(*simulator.Datastore)
+	host := sim.Model.Service.Context.Map.Get(*vmSim.Runtime.Host).(*simulator.HostSystem)
 
 	expectedLabels := map[string]string{
 		"annotation":                  vmSim.Config.Annotation,
@@ -77,13 +73,9 @@ func TestArtifactHCPPackerMetadata(t *testing.T) {
 }
 
 func TestArtifactHCPPackerRegistrySourceRemoteURL(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	vm, _ := sim.ChooseSimulatorPreCreatedVM()
+	vm, _ := mustPreCreatedVM(t, sim)
 
 	artifact := &Artifact{
 		Name:       "test-vm",
@@ -106,13 +98,9 @@ func TestArtifactHCPPackerRegistrySourceRemoteURL(t *testing.T) {
 }
 
 func TestArtifactState_OvfLocalPathMetadata(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("should not fail: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	vm, _ := sim.ChooseSimulatorPreCreatedVM()
+	vm, _ := mustPreCreatedVM(t, sim)
 
 	artifact := &Artifact{
 		Name:       "test-vm",

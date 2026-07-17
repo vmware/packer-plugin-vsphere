@@ -12,7 +12,7 @@ import (
 
 	"github.com/hashicorp/packer-plugin-sdk/acctest"
 	"github.com/vmware/govmomi/vapi/tags"
-	"github.com/vmware/packer-plugin-vsphere/testing/vsphere"
+	"github.com/vmware/packer-plugin-vsphere/testing/acceptance"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -45,7 +45,7 @@ func TestAccSupervisorBuilderAcc_tags_list(t *testing.T) {
 	config := defaultConfig()
 
 	// Setup: Create test tag category and tags
-	d, err := vsphere.TestConn()
+	d, err := acceptance.TestConn()
 	if err != nil {
 		t.Fatalf("cannot connect: %v", err)
 	}
@@ -86,7 +86,7 @@ func TestAccSupervisorBuilderAcc_tags_list(t *testing.T) {
 
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-supervisor_tags_list_test",
-		Template: vsphere.RenderConfig("vsphere-supervisor", config),
+		Template: acceptance.RenderConfig("vsphere-supervisor", config),
 		Teardown: func() error {
 			// Note: Cleanup would need to be implemented for supervisor VMs
 			return nil
@@ -115,7 +115,7 @@ func TestAccSupervisorBuilderAcc_tags_blocks(t *testing.T) {
 	config := defaultConfig()
 
 	// Setup: Create test tag category (tags will be created by the builder)
-	d, err := vsphere.TestConn()
+	d, err := acceptance.TestConn()
 	if err != nil {
 		t.Fatalf("cannot connect: %v", err)
 	}
@@ -148,7 +148,7 @@ func TestAccSupervisorBuilderAcc_tags_blocks(t *testing.T) {
 
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-supervisor_tags_blocks_test",
-		Template: vsphere.RenderConfig("vsphere-supervisor", config),
+		Template: acceptance.RenderConfig("vsphere-supervisor", config),
 		Teardown: func() error {
 			// Note: Cleanup would need to be implemented for supervisor VMs
 			return nil
@@ -168,7 +168,7 @@ func TestAccSupervisorBuilderAcc_tags_blocks(t *testing.T) {
 
 // checkTags verifies that the specified tags are attached to a virtual machine.
 func checkTags(vmName string, expectedTagIDs []string) error {
-	d, err := vsphere.TestConn()
+	d, err := acceptance.TestConn()
 	if err != nil {
 		return fmt.Errorf("cannot connect: %v", err)
 	}
@@ -206,7 +206,7 @@ func checkTags(vmName string, expectedTagIDs []string) error {
 
 // checkTagsByName verifies that tags with the specified names in a category are attached to a virtual machine.
 func checkTagsByName(vmName string, categoryName string, expectedTagNames []string) error {
-	d, err := vsphere.TestConn()
+	d, err := acceptance.TestConn()
 	if err != nil {
 		return fmt.Errorf("cannot connect: %v", err)
 	}

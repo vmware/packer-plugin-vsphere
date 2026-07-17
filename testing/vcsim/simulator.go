@@ -2,7 +2,7 @@
 // The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 // SPDX-License-Identifier: MPL-2.0
 
-package vsphere
+package vcsim
 
 import (
 	"bytes"
@@ -110,7 +110,8 @@ type SimulatedContentLibraryItemConfig struct {
 	Tags    []Tag
 }
 
-type simulatorContext struct {
+// Simulator is a running govmomi vcsim instance with SOAP and REST clients.
+type Simulator struct {
 	Model      *simulator.Model
 	Server     *simulator.Server
 	Ctx        context.Context
@@ -118,10 +119,13 @@ type simulatorContext struct {
 	RestClient *rest.Client
 	Finder     *find.Finder
 	Datacenter *object.Datacenter
+
+	// restLoginErr is set when CIS REST login fails (common on ESX-only models).
+	restLoginErr error
 }
 
 // NewSimulator creates a new vCenter simulator with the specified model.
-func NewSimulator(model *simulator.Model) (*simulatorContext, error) {
+func NewSimulator(model *simulator.Model) (*Simulator, error) {
 	ctx := context.Background()
 	if model == nil {
 		return nil, fmt.Errorf("model has not been initialized")
@@ -149,9 +153,11 @@ func NewSimulator(model *simulator.Model) (*simulatorContext, error) {
 	}
 
 	restClient := rest.NewClient(client.Client)
-	err = restClient.Login(ctx, simulator.DefaultLogin)
-	if err != nil {
-		return nil, fmt.Errorf("failed to login to REST simulator: %w", err)
+	// REST is available on VPX models; ESX-only models may not expose the CIS session API.
+	var restLoginErr error
+	if err = restClient.Login(ctx, simulator.DefaultLogin); err != nil {
+		restLoginErr = err
+		restClient = nil
 	}
 
 	finder := find.NewFinder(client.Client, false)
@@ -164,18 +170,27 @@ func NewSimulator(model *simulator.Model) (*simulatorContext, error) {
 	}
 	finder.SetDatacenter(dcs[0])
 
-	return &simulatorContext{
-		Ctx:        ctx,
-		Server:     server,
-		Model:      model,
-		Client:     client,
-		Finder:     finder,
-		RestClient: restClient,
-		Datacenter: dcs[0],
+	return &Simulator{
+		Ctx:          ctx,
+		Server:       server,
+		Model:        model,
+		Client:       client,
+		Finder:       finder,
+		RestClient:   restClient,
+		Datacenter:   dcs[0],
+		restLoginErr: restLoginErr,
 	}, nil
 }
 
-func (sim *simulatorContext) Stop() {
+// NewVPXSimulator creates a VPX simulator with a single pre-created VM.
+// Matches the former driver/common NewVCenterSimulator helper.
+func NewVPXSimulator() (*Simulator, error) {
+	model := simulator.VPX()
+	model.Machine = 1
+	return NewSimulator(model)
+}
+
+func (sim *Simulator) Stop() {
 	if sim.Model != nil {
 		sim.Model.Remove()
 	}
@@ -184,8 +199,23 @@ func (sim *simulatorContext) Stop() {
 	}
 }
 
+// requireREST ensures the CIS REST session is available (VPX models).
+// ESX-only models may leave RestClient nil; the original login error is preserved.
+func (sim *Simulator) requireREST() error {
+	if sim.RestClient != nil {
+		return nil
+	}
+	if sim.restLoginErr != nil {
+		return fmt.Errorf("REST client is unavailable; use a VPX simulator model for tags and content library APIs: %w", sim.restLoginErr)
+	}
+	return fmt.Errorf("REST client is unavailable; use a VPX simulator model for tags and content library APIs")
+}
+
 // ApplyVmConfiguration applies virtual machines in the simulator according to the provided configurations.
-func (sim *simulatorContext) ApplyVmConfiguration(vmsConfig []SimulatedVmConfig) error {
+func (sim *Simulator) ApplyVmConfiguration(vmsConfig []SimulatedVmConfig) error {
+	if err := sim.requireREST(); err != nil {
+		return err
+	}
 	tagMan := tags.NewManager(sim.RestClient)
 
 	vms, err := sim.Finder.VirtualMachineList(sim.Ctx, "*")
@@ -244,7 +274,10 @@ func (sim *simulatorContext) ApplyVmConfiguration(vmsConfig []SimulatedVmConfig)
 // to the provided configurations, matched by Finder.DatastoreList order.
 // Capacity and FreeSpace mutations update Summary and Info; do not call
 // simulator RefreshDatastore afterward or those values are reset.
-func (sim *simulatorContext) ApplyDatastoreConfiguration(dsConfigs []SimulatedDatastoreConfig) error {
+func (sim *Simulator) ApplyDatastoreConfiguration(dsConfigs []SimulatedDatastoreConfig) error {
+	if err := sim.requireREST(); err != nil {
+		return err
+	}
 	tagMan := tags.NewManager(sim.RestClient)
 
 	datastores, err := sim.Finder.DatastoreList(sim.Ctx, "*")
@@ -297,7 +330,10 @@ func (sim *simulatorContext) ApplyDatastoreConfiguration(dsConfigs []SimulatedDa
 // ApplyDatastoreClusterConfiguration renames simulator storage pods, moves
 // selected datastores into them, and attaches tags. MemberIndexes refer to the
 // DatastoreList "*" order used by ApplyDatastoreConfiguration.
-func (sim *simulatorContext) ApplyDatastoreClusterConfiguration(clusterConfigs []SimulatedDatastoreClusterConfig) error {
+func (sim *Simulator) ApplyDatastoreClusterConfiguration(clusterConfigs []SimulatedDatastoreClusterConfig) error {
+	if err := sim.requireREST(); err != nil {
+		return err
+	}
 	tagMan := tags.NewManager(sim.RestClient)
 
 	clusters, err := sim.Finder.DatastoreClusterList(sim.Ctx, "*")
@@ -365,7 +401,10 @@ func (sim *simulatorContext) ApplyDatastoreClusterConfiguration(clusterConfigs [
 
 // ApplyHostConfiguration updates existing simulator hosts according to the
 // provided configurations, matched by Finder.HostSystemList order.
-func (sim *simulatorContext) ApplyHostConfiguration(hostConfigs []SimulatedHostConfig) error {
+func (sim *Simulator) ApplyHostConfiguration(hostConfigs []SimulatedHostConfig) error {
+	if err := sim.requireREST(); err != nil {
+		return err
+	}
 	tagMan := tags.NewManager(sim.RestClient)
 
 	hosts, err := sim.Finder.HostSystemList(sim.Ctx, "*")
@@ -418,7 +457,10 @@ func (sim *simulatorContext) ApplyHostConfiguration(hostConfigs []SimulatedHostC
 // ApplyComputeClusterConfiguration updates existing simulator compute clusters
 // according to the provided configurations, matched by
 // Finder.ClusterComputeResourceList order.
-func (sim *simulatorContext) ApplyComputeClusterConfiguration(clusterConfigs []SimulatedComputeClusterConfig) error {
+func (sim *Simulator) ApplyComputeClusterConfiguration(clusterConfigs []SimulatedComputeClusterConfig) error {
+	if err := sim.requireREST(); err != nil {
+		return err
+	}
 	tagMan := tags.NewManager(sim.RestClient)
 
 	clusters, err := sim.Finder.ClusterComputeResourceList(sim.Ctx, "*")
@@ -460,7 +502,10 @@ func (sim *simulatorContext) ApplyComputeClusterConfiguration(clusterConfigs []S
 
 // ApplyResourcePoolConfiguration creates nested resource pools under compute
 // cluster roots and attaches tags.
-func (sim *simulatorContext) ApplyResourcePoolConfiguration(poolConfigs []SimulatedResourcePoolConfig) error {
+func (sim *Simulator) ApplyResourcePoolConfiguration(poolConfigs []SimulatedResourcePoolConfig) error {
+	if err := sim.requireREST(); err != nil {
+		return err
+	}
 	tagMan := tags.NewManager(sim.RestClient)
 
 	clusters, err := sim.Finder.ClusterComputeResourceList(sim.Ctx, "*")
@@ -516,7 +561,10 @@ func (sim *simulatorContext) ApplyResourcePoolConfiguration(poolConfigs []Simula
 
 // ApplyNetworkConfiguration updates existing simulator networks according to
 // the provided configurations, matched by supported NetworkList order.
-func (sim *simulatorContext) ApplyNetworkConfiguration(networkConfigs []SimulatedNetworkConfig) error {
+func (sim *Simulator) ApplyNetworkConfiguration(networkConfigs []SimulatedNetworkConfig) error {
+	if err := sim.requireREST(); err != nil {
+		return err
+	}
 	tagMan := tags.NewManager(sim.RestClient)
 
 	all, err := sim.Finder.NetworkList(sim.Ctx, "*")
@@ -583,7 +631,10 @@ func (sim *simulatorContext) ApplyNetworkConfiguration(networkConfigs []Simulate
 
 // ApplyContentLibraryConfiguration creates local content libraries backed by
 // simulator datastores and attaches tags.
-func (sim *simulatorContext) ApplyContentLibraryConfiguration(libraryConfigs []SimulatedContentLibraryConfig) error {
+func (sim *Simulator) ApplyContentLibraryConfiguration(libraryConfigs []SimulatedContentLibraryConfig) error {
+	if err := sim.requireREST(); err != nil {
+		return err
+	}
 	tagMan := tags.NewManager(sim.RestClient)
 	libMan := library.NewManager(sim.RestClient)
 
@@ -636,7 +687,10 @@ func (sim *simulatorContext) ApplyContentLibraryConfiguration(libraryConfigs []S
 
 // ApplyContentLibraryItemConfiguration creates content library items in
 // existing content libraries, attaches tags, and uploads any requested files.
-func (sim *simulatorContext) ApplyContentLibraryItemConfiguration(itemConfigs []SimulatedContentLibraryItemConfig) error {
+func (sim *Simulator) ApplyContentLibraryItemConfiguration(itemConfigs []SimulatedContentLibraryItemConfig) error {
+	if err := sim.requireREST(); err != nil {
+		return err
+	}
 	tagMan := tags.NewManager(sim.RestClient)
 	libMan := library.NewManager(sim.RestClient)
 
@@ -717,7 +771,7 @@ func (sim *simulatorContext) ApplyContentLibraryItemConfiguration(itemConfigs []
 	return nil
 }
 
-func ensureChildResourcePool(sim *simulatorContext, parent *object.ResourcePool, name string) (*object.ResourcePool, error) {
+func ensureChildResourcePool(sim *Simulator, parent *object.ResourcePool, name string) (*object.ResourcePool, error) {
 	parentPath := parent.InventoryPath
 	if parentPath == "" {
 		element, err := sim.Finder.Element(sim.Ctx, parent.Reference())

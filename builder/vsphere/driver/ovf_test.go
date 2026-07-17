@@ -16,13 +16,9 @@ import (
 // TestOvfManagerWrapper_ValidateURL tests URL validation for OVF Manager
 // wrapper functionality.
 func TestOvfManagerWrapper_ValidateURL(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 
 	tests := []struct {
 		name        string
@@ -87,13 +83,9 @@ func TestOvfManagerWrapper_ValidateURL(t *testing.T) {
 // TestOvfManagerWrapper_ValidateAuthentication tests authentication validation
 // for OVF Manager wrapper.
 func TestOvfManagerWrapper_ValidateAuthentication(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 
 	tests := []struct {
 		name        string
@@ -159,13 +151,9 @@ func TestOvfManagerWrapper_ValidateAuthentication(t *testing.T) {
 
 // TestOvfManagerWrapper_IsOvfFileURL tests OVF/OVA file URL detection.
 func TestOvfManagerWrapper_IsOvfFileURL(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 
 	tests := []struct {
 		name     string
@@ -222,13 +210,9 @@ func TestOvfManagerWrapper_IsOvfFileURL(t *testing.T) {
 // TestDeployOvf_ValidConfiguration tests successful OVF deployment with valid
 // configuration.
 func TestDeployOvf_ValidConfiguration(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 	ctx := context.Background()
 
 	config := &OvfDeployConfig{
@@ -254,7 +238,7 @@ func TestDeployOvf_ValidConfiguration(t *testing.T) {
 		}
 	}()
 
-	_, err = driver.DeployOvf(ctx, config, &testUI{})
+	_, err := driver.DeployOvf(ctx, config, &testUI{})
 
 	// We expect an error because the simulator doesn't support OVF deployment,
 	// but the error should not be a configuration validation error.
@@ -266,13 +250,9 @@ func TestDeployOvf_ValidConfiguration(t *testing.T) {
 // TestDeployOvf_InvalidConfiguration tests OVF deployment with invalid
 // configurations.
 func TestDeployOvf_InvalidConfiguration(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 	ctx := context.Background()
 
 	tests := []struct {
@@ -447,13 +427,9 @@ func TestDeployOvf_InvalidConfiguration(t *testing.T) {
 // TestValidateOvfDeploymentConfig_TlsConfiguration tests TLS configuration
 // validation.
 func TestValidateOvfDeploymentConfig_TlsConfiguration(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("failed to create vCenter simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 
 	tests := []struct {
 		name        string
@@ -533,13 +509,9 @@ func TestValidateOvfDeploymentConfig_TlsConfiguration(t *testing.T) {
 // TestDeployOvf_AuthenticationHandling tests authentication parameter handling
 // in OVF deployment.
 func TestDeployOvf_AuthenticationHandling(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 	ctx := context.Background()
 
 	tests := []struct {
@@ -628,13 +600,9 @@ func TestDeployOvf_AuthenticationHandling(t *testing.T) {
 // TestGetOvfOptions_ValidConfiguration tests successful OVF options retrieval
 // with valid configuration.
 func TestGetOvfOptions_ValidConfiguration(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 	ctx := context.Background()
 
 	tests := []struct {
@@ -688,13 +656,9 @@ func TestGetOvfOptions_ValidConfiguration(t *testing.T) {
 // TestGetOvfOptions_InvalidConfiguration tests OVF options retrieval with
 // invalid configurations.
 func TestGetOvfOptions_InvalidConfiguration(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 	ctx := context.Background()
 
 	tests := []struct {
@@ -782,13 +746,9 @@ func TestGetOvfOptions_InvalidConfiguration(t *testing.T) {
 // TestOvfManagerWrapper_CreateOvfManagerWrapper tests OVF Manager wrapper
 // creation with different authentication scenarios.
 func TestOvfManagerWrapper_CreateOvfManagerWrapper(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 
 	tests := []struct {
 		name        string
@@ -865,13 +825,9 @@ func TestOvfManagerWrapper_CreateOvfManagerWrapper(t *testing.T) {
 // TestOvfManagerWrapper_ErrorScenarios tests various error scenarios in OVF
 // operations.
 func TestOvfManagerWrapper_ErrorScenarios(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 	ctx := context.Background()
 
 	// Test network connectivity error simulation.
@@ -948,13 +904,9 @@ func TestOvfManagerWrapper_ErrorScenarios(t *testing.T) {
 // TestOvfManagerWrapper_VAppPropertiesHandling tests vApp properties handling
 // in OVF deployment.
 func TestOvfManagerWrapper_VAppPropertiesHandling(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 
 	tests := []struct {
 		name           string
@@ -1195,13 +1147,9 @@ func TestDriverMock_GetOvfOptions(t *testing.T) {
 // TestOvfManagerWrapper_EdgeCases tests edge cases and boundary conditions for
 // OVF operations.
 func TestOvfManagerWrapper_EdgeCases(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 
 	// Test URL validation edge cases.
 	t.Run("URL validation edge cases", func(t *testing.T) {
@@ -1393,13 +1341,9 @@ func TestOvfManagerWrapper_EdgeCases(t *testing.T) {
 // TestOvfManagerWrapper_ConcurrentAccess tests concurrent access to OVF
 // operations.
 func TestOvfManagerWrapper_ConcurrentAccess(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 	ctx := context.Background()
 
 	// Test concurrent OVF options retrieval.
@@ -1567,13 +1511,9 @@ func TestApplyOvfPostImportConfig(t *testing.T) {
 }
 
 func TestBuildOvfNetworkMappings(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error creating simulator: %s", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	driver := sim.driver
+	driver := newSimulatorDriver(sim)
 
 	tests := []struct {
 		name         string

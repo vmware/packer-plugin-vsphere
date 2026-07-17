@@ -11,14 +11,10 @@ import (
 )
 
 func TestVCenterDriver_FindResourcePool(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
 	t.Run("empty name with host", func(t *testing.T) {
-		res, err := sim.driver.FindResourcePool("", "DC0_H0", "")
+		res, err := newSimulatorDriver(sim).FindResourcePool("", "DC0_H0", "")
 		if err != nil {
 			t.Fatalf("unexpected error: '%s'", err)
 		}
@@ -32,7 +28,7 @@ func TestVCenterDriver_FindResourcePool(t *testing.T) {
 	})
 
 	t.Run("empty name with cluster", func(t *testing.T) {
-		res, err := sim.driver.FindResourcePool("DC0_C0", "", "")
+		res, err := newSimulatorDriver(sim).FindResourcePool("DC0_C0", "", "")
 		if err != nil {
 			t.Fatalf("unexpected error: '%s'", err)
 		}
@@ -45,7 +41,7 @@ func TestVCenterDriver_FindResourcePool(t *testing.T) {
 	})
 
 	t.Run("relative path", func(t *testing.T) {
-		res, err := sim.driver.FindResourcePool("DC0_C0", "", "foo")
+		res, err := newSimulatorDriver(sim).FindResourcePool("DC0_C0", "", "foo")
 
 		if err == nil {
 			t.Fatalf("expected error when using unknown relative resource pool path 'foo', but got none")
@@ -56,7 +52,7 @@ func TestVCenterDriver_FindResourcePool(t *testing.T) {
 	})
 
 	t.Run("absolute path", func(t *testing.T) {
-		res, err := sim.driver.FindResourcePool("", "", "/DC0/host/DC0_H0/Resources")
+		res, err := newSimulatorDriver(sim).FindResourcePool("", "", "/DC0/host/DC0_H0/Resources")
 		if err != nil {
 			t.Fatalf("unexpected error: '%s'", err)
 		}
@@ -66,7 +62,7 @@ func TestVCenterDriver_FindResourcePool(t *testing.T) {
 	})
 
 	t.Run("whitespace trimming", func(t *testing.T) {
-		res, err := sim.driver.FindResourcePool("", "DC0_H0", "  ")
+		res, err := newSimulatorDriver(sim).FindResourcePool("", "DC0_H0", "  ")
 		if err != nil {
 			t.Fatalf("unexpected error: '%s'", err)
 		}
@@ -89,13 +85,9 @@ func TestVCenterDriver_FindResourcePoolStandaloneESX(t *testing.T) {
 	model.DelayConfig.MethodDelay = opts.DelayConfig.MethodDelay
 	model.DelayConfig.DelayJitter = opts.DelayConfig.DelayJitter
 
-	sim, err := NewCustomVCenterSimulator(model)
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustCustomSimulator(t, model)
 
-	res, err := sim.driver.FindResourcePool("", "localhost.localdomain", "")
+	res, err := newSimulatorDriver(sim).FindResourcePool("", "localhost.localdomain", "")
 	if err != nil {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
@@ -108,7 +100,7 @@ func TestVCenterDriver_FindResourcePoolStandaloneESX(t *testing.T) {
 	}
 
 	// Invalid resource name should look for default resource pool
-	res, err = sim.driver.FindResourcePool("", "localhost.localdomain", "invalid")
+	res, err = newSimulatorDriver(sim).FindResourcePool("", "localhost.localdomain", "invalid")
 	if err != nil {
 		t.Fatalf("unexpected error: '%s'", err)
 	}

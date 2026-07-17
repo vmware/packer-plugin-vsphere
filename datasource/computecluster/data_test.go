@@ -10,20 +10,20 @@ import (
 
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
-	"github.com/vmware/packer-plugin-vsphere/testing/vsphere"
+	"github.com/vmware/packer-plugin-vsphere/testing/vcsim"
 )
 
 func TestDatasource_Execute(t *testing.T) {
-	clustersToPrepare := []vsphere.SimulatedComputeClusterConfig{
+	clustersToPrepare := []vcsim.SimulatedComputeClusterConfig{
 		{
 			Name: "w01-cl01",
-			Tags: []vsphere.Tag{
+			Tags: []vcsim.Tag{
 				{Category: "env", Name: "Packer"},
 			},
 		},
 		{
 			Name: "w01-cl02",
-			Tags: []vsphere.Tag{
+			Tags: []vcsim.Tag{
 				{Category: "env", Name: "Packer"},
 				{Category: "tier", Name: "gold"},
 			},
@@ -35,7 +35,7 @@ func TestDatasource_Execute(t *testing.T) {
 	model.ClusterHost = 1
 	model.Host = 0
 
-	vcSim, err := vsphere.NewSimulator(model)
+	vcSim, err := vcsim.NewSimulator(model)
 	if err != nil {
 		t.Fatalf("error creating vCenter simulator: %s", err)
 	}

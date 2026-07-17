@@ -10,14 +10,14 @@ import (
 
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
-	"github.com/vmware/packer-plugin-vsphere/testing/vsphere"
+	"github.com/vmware/packer-plugin-vsphere/testing/vcsim"
 )
 
 func TestDatasource_Execute(t *testing.T) {
-	machinesToPrepare := []vsphere.SimulatedVmConfig{
+	machinesToPrepare := []vcsim.SimulatedVmConfig{
 		{
 			Name: "first-vm",
-			Tags: []vsphere.Tag{
+			Tags: []vcsim.Tag{
 				{
 					Category: "operating-system-class",
 					Name:     "Linux",
@@ -25,7 +25,7 @@ func TestDatasource_Execute(t *testing.T) {
 			},
 		}, {
 			Name: "second-vm",
-			Tags: []vsphere.Tag{
+			Tags: []vcsim.Tag{
 				{
 					Category: "operating-system-class",
 					Name:     "Linux",
@@ -42,7 +42,7 @@ func TestDatasource_Execute(t *testing.T) {
 			Template: true,
 		}, {
 			Name: "machine-three",
-			Tags: []vsphere.Tag{
+			Tags: []vcsim.Tag{
 				{
 					Category: "operating-system-class",
 					Name:     "Linux",
@@ -60,7 +60,7 @@ func TestDatasource_Execute(t *testing.T) {
 	model.Datacenter = 2
 	model.Machine = 8
 
-	vcSim, err := vsphere.NewSimulator(model)
+	vcSim, err := vcsim.NewSimulator(model)
 	if err != nil {
 		t.Fatalf("error creating vCenter simulator: %s", err)
 	}
