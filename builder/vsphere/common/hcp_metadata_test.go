@@ -16,24 +16,19 @@ import (
 )
 
 func TestGetVMMetadata(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
 	state := new(multistep.BasicStateBag)
 	state.Put("content_library_datastore", []string{"tmpl-datastore-mock"})
 
-	vm, vmSim := sim.ChooseSimulatorPreCreatedVM()
+	vm, vmSim := mustPreCreatedVM(t, sim)
 	confSpec := types.VirtualMachineConfigSpec{Annotation: "simple vm description"}
 	if err := vm.Reconfigure(confSpec); err != nil {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
-	datastore := sim.model.Service.Context.Map.Any("Datastore").(*simulator.Datastore)
+	datastore := sim.Model.Service.Context.Map.Any("Datastore").(*simulator.Datastore)
 
 	metadata := GetVMMetadata(vm.(*driver.VirtualMachineDriver), state)
-	// Validate Labels
 	expectedLabels := map[string]string{
 		"annotation":         vmSim.Config.Annotation,
 		"num_cpu":            fmt.Sprintf("%d", vmSim.Config.Hardware.NumCPU),

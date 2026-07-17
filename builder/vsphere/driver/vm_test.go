@@ -12,13 +12,9 @@ import (
 )
 
 func TestVirtualMachineDriver_Configure(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	vm, _ := sim.ChooseSimulatorPreCreatedVM()
+	vm, _ := mustPreCreatedVM(t, sim)
 
 	// Happy test
 	hardwareConfig := &HardwareConfig{
@@ -36,11 +32,11 @@ func TestVirtualMachineDriver_Configure(t *testing.T) {
 		VTPMEnabled:           true,
 		VirtualPrecisionClock: "ntp",
 	}
-	if err = vm.Configure(hardwareConfig); err != nil {
+	if err := vm.Configure(hardwareConfig); err != nil {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
 
-	props, err := vm.Properties(sim.driver.Ctx)
+	props, err := vm.Properties(newSimulatorDriver(sim).Ctx)
 	if err != nil {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
@@ -53,20 +49,16 @@ func TestVirtualMachineDriver_Configure(t *testing.T) {
 }
 
 func TestVirtualMachineDriver_ConfigureBootDelayOnly(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	vm, _ := sim.ChooseSimulatorPreCreatedVM()
+	vm, _ := mustPreCreatedVM(t, sim)
 
 	const bootDelay int64 = 5000
-	if err = vm.Configure(&HardwareConfig{BootDelay: bootDelay}); err != nil {
+	if err := vm.Configure(&HardwareConfig{BootDelay: bootDelay}); err != nil {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
 
-	props, err := vm.Properties(sim.driver.Ctx)
+	props, err := vm.Properties(newSimulatorDriver(sim).Ctx)
 	if err != nil {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
@@ -79,24 +71,20 @@ func TestVirtualMachineDriver_ConfigureBootDelayOnly(t *testing.T) {
 }
 
 func TestVirtualMachineDriver_SetBootOrderPreservesBootDelay(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	vm, _ := sim.ChooseSimulatorPreCreatedVM()
+	vm, _ := mustPreCreatedVM(t, sim)
 
 	const bootDelay int64 = 5000
-	if err = vm.Configure(&HardwareConfig{BootDelay: bootDelay}); err != nil {
+	if err := vm.Configure(&HardwareConfig{BootDelay: bootDelay}); err != nil {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
 
-	if err = vm.SetBootOrder([]string{"disk", "cdrom"}); err != nil {
+	if err := vm.SetBootOrder([]string{"disk", "cdrom"}); err != nil {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
 
-	props, err := vm.Properties(sim.driver.Ctx)
+	props, err := vm.Properties(newSimulatorDriver(sim).Ctx)
 	if err != nil {
 		t.Fatalf("unexpected error: '%s'", err)
 	}
@@ -109,13 +97,9 @@ func TestVirtualMachineDriver_SetBootOrderPreservesBootDelay(t *testing.T) {
 }
 
 func TestVirtualMachineDriver_CreateVMWithMultipleDisks(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	_, datastore := sim.ChooseSimulatorPreCreatedDatastore()
+	_, datastore := mustPreCreatedDatastore(t, sim)
 
 	config := &CreateConfig{
 		Name:      "mock name",
@@ -144,7 +128,7 @@ func TestVirtualMachineDriver_CreateVMWithMultipleDisks(t *testing.T) {
 		},
 	}
 
-	vm, err := sim.driver.CreateVM(config)
+	vm, err := newSimulatorDriver(sim).CreateVM(config)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -168,14 +152,10 @@ func TestVirtualMachineDriver_CreateVMWithMultipleDisks(t *testing.T) {
 }
 
 func TestVirtualMachineDriver_CloneWithPrimaryDiskResize(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	_, datastore := sim.ChooseSimulatorPreCreatedDatastore()
-	vm, _ := sim.ChooseSimulatorPreCreatedVM()
+	_, datastore := mustPreCreatedDatastore(t, sim)
+	vm, _ := mustPreCreatedVM(t, sim)
 
 	config := &CloneConfig{
 		Name:            "mock name",
@@ -233,14 +213,10 @@ func TestVirtualMachineDriver_CloneWithPrimaryDiskResize(t *testing.T) {
 }
 
 func TestVirtualMachineDriver_CloneWithMacAddress(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	_, datastore := sim.ChooseSimulatorPreCreatedDatastore()
-	vm, _ := sim.ChooseSimulatorPreCreatedVM()
+	_, datastore := mustPreCreatedDatastore(t, sim)
+	vm, _ := mustPreCreatedVM(t, sim)
 
 	devices, err := vm.Devices()
 	if err != nil {

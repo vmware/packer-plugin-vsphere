@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/acctest"
 	"github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common/utils"
-	"github.com/vmware/packer-plugin-vsphere/testing/vsphere"
+	"github.com/vmware/packer-plugin-vsphere/testing/acceptance"
 )
 
 // TestAccISOBuilderAcc_default acceptance test validates a default configuration.
@@ -21,13 +21,13 @@ func TestAccISOBuilderAcc_default(t *testing.T) {
 	config := defaultConfig()
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-iso_basic_test",
-		Template: vsphere.RenderConfig("vsphere-iso", config),
+		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := vsphere.TestConn()
+			d, err := acceptance.TestConn()
 			if err != nil {
 				return fmt.Errorf("cannot connect %v", err)
 			}
-			return vsphere.CleanupVm(d, config["vm_name"].(string))
+			return acceptance.CleanupVm(d, config["vm_name"].(string))
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
 			if buildCommand.ProcessState != nil {
@@ -58,7 +58,7 @@ func defaultConfig() map[string]interface{} {
 		"ssh_username": "packer",
 		"ssh_password": "VMw@re1!",
 
-		"vm_name": vsphere.NewVmName(),
+		"vm_name": acceptance.NewVmName(),
 		"storage": map[string]interface{}{
 			"disk_size": 2048,
 		},
@@ -71,7 +71,7 @@ func defaultConfig() map[string]interface{} {
 
 // checkDefault verifies the configuration of a virtual machine by comparing its properties against expected values.
 func checkDefault(name string, host string, datastore string) error {
-	d, err := vsphere.TestConn()
+	d, err := acceptance.TestConn()
 	if err != nil {
 		return fmt.Errorf("cannot connect %v", err)
 	}
@@ -140,13 +140,13 @@ func TestAccISOBuilderAcc_notes(t *testing.T) {
 
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-iso_notes_test",
-		Template: vsphere.RenderConfig("vsphere-iso", config),
+		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := vsphere.TestConn()
+			d, err := acceptance.TestConn()
 			if err != nil {
 				return fmt.Errorf("cannot connect %v", err)
 			}
-			return vsphere.CleanupVm(d, config["vm_name"].(string))
+			return acceptance.CleanupVm(d, config["vm_name"].(string))
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
 			if buildCommand.ProcessState != nil {
@@ -162,7 +162,7 @@ func TestAccISOBuilderAcc_notes(t *testing.T) {
 
 // checkNotes verifies a virtual machine has the "config.annotation" field set.
 func checkNotes(name string) error {
-	d, err := vsphere.TestConn()
+	d, err := acceptance.TestConn()
 	if err != nil {
 		return fmt.Errorf("cannot connect %v", err)
 	}
@@ -198,13 +198,13 @@ func TestAccISOBuilderAcc_hardware(t *testing.T) {
 
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-iso_hardware_test",
-		Template: vsphere.RenderConfig("vsphere-iso", config),
+		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := vsphere.TestConn()
+			d, err := acceptance.TestConn()
 			if err != nil {
 				return fmt.Errorf("cannot connect %v", err)
 			}
-			return vsphere.CleanupVm(d, config["vm_name"].(string))
+			return acceptance.CleanupVm(d, config["vm_name"].(string))
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
 			if buildCommand.ProcessState != nil {
@@ -220,7 +220,7 @@ func TestAccISOBuilderAcc_hardware(t *testing.T) {
 
 // checkHardware verifies a virtual machine hardware configuration.
 func checkHardware(name string) error {
-	d, err := vsphere.TestConn()
+	d, err := acceptance.TestConn()
 	if err != nil {
 		return fmt.Errorf("cannot connect %v", err)
 	}
@@ -307,13 +307,13 @@ func TestAccISOBuilderAcc_limit(t *testing.T) {
 
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-iso_limit_test",
-		Template: vsphere.RenderConfig("vsphere-iso", config),
+		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := vsphere.TestConn()
+			d, err := acceptance.TestConn()
 			if err != nil {
 				return fmt.Errorf("cannot connect %v", err)
 			}
-			return vsphere.CleanupVm(d, config["vm_name"].(string))
+			return acceptance.CleanupVm(d, config["vm_name"].(string))
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
 			if buildCommand.ProcessState != nil {
@@ -329,7 +329,7 @@ func TestAccISOBuilderAcc_limit(t *testing.T) {
 
 // checkLimit verifies a virtual machine unlimited CPU allocation limit.
 func checkLimit(name string) error {
-	d, err := vsphere.TestConn()
+	d, err := acceptance.TestConn()
 	if err != nil {
 		return fmt.Errorf("cannot connect %v", err)
 	}
@@ -357,13 +357,13 @@ func TestAccISOBuilderAcc_sata(t *testing.T) {
 
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-iso_sata_test",
-		Template: vsphere.RenderConfig("vsphere-iso", config),
+		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := vsphere.TestConn()
+			d, err := acceptance.TestConn()
 			if err != nil {
 				return fmt.Errorf("cannot connect %v", err)
 			}
-			return vsphere.CleanupVm(d, config["vm_name"].(string))
+			return acceptance.CleanupVm(d, config["vm_name"].(string))
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
 			if buildCommand.ProcessState != nil {
@@ -379,7 +379,7 @@ func TestAccISOBuilderAcc_sata(t *testing.T) {
 
 // checkSata verifies a virtual machine SATA controller configuration.
 func checkSata(name string) error {
-	d, err := vsphere.TestConn()
+	d, err := acceptance.TestConn()
 	if err != nil {
 		return fmt.Errorf("cannot connect %v", err)
 	}
@@ -410,13 +410,13 @@ func TestAccISOBuilderAcc_cdrom(t *testing.T) {
 	}
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-iso_cdrom_test",
-		Template: vsphere.RenderConfig("vsphere-iso", config),
+		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := vsphere.TestConn()
+			d, err := acceptance.TestConn()
 			if err != nil {
 				return fmt.Errorf("cannot connect %v", err)
 			}
-			return vsphere.CleanupVm(d, config["vm_name"].(string))
+			return acceptance.CleanupVm(d, config["vm_name"].(string))
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
 			if buildCommand.ProcessState != nil {
@@ -438,13 +438,13 @@ func TestAccISOBuilderAcc_networkCard(t *testing.T) {
 	}
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-iso_networkCard_test",
-		Template: vsphere.RenderConfig("vsphere-iso", config),
+		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := vsphere.TestConn()
+			d, err := acceptance.TestConn()
 			if err != nil {
 				return fmt.Errorf("cannot connect %v", err)
 			}
-			return vsphere.CleanupVm(d, config["vm_name"].(string))
+			return acceptance.CleanupVm(d, config["vm_name"].(string))
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
 			if buildCommand.ProcessState != nil {
@@ -460,7 +460,7 @@ func TestAccISOBuilderAcc_networkCard(t *testing.T) {
 
 // checkNetworkCard verifies a virtual machine network card configuration.
 func checkNetworkCard(name string) error {
-	d, err := vsphere.TestConn()
+	d, err := acceptance.TestConn()
 	if err != nil {
 		return fmt.Errorf("cannot connect %v", err)
 	}
@@ -505,13 +505,13 @@ func TestAccISOBuilderAcc_createFloppy(t *testing.T) {
 	config["floppy_files"] = []string{tmpFile.Name()}
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-iso_createFloppy_test",
-		Template: vsphere.RenderConfig("vsphere-iso", config),
+		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := vsphere.TestConn()
+			d, err := acceptance.TestConn()
 			if err != nil {
 				return fmt.Errorf("unexpected error: expected 'nil', but returned '%s'", err)
 			}
-			return vsphere.CleanupVm(d, config["vm_name"].(string))
+			return acceptance.CleanupVm(d, config["vm_name"].(string))
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
 			if buildCommand.ProcessState != nil {
@@ -530,13 +530,13 @@ func TestAccISOBuilderAcc_full(t *testing.T) {
 	config := fullConfig()
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-iso_full_test",
-		Template: vsphere.RenderConfig("vsphere-iso", config),
+		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := vsphere.TestConn()
+			d, err := acceptance.TestConn()
 			if err != nil {
 				return fmt.Errorf("cannot connect %v", err)
 			}
-			return vsphere.CleanupVm(d, config["vm_name"].(string))
+			return acceptance.CleanupVm(d, config["vm_name"].(string))
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
 			if buildCommand.ProcessState != nil {
@@ -564,7 +564,7 @@ func fullConfig() map[string]interface{} {
 		"host":                host,
 		"insecure_connection": true,
 
-		"vm_name": vsphere.NewVmName(),
+		"vm_name": acceptance.NewVmName(),
 
 		"RAM": 512,
 		"disk_controller_type": []string{
@@ -615,7 +615,7 @@ func fullConfig() map[string]interface{} {
 
 // checkFull verifies a virtual machine full configuration.
 func checkFull(name string) error {
-	d, err := vsphere.TestConn()
+	d, err := acceptance.TestConn()
 	if err != nil {
 		return fmt.Errorf("cannot connect %v", err)
 	}
@@ -655,13 +655,13 @@ func TestAccISOBuilderAcc_bootOrder(t *testing.T) {
 
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-iso_bootOrder_test",
-		Template: vsphere.RenderConfig("vsphere-iso", config),
+		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := vsphere.TestConn()
+			d, err := acceptance.TestConn()
 			if err != nil {
 				return fmt.Errorf("cannot connect %v", err)
 			}
-			return vsphere.CleanupVm(d, config["vm_name"].(string))
+			return acceptance.CleanupVm(d, config["vm_name"].(string))
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
 			if buildCommand.ProcessState != nil {
@@ -677,7 +677,7 @@ func TestAccISOBuilderAcc_bootOrder(t *testing.T) {
 
 // checkBootOrder verifies a virtual machine boot order configuration.
 func checkBootOrder(name string) error {
-	d, err := vsphere.TestConn()
+	d, err := acceptance.TestConn()
 	if err != nil {
 		return fmt.Errorf("cannot connect %v", err)
 	}
@@ -706,13 +706,13 @@ func TestISOBuilderAcc_cluster(t *testing.T) {
 	config["host"] = "esx02.example.com"
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-iso_bootOrder_test",
-		Template: vsphere.RenderConfig("vsphere-iso", config),
+		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := vsphere.TestConn()
+			d, err := acceptance.TestConn()
 			if err != nil {
 				return fmt.Errorf("cannot connect %v", err)
 			}
-			return vsphere.CleanupVm(d, config["vm_name"].(string))
+			return acceptance.CleanupVm(d, config["vm_name"].(string))
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
 			if buildCommand.ProcessState != nil {
@@ -738,13 +738,13 @@ func TestISOBuilderAcc_clusterDRS(t *testing.T) {
 
 	testCase := &acctest.PluginTestCase{
 		Name:     "vsphere-iso_bootOrder_test",
-		Template: vsphere.RenderConfig("vsphere-iso", config),
+		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := vsphere.TestConn()
+			d, err := acceptance.TestConn()
 			if err != nil {
 				return fmt.Errorf("cannot connect %v", err)
 			}
-			return vsphere.CleanupVm(d, config["vm_name"].(string))
+			return acceptance.CleanupVm(d, config["vm_name"].(string))
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
 			if buildCommand.ProcessState != nil {

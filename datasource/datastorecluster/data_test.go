@@ -10,13 +10,13 @@ import (
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/govmomi/units"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
-	"github.com/vmware/packer-plugin-vsphere/testing/vsphere"
+	"github.com/vmware/packer-plugin-vsphere/testing/vcsim"
 )
 
 func int64Ptr(v int64) *int64 { return &v }
 
 func TestDatasource_Execute(t *testing.T) {
-	datastoresToPrepare := []vsphere.SimulatedDatastoreConfig{
+	datastoresToPrepare := []vcsim.SimulatedDatastoreConfig{
 		{
 			Name:      "w01-cl01-ds01",
 			Capacity:  int64Ptr(int64(200 * units.GB)),
@@ -39,18 +39,18 @@ func TestDatasource_Execute(t *testing.T) {
 		},
 	}
 
-	clustersToPrepare := []vsphere.SimulatedDatastoreClusterConfig{
+	clustersToPrepare := []vcsim.SimulatedDatastoreClusterConfig{
 		{
 			Name:          "w01-cl01-dsc01",
 			MemberIndexes: []int{0, 1},
-			Tags: []vsphere.Tag{
+			Tags: []vcsim.Tag{
 				{Category: "env", Name: "Packer"},
 			},
 		},
 		{
 			Name:          "w01-cl01-dsc02",
 			MemberIndexes: []int{2, 3},
-			Tags: []vsphere.Tag{
+			Tags: []vcsim.Tag{
 				{Category: "env", Name: "Packer"},
 				{Category: "tier", Name: "gold"},
 			},
@@ -61,7 +61,7 @@ func TestDatasource_Execute(t *testing.T) {
 	model.Datastore = len(datastoresToPrepare)
 	model.Pod = len(clustersToPrepare)
 
-	vcSim, err := vsphere.NewSimulator(model)
+	vcSim, err := vcsim.NewSimulator(model)
 	if err != nil {
 		t.Fatalf("error creating vCenter simulator: %s", err)
 	}

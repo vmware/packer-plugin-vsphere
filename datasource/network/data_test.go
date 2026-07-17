@@ -9,7 +9,7 @@ import (
 
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
-	"github.com/vmware/packer-plugin-vsphere/testing/vsphere"
+	"github.com/vmware/packer-plugin-vsphere/testing/vcsim"
 )
 
 func TestDatasource_Execute(t *testing.T) {
@@ -18,29 +18,29 @@ func TestDatasource_Execute(t *testing.T) {
 	model.Cluster = 1
 	model.ClusterHost = 1
 
-	vcSim, err := vsphere.NewSimulator(model)
+	vcSim, err := vcsim.NewSimulator(model)
 	if err != nil {
 		t.Fatalf("error creating vCenter simulator: %s", err)
 	}
 	defer vcSim.Stop()
 
-	if err := vcSim.ApplyComputeClusterConfiguration([]vsphere.SimulatedComputeClusterConfig{
+	if err := vcSim.ApplyComputeClusterConfiguration([]vcsim.SimulatedComputeClusterConfig{
 		{Name: "w01-cl01"},
 	}); err != nil {
 		t.Fatalf("error customizing simulator compute clusters: %s", err)
 	}
 
-	if err := vcSim.ApplyHostConfiguration([]vsphere.SimulatedHostConfig{
+	if err := vcSim.ApplyHostConfiguration([]vcsim.SimulatedHostConfig{
 		{Name: "esx-01"},
 	}); err != nil {
 		t.Fatalf("error customizing simulator hosts: %s", err)
 	}
 
 	// Supported NetworkList order in VPX: standard Network, DV uplink PG, DVPG.
-	if err := vcSim.ApplyNetworkConfiguration([]vsphere.SimulatedNetworkConfig{
+	if err := vcSim.ApplyNetworkConfiguration([]vcsim.SimulatedNetworkConfig{
 		{
 			Name: "pg-standard",
-			Tags: []vsphere.Tag{
+			Tags: []vcsim.Tag{
 				{Category: "env", Name: "Packer"},
 			},
 		},
@@ -49,7 +49,7 @@ func TestDatasource_Execute(t *testing.T) {
 		},
 		{
 			Name: "pg-distributed",
-			Tags: []vsphere.Tag{
+			Tags: []vcsim.Tag{
 				{Category: "env", Name: "Packer"},
 				{Category: "tier", Name: "gold"},
 			},

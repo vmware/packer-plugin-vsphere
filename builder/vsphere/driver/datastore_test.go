@@ -97,14 +97,10 @@ func TestDatastoreIsoPath(t *testing.T) {
 }
 
 func TestVCenterDriver_FindDatastore(t *testing.T) {
-	sim, err := NewVCenterSimulator()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustVPXSimulator(t)
 
-	_, datastore := sim.ChooseSimulatorPreCreatedDatastore()
-	_, host := sim.ChooseSimulatorPreCreatedHost()
+	_, datastore := mustPreCreatedDatastore(t, sim)
+	_, host := mustPreCreatedHost(t, sim)
 
 	tc := []struct {
 		name       string
@@ -137,7 +133,7 @@ func TestVCenterDriver_FindDatastore(t *testing.T) {
 
 	for _, c := range tc {
 		t.Run(c.name, func(t *testing.T) {
-			ds, err := sim.driver.FindDatastore(c.datastore, c.host)
+			ds, err := newSimulatorDriver(sim).FindDatastore(c.datastore, c.host)
 			if c.fail {
 				if err == nil {
 					t.Fatal("unexpected success: expected failure")
@@ -160,15 +156,11 @@ func TestVCenterDriver_FindDatastore(t *testing.T) {
 func TestVCenterDriver_MultipleDatastoreError(t *testing.T) {
 	model := simulator.ESX()
 	model.Datastore = 2
-	sim, err := NewCustomVCenterSimulator(model)
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	defer sim.Close()
+	sim := mustCustomSimulator(t, model)
 
-	_, host := sim.ChooseSimulatorPreCreatedHost()
+	_, host := mustPreCreatedHost(t, sim)
 
-	_, err = sim.driver.FindDatastore("", host.Name)
+	_, err := newSimulatorDriver(sim).FindDatastore("", host.Name)
 	if err == nil {
 		t.Fatal("unexpected success: expected failure")
 	}
