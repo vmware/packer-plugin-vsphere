@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common/utils"
+	"github.com/vmware/packer-plugin-vsphere/testing/env"
 )
 
 // testUI provides a simple UI implementation for testing.
@@ -30,9 +30,9 @@ func (ui *testUI) TrackProgress(string, int64, int64, io.ReadCloser) io.ReadClos
 
 // newTestDriver creates a new driver instance for testing against a live endpoint.
 func newTestDriver(t *testing.T) Driver {
-	vcenter := utils.GetenvOrDefault(utils.EnvVcenterServer, utils.DefaultVcenterServer)
-	username := utils.GetenvOrDefault(utils.EnvVsphereUsername, utils.DefaultVsphereUsername)
-	password := utils.GetenvOrDefault(utils.EnvVspherePassword, utils.DefaultVspherePassword)
+	vcenter := env.GetenvOrDefault(env.EnvVcenterServer, env.DefaultVcenterServer)
+	username := env.GetenvOrDefault(env.EnvVsphereUsername, env.DefaultVsphereUsername)
+	password := env.GetenvOrDefault(env.EnvVspherePassword, env.DefaultVspherePassword)
 
 	d, err := NewDriver(&ConnectConfig{
 		VCenterServer:      vcenter,

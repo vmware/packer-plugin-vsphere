@@ -12,8 +12,8 @@ import (
 
 	"github.com/hashicorp/packer-plugin-sdk/acctest"
 	"github.com/vmware/govmomi/vim25/types"
-	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common/utils"
 	"github.com/vmware/packer-plugin-vsphere/testing/acceptance"
+	"github.com/vmware/packer-plugin-vsphere/testing/env"
 )
 
 // TestAccISOBuilderAcc_default acceptance test validates a default configuration.
@@ -43,10 +43,10 @@ func TestAccISOBuilderAcc_default(t *testing.T) {
 
 // defaultConfig initializes and returns a default configuration map for a vSphere environment.
 func defaultConfig() map[string]interface{} {
-	vcenter := utils.GetenvOrDefault(utils.EnvVcenterServer, utils.DefaultVcenterServer)
-	username := utils.GetenvOrDefault(utils.EnvVsphereUsername, utils.DefaultVsphereUsername)
-	password := utils.GetenvOrDefault(utils.EnvVspherePassword, utils.DefaultVspherePassword)
-	host := utils.GetenvOrDefault(utils.EnvVsphereHost, utils.DefaultVsphereHost)
+	vcenter := env.GetenvOrDefault(env.EnvVcenterServer, env.DefaultVcenterServer)
+	username := env.GetenvOrDefault(env.EnvVsphereUsername, env.DefaultVsphereUsername)
+	password := env.GetenvOrDefault(env.EnvVspherePassword, env.DefaultVspherePassword)
+	host := env.GetenvOrDefault(env.EnvVsphereHost, env.DefaultVsphereHost)
 
 	config := map[string]interface{}{
 		"vcenter_server":      vcenter,
@@ -552,10 +552,10 @@ func TestAccISOBuilderAcc_full(t *testing.T) {
 
 // fullConfig constructs and returns a full configuration map for setting up a virtual machine with default settings.
 func fullConfig() map[string]interface{} {
-	vcenter := utils.GetenvOrDefault(utils.EnvVcenterServer, utils.DefaultVcenterServer)
-	username := utils.GetenvOrDefault(utils.EnvVsphereUsername, utils.DefaultVsphereUsername)
-	password := utils.GetenvOrDefault(utils.EnvVspherePassword, utils.DefaultVspherePassword)
-	host := utils.GetenvOrDefault(utils.EnvVsphereHost, utils.DefaultVsphereHost)
+	vcenter := env.GetenvOrDefault(env.EnvVcenterServer, env.DefaultVcenterServer)
+	username := env.GetenvOrDefault(env.EnvVsphereUsername, env.DefaultVsphereUsername)
+	password := env.GetenvOrDefault(env.EnvVspherePassword, env.DefaultVspherePassword)
+	host := env.GetenvOrDefault(env.EnvVsphereHost, env.DefaultVsphereHost)
 
 	config := map[string]interface{}{
 		"vcenter_server":      vcenter,
