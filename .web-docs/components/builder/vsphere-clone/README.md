@@ -842,7 +842,7 @@ JSON Example:
 ```json
   "customize": {
     "windows_options": {
-      "host_name": "foo",
+      "computer_name": "foo",
       "workgroup": "example",
       "product_key": "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX",
       "admin_password": "password"
