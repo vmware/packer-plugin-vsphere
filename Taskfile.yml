@@ -43,10 +43,57 @@ tasks:
         packer-sdc plugin-check {{.BINARY}}
 
   testacc:
-    desc: Run acceptance tests.
+    desc: Run all acceptance tests.
     deps: [dev]
     cmds:
-      - PACKER_ACC=1 go test -count {{.COUNT}} -v {{.TEST}} -timeout=120m
+      - PACKER_ACC=1 go test -count {{.COUNT}} -v {{.TEST}} -timeout=180m
+
+  testacc-datasource:
+    desc: Run datasource acceptance tests against a live vCenter.
+    vars:
+      TESTACC_DATASOURCE_RUN: '{{.TESTACC_DATASOURCE_RUN | default "TestAccDatasource"}}'
+    cmds:
+      - PACKER_ACC=1 go test ./datasource/... -count {{.COUNT}} -v -timeout=15m -run '{{.TESTACC_DATASOURCE_RUN}}'
+
+  testacc-builder-iso:
+    desc: Run vsphere-iso matrix acceptance tests (Alpine installs).
+    deps: [dev]
+    vars:
+      TESTACC_BUILDER_ISO_RUN: '{{.TESTACC_BUILDER_ISO_RUN | default "TestAccISOBuilder_Matrix"}}'
+    cmds:
+      - PACKER_ACC=1 go test ./builder/vsphere/iso -count {{.COUNT}} -v -timeout=180m -run '{{.TESTACC_BUILDER_ISO_RUN}}'
+
+  testacc-builder-clone:
+    desc: Run vsphere-clone matrix acceptance tests.
+    deps: [dev]
+    vars:
+      TESTACC_BUILDER_CLONE_RUN: '{{.TESTACC_BUILDER_CLONE_RUN | default "TestAccCloneBuilder_Matrix"}}'
+    cmds:
+      - PACKER_ACC=1 go test ./builder/vsphere/clone -count {{.COUNT}} -v -timeout=30m -run '{{.TESTACC_BUILDER_CLONE_RUN}}'
+
+  testacc-builder:
+    desc: Run all builder acceptance tests.
+    deps: [testacc-builder-iso, testacc-builder-clone]
+
+  testacc-post-processor-vsphere:
+    desc: Run vsphere post-processor acceptance tests.
+    deps: [dev]
+    vars:
+      TESTACC_POST_PROCESSOR_VSPHERE_RUN: '{{.TESTACC_POST_PROCESSOR_VSPHERE_RUN | default "TestAccPostProcessorVSphere_Matrix"}}'
+    cmds:
+      - PACKER_ACC=1 go test ./post-processor/vsphere -count {{.COUNT}} -v -timeout=30m -run '{{.TESTACC_POST_PROCESSOR_VSPHERE_RUN}}'
+
+  testacc-post-processor-vsphere-template:
+    desc: Run vsphere-template post-processor acceptance tests.
+    deps: [dev]
+    vars:
+      TESTACC_POST_PROCESSOR_VSPHERE_TEMPLATE_RUN: '{{.TESTACC_POST_PROCESSOR_VSPHERE_TEMPLATE_RUN | default "TestAccPostProcessorVSphereTemplate_Matrix"}}'
+    cmds:
+      - PACKER_ACC=1 go test ./post-processor/vsphere-template -count {{.COUNT}} -v -timeout=30m -run '{{.TESTACC_POST_PROCESSOR_VSPHERE_TEMPLATE_RUN}}'
+
+  testacc-post-processor:
+    desc: Run all post-processor acceptance tests.
+    deps: [testacc-post-processor-vsphere, testacc-post-processor-vsphere-template]
 
   generate:
     desc: Run code generation for docs and other generated code.

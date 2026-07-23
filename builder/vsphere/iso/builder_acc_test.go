@@ -5,72 +5,300 @@
 package iso
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/packer-plugin-sdk/acctest"
+	"github.com/vmware/govmomi/vapi/tags"
 	"github.com/vmware/govmomi/vim25/types"
+	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 	"github.com/vmware/packer-plugin-vsphere/testing/acceptance"
 	"github.com/vmware/packer-plugin-vsphere/testing/env"
 )
 
-// TestAccISOBuilderAcc_default acceptance test validates a default configuration.
-func TestAccISOBuilderAcc_default(t *testing.T) {
-	config := defaultConfig()
+// ---------------------------------------------------------------------------
+// Shared Helpers
+// ---------------------------------------------------------------------------
+
+func alpineExampleConfig() map[string]interface{} {
+	acc := env.AccFromEnv()
+	exampleDir := alpineExampleDir()
+
+	return map[string]interface{}{
+		"vcenter_server":      acc.VCenterServer,
+		"username":            acc.Username,
+		"password":            acc.Password,
+		"datacenter":          acc.Datacenter,
+		"host":                acc.Host,
+		"cluster":             acc.Cluster,
+		"datastore":           acc.Datastore,
+		"folder":              acc.Folder,
+		"resource_pool":       acc.ResourcePool,
+		"insecure_connection": true,
+
+		"vm_name":       acceptance.NewVmName(),
+		"vm_version":    21,
+		"guest_os_type": "other6xLinux64Guest",
+		"CPUs":          1,
+		"RAM":           512,
+
+		"disk_controller_type": []string{"pvscsi"},
+		"storage": map[string]interface{}{
+			"disk_size":             1024,
+			"disk_thin_provisioned": true,
+		},
+		"network_adapters": map[string]interface{}{
+			"network_card": "vmxnet3",
+			"network":      acc.Network,
+		},
+
+		"iso_paths": []string{acc.ISOPath},
+		"floppy_files": []string{
+			filepath.Join(exampleDir, "answerfile"),
+			filepath.Join(exampleDir, "setup.sh"),
+		},
+
+		"boot_wait": "15s",
+		"boot_command": []string{
+			"<wait30>",
+			"root<enter><wait>",
+			"mount -t vfat /dev/fd0 /media/floppy<enter><wait>",
+			"setup-alpine -f /media/floppy/answerfile<enter>",
+			"<wait15>",
+			"VMw@re1!<enter>",
+			"VMw@re1!<enter>",
+			"<wait10>",
+			"y<enter>",
+			"<wait45>",
+			"reboot<enter>",
+			// EFI reboot + DHCP need more headroom than the example's 20s.
+			"<wait60>",
+			"root<enter><wait>",
+			"VMw@re1!<enter><wait>",
+			"mount -t vfat /dev/fd0 /media/floppy<enter><wait>",
+			"/media/floppy/SETUP.SH<enter>",
+			// Give open-vm-tools time to install before IP wait starts polling.
+			"<wait90>",
+		},
+
+		"ssh_username": "root",
+		"ssh_password": "VMw@re1!",
+	}
+}
+
+func alpineExampleDir() string {
+	_, thisFile, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "examples", "builder", "vsphere-iso", "alpine")
+}
+
+func alpineMatrixGuest(config map[string]interface{}) {
+	config["CPUs"] = 2
+	config["RAM"] = 2048
+	config["firmware"] = "efi"
+	config["boot_wait"] = "30s"
+	config["storage"] = map[string]interface{}{
+		"disk_size":             2048,
+		"disk_thin_provisioned": true,
+	}
+	config["ip_settle_timeout"] = "30s"
+}
+
+func checkBuildSucceeded(buildCommand *exec.Cmd, logfile string) error {
+	if buildCommand.ProcessState != nil && buildCommand.ProcessState.ExitCode() != 0 {
+		return fmt.Errorf("bad exit code; logfile: %s", logfile)
+	}
+	return nil
+}
+
+func checkFolderAndResourcePool(d driver.Driver, parent, resourcePool *types.ManagedObjectReference, acc env.AccConfig, requireResourcePool bool) error {
+	if parent == nil {
+		return fmt.Errorf("expected VM parent folder %q", acc.Folder)
+	}
+	folder := d.NewFolder(parent)
+	folderInfo, err := folder.Info("name")
+	if err != nil {
+		return fmt.Errorf("cannot read folder properties: %v", err)
+	}
+	if folderInfo.Name != acc.Folder {
+		return fmt.Errorf("unexpected folder: expected %q, got %q", acc.Folder, folderInfo.Name)
+	}
+
+	if !requireResourcePool {
+		return nil
+	}
+
+	if resourcePool == nil {
+		return fmt.Errorf("expected VM resource pool %q", acc.ResourcePool)
+	}
+	rp := d.NewResourcePool(resourcePool)
+	rpInfo, err := rp.Info("name")
+	if err != nil {
+		return fmt.Errorf("cannot read resource pool properties: %v", err)
+	}
+	if rpInfo.Name != acc.ResourcePool {
+		return fmt.Errorf("unexpected resource pool: expected %q, got %q", acc.ResourcePool, rpInfo.Name)
+	}
+	return nil
+}
+
+func checkTagsByName(d driver.Driver, vm driver.VirtualMachine, categoryName string, expectedTagNames []string) error {
+	if err := restLogin(d); err != nil {
+		return fmt.Errorf("REST login for tags: %v", err)
+	}
+
+	ctx := context.Background()
+	tagsManager := tags.NewManager(d.GetRestClient())
+	attachedTagIDs, err := tagsManager.ListAttachedTags(ctx, vm.Reference())
+	if err != nil {
+		return fmt.Errorf("cannot list attached tags: %v", err)
+	}
+
+	attachedTagNames := make(map[string]bool)
+	for _, tagID := range attachedTagIDs {
+		tagInfo, err := tagsManager.GetTag(ctx, tagID)
+		if err != nil {
+			continue
+		}
+		categoryInfo, err := tagsManager.GetCategory(ctx, tagInfo.CategoryID)
+		if err != nil {
+			continue
+		}
+		if categoryInfo.Name == categoryName {
+			attachedTagNames[tagInfo.Name] = true
+		}
+	}
+
+	for _, expectedTagName := range expectedTagNames {
+		if !attachedTagNames[expectedTagName] {
+			return fmt.Errorf("expected tag %q in category %q not attached", expectedTagName, categoryName)
+		}
+	}
+	return nil
+}
+
+func ensureTagCategoryMultiple(t *testing.T, categoryName string) {
+	t.Helper()
+	d, err := acceptance.TestConn()
+	if err != nil {
+		t.Fatalf("cannot connect: %v", err)
+	}
+	if err := restLogin(d); err != nil {
+		t.Fatalf("REST login: %v", err)
+	}
+
+	ctx := context.Background()
+	tm := tags.NewManager(d.GetRestClient())
+	categories, err := tm.GetCategories(ctx)
+	if err != nil {
+		t.Fatalf("list tag categories: %v", err)
+	}
+
+	for i := range categories {
+		cat := categories[i]
+		if cat.Name != categoryName {
+			continue
+		}
+		if cat.Cardinality == "MULTIPLE" {
+			return
+		}
+		cat.Cardinality = "MULTIPLE"
+		if err := tm.UpdateCategory(ctx, &cat); err != nil {
+			t.Fatalf("tag category %q must allow MULTIPLE tags (attach blue+red); update failed: %v", categoryName, err)
+		}
+		return
+	}
+
+	if _, err := tm.CreateCategory(ctx, &tags.Category{
+		Name:            categoryName,
+		Cardinality:     "MULTIPLE",
+		AssociableTypes: []string{"VirtualMachine"},
+	}); err != nil {
+		t.Fatalf("create tag category %q: %v", categoryName, err)
+	}
+}
+
+func restLogin(d driver.Driver) error {
+	vd, ok := d.(*driver.VCenterDriver)
+	if !ok {
+		return fmt.Errorf("unexpected driver type %T", d)
+	}
+	return vd.RestClient.Login(vd.Ctx)
+}
+
+func teardownContentLibraryItem(libraryName, itemName string) error {
+	d, err := acceptance.TestConn()
+	if err != nil {
+		return fmt.Errorf("cannot connect %v", err)
+	}
+	item, err := d.ResolveContentLibraryItem(libraryName, itemName)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil
+		}
+		return err
+	}
+	return d.DeleteContentLibraryItem(item.ID)
+}
+
+func teardownVM(vmName string) error {
+	d, err := acceptance.TestConn()
+	if err != nil {
+		return fmt.Errorf("cannot connect %v", err)
+	}
+	return acceptance.CleanupVm(d, vmName)
+}
+
+// ---------------------------------------------------------------------------
+// Matrix A — Datastore Placement with Hardware Overlays
+// ---------------------------------------------------------------------------
+
+func TestAccISOBuilder_MatrixA(t *testing.T) {
+	acceptance.RequireAcceptance(t)
+	acc := env.AccFromEnv()
+	ensureTagCategoryMultiple(t, acc.TagCategory)
+
+	config := alpineExampleConfig()
+	alpineMatrixGuest(config)
+	config["notes"] = acc.Notes
+	config["tag"] = []map[string]interface{}{
+		{"category": acc.TagCategory, "name": acc.TagA},
+		{"category": acc.TagCategory, "name": acc.TagB},
+	}
+	config["cpu_cores"] = 2
+	config["CPU_reservation"] = 1000
+	config["CPU_limit"] = 1500
+	config["RAM_reservation"] = 1024
+	config["NestedHV"] = true
+	config["video_ram"] = 8192
+	config["remove_cdrom"] = true
+	config["create_snapshot"] = true
+	config["snapshot_name"] = "acc-test-snapshot"
+	config["convert_to_template"] = true
+
+	vmName := config["vm_name"].(string)
 	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-iso_basic_test",
+		Name:     "vsphere-iso-matrix-a",
 		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := acceptance.TestConn()
-			if err != nil {
-				return fmt.Errorf("cannot connect %v", err)
-			}
-			return acceptance.CleanupVm(d, config["vm_name"].(string))
+			return teardownVM(vmName)
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
-			if buildCommand.ProcessState != nil {
-				if buildCommand.ProcessState.ExitCode() != 0 {
-					return fmt.Errorf("bad exit code; logfile: %s", logfile)
-				}
+			if err := checkBuildSucceeded(buildCommand, logfile); err != nil {
+				return err
 			}
-			return checkDefault(config["vm_name"].(string), config["host"].(string), "datastore1")
+			return checkMatrixA(vmName, acc)
 		},
 	}
 	acctest.TestPlugin(t, testCase)
 }
 
-// defaultConfig initializes and returns a default configuration map for a vSphere environment.
-func defaultConfig() map[string]interface{} {
-	vcenter := env.GetenvOrDefault(env.EnvVcenterServer, env.DefaultVcenterServer)
-	username := env.GetenvOrDefault(env.EnvVsphereUsername, env.DefaultVsphereUsername)
-	password := env.GetenvOrDefault(env.EnvVspherePassword, env.DefaultVspherePassword)
-	host := env.GetenvOrDefault(env.EnvVsphereHost, env.DefaultVsphereHost)
-
-	config := map[string]interface{}{
-		"vcenter_server":      vcenter,
-		"username":            username,
-		"password":            password,
-		"host":                host,
-		"insecure_connection": true,
-
-		"ssh_username": "packer",
-		"ssh_password": "VMw@re1!",
-
-		"vm_name": acceptance.NewVmName(),
-		"storage": map[string]interface{}{
-			"disk_size": 2048,
-		},
-
-		"communicator": "none", // do not start the VM without any bootable devices
-	}
-
-	return config
-}
-
-// checkDefault verifies the configuration of a virtual machine by comparing its properties against expected values.
-func checkDefault(name string, host string, datastore string) error {
+func checkMatrixA(name string, acc env.AccConfig) error {
 	d, err := acceptance.TestConn()
 	if err != nil {
 		return fmt.Errorf("cannot connect %v", err)
@@ -80,22 +308,48 @@ func checkDefault(name string, host string, datastore string) error {
 		return fmt.Errorf("cannot find VM: %v", err)
 	}
 
-	vmInfo, err := vm.Info("name", "parent", "runtime.host", "resourcePool", "datastore", "layoutEx.disk", "config.firmware")
+	vmInfo, err := vm.Info(
+		"name",
+		"parent",
+		"runtime.host",
+		"resourcePool",
+		"datastore",
+		"config",
+		"snapshot",
+	)
 	if err != nil {
 		return fmt.Errorf("cannot read VM properties: %v", err)
 	}
 
-	if vmInfo.Name != name {
-		return fmt.Errorf("unexpected virtual machine name: expected '%v', but returned '%v'", name, vmInfo.Name)
+	if !vmInfo.Config.Template {
+		return fmt.Errorf("expected convert_to_template result, but config.template is false")
 	}
-
-	f := d.NewFolder(vmInfo.Parent)
-	folderPath, err := f.Path()
-	if err != nil {
-		return fmt.Errorf("cannot read folder name: %v", err)
+	if vmInfo.Config.Annotation != acc.Notes {
+		return fmt.Errorf("unexpected notes: expected %q, got %q", acc.Notes, vmInfo.Config.Annotation)
 	}
-	if folderPath != "" {
-		return fmt.Errorf("unexpected folder: expected '/', but returned '%v'", folderPath)
+	if vmInfo.Config.Firmware != "efi" {
+		return fmt.Errorf("unexpected firmware: expected 'efi', got %q", vmInfo.Config.Firmware)
+	}
+	if vmInfo.Config.Hardware.NumCPU != 2 {
+		return fmt.Errorf("expected 2 CPU sockets, got %v", vmInfo.Config.Hardware.NumCPU)
+	}
+	if vmInfo.Config.Hardware.NumCoresPerSocket == nil || *vmInfo.Config.Hardware.NumCoresPerSocket != 2 {
+		return fmt.Errorf("expected 2 CPU cores per socket")
+	}
+	if vmInfo.Config.CpuAllocation == nil || vmInfo.Config.CpuAllocation.Reservation == nil || *vmInfo.Config.CpuAllocation.Reservation != 1000 {
+		return fmt.Errorf("expected CPU reservation 1000 MHz")
+	}
+	if vmInfo.Config.CpuAllocation.Limit == nil || *vmInfo.Config.CpuAllocation.Limit != 1500 {
+		return fmt.Errorf("expected CPU limit 1500 MHz")
+	}
+	if vmInfo.Config.Hardware.MemoryMB != 2048 {
+		return fmt.Errorf("expected 2048 MB RAM, got %v", vmInfo.Config.Hardware.MemoryMB)
+	}
+	if vmInfo.Config.MemoryAllocation == nil || vmInfo.Config.MemoryAllocation.Reservation == nil || *vmInfo.Config.MemoryAllocation.Reservation != 1024 {
+		return fmt.Errorf("expected RAM reservation 1024 MB")
+	}
+	if vmInfo.Config.NestedHVEnabled == nil || !*vmInfo.Config.NestedHVEnabled {
+		return fmt.Errorf("expected NestedHV enabled")
 	}
 
 	h := d.NewHost(vmInfo.Runtime.Host)
@@ -103,17 +357,12 @@ func checkDefault(name string, host string, datastore string) error {
 	if err != nil {
 		return fmt.Errorf("cannot read host properties: %#v", err)
 	}
-	if hostInfo.Name != host {
-		return fmt.Errorf("unexpected host name: expected '%v', but returned '%v'", host, hostInfo.Name)
+	if hostInfo.Name != acc.Host {
+		return fmt.Errorf("unexpected host name: expected %q, got %q", acc.Host, hostInfo.Name)
 	}
 
-	p := d.NewResourcePool(vmInfo.ResourcePool)
-	poolPath, err := p.Path()
-	if err != nil {
-		return fmt.Errorf("cannot read resource pool name: %v", err)
-	}
-	if poolPath != "" {
-		return fmt.Errorf("unexpected resource pool: expected '/', but returned '%v'", poolPath)
+	if err := checkFolderAndResourcePool(d, vmInfo.Parent, vmInfo.ResourcePool, acc, !vmInfo.Config.Template); err != nil {
+		return err
 	}
 
 	dsr := vmInfo.Datastore[0].Reference()
@@ -122,515 +371,12 @@ func checkDefault(name string, host string, datastore string) error {
 	if err != nil {
 		return fmt.Errorf("cannot read datastore properties: %#v", err)
 	}
-	if dsInfo.Name != datastore {
-		return fmt.Errorf("unexpected datastore name: expected '%v', but returned '%v'", datastore, dsInfo.Name)
+	if dsInfo.Name != acc.Datastore {
+		return fmt.Errorf("unexpected datastore name: expected %q, got %q", acc.Datastore, dsInfo.Name)
 	}
 
-	fw := vmInfo.Config.Firmware
-	if fw != "bios" {
-		return fmt.Errorf("unexpected firmware: expected 'bios', but returned '%v'", fw)
-	}
-	return nil
-}
-
-// TestAccISOBuilderAcc_notes acceptance test validates a note configuration.
-func TestAccISOBuilderAcc_notes(t *testing.T) {
-	config := defaultConfig()
-	config["notes"] = "test"
-
-	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-iso_notes_test",
-		Template: acceptance.RenderConfig("vsphere-iso", config),
-		Teardown: func() error {
-			d, err := acceptance.TestConn()
-			if err != nil {
-				return fmt.Errorf("cannot connect %v", err)
-			}
-			return acceptance.CleanupVm(d, config["vm_name"].(string))
-		},
-		Check: func(buildCommand *exec.Cmd, logfile string) error {
-			if buildCommand.ProcessState != nil {
-				if buildCommand.ProcessState.ExitCode() != 0 {
-					return fmt.Errorf("bad exit code; logfile: %s", logfile)
-				}
-			}
-			return checkNotes(config["vm_name"].(string))
-		},
-	}
-	acctest.TestPlugin(t, testCase)
-}
-
-// checkNotes verifies a virtual machine has the "config.annotation" field set.
-func checkNotes(name string) error {
-	d, err := acceptance.TestConn()
-	if err != nil {
-		return fmt.Errorf("cannot connect %v", err)
-	}
-	vm, err := d.FindVM(name)
-	if err != nil {
-		return fmt.Errorf("cannot find VM: %v", err)
-	}
-	vmInfo, err := vm.Info("config.annotation")
-	if err != nil {
-		return fmt.Errorf("cannot read VM properties: %v", err)
-	}
-
-	notes := vmInfo.Config.Annotation
-	if notes != "test" {
-		return fmt.Errorf("notes should be 'test'")
-	}
-
-	return nil
-}
-
-// TestAccISOBuilderAcc_hardware acceptance test validates a hardware configuration.
-func TestAccISOBuilderAcc_hardware(t *testing.T) {
-	config := defaultConfig()
-	config["CPUs"] = 2
-	config["cpu_cores"] = 2
-	config["CPU_reservation"] = 1000
-	config["CPU_limit"] = 1500
-	config["RAM"] = 2048
-	config["RAM_reservation"] = 1024
-	config["NestedHV"] = true
-	config["firmware"] = "efi"
-	config["video_ram"] = 8192
-
-	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-iso_hardware_test",
-		Template: acceptance.RenderConfig("vsphere-iso", config),
-		Teardown: func() error {
-			d, err := acceptance.TestConn()
-			if err != nil {
-				return fmt.Errorf("cannot connect %v", err)
-			}
-			return acceptance.CleanupVm(d, config["vm_name"].(string))
-		},
-		Check: func(buildCommand *exec.Cmd, logfile string) error {
-			if buildCommand.ProcessState != nil {
-				if buildCommand.ProcessState.ExitCode() != 0 {
-					return fmt.Errorf("bad exit code; logfile: %s", logfile)
-				}
-			}
-			return checkHardware(config["vm_name"].(string))
-		},
-	}
-	acctest.TestPlugin(t, testCase)
-}
-
-// checkHardware verifies a virtual machine hardware configuration.
-func checkHardware(name string) error {
-	d, err := acceptance.TestConn()
-	if err != nil {
-		return fmt.Errorf("cannot connect %v", err)
-	}
-	vm, err := d.FindVM(name)
-	if err != nil {
-		return fmt.Errorf("cannot find VM: %v", err)
-	}
-	vmInfo, err := vm.Info("config")
-	if err != nil {
-		return fmt.Errorf("cannot read VM properties: %v", err)
-	}
-
-	cpuSockets := vmInfo.Config.Hardware.NumCPU
-	if cpuSockets != 2 {
-		return fmt.Errorf("VM should have 2 CPU sockets, but returned %v", cpuSockets)
-	}
-
-	cpuCores := vmInfo.Config.Hardware.NumCoresPerSocket
-	if cpuCores == nil {
-		return fmt.Errorf("VM should have 2 CPU cores per socket, but returned nil")
-	}
-	if *cpuCores != 2 {
-		return fmt.Errorf("VM should have 2 CPU cores per socket, but returned %v", *cpuCores)
-	}
-
-	cpuReservation := *vmInfo.Config.CpuAllocation.Reservation
-	if cpuReservation != 1000 {
-		return fmt.Errorf("VM should have CPU reservation for 1000 Mhz, but returned %v", cpuReservation)
-	}
-
-	cpuLimit := *vmInfo.Config.CpuAllocation.Limit
-	if cpuLimit != 1500 {
-		return fmt.Errorf("VM should have CPU reservation for 1500 Mhz, but returned %v", cpuLimit)
-	}
-
-	ram := vmInfo.Config.Hardware.MemoryMB
-	if ram != 2048 {
-		return fmt.Errorf("VM should have 2048 MB of RAM, but returned %v", ram)
-	}
-
-	ramReservation := *vmInfo.Config.MemoryAllocation.Reservation
-	if ramReservation != 1024 {
-		return fmt.Errorf("VM should have RAM reservation for 1024 MB, but returned %v", ramReservation)
-	}
-
-	nestedHV := vmInfo.Config.NestedHVEnabled
-	if !*nestedHV {
-		return fmt.Errorf("VM should have NestedHV enabled, but returned %v", nestedHV)
-	}
-
-	fw := vmInfo.Config.Firmware
-	if fw != "efi" {
-		return fmt.Errorf("unexpected firmware: expected 'efi', but returned '%v'", fw)
-	}
-
-	l, err := vm.Devices()
-	if err != nil {
-		return fmt.Errorf("cannot read VM devices: %v", err)
-	}
-	c := l.PickController((*types.VirtualIDEController)(nil))
-	if c == nil {
-		return fmt.Errorf("VM should have IDE controller")
-	}
-	s := l.PickController((*types.VirtualAHCIController)(nil))
-	if s != nil {
-		return fmt.Errorf("VM should have no SATA controllers")
-	}
-
-	v := l.SelectByType((*types.VirtualMachineVideoCard)(nil))
-	if len(v) != 1 {
-		return fmt.Errorf("virtual machine")
-	}
-	if v[0].(*types.VirtualMachineVideoCard).VideoRamSizeInKB != 8192 {
-		return fmt.Errorf("video memory should be equal 8192")
-	}
-
-	return nil
-}
-
-// TestAccISOBuilderAcc_limit acceptance test validates an unlimited CPU allocation.
-func TestAccISOBuilderAcc_limit(t *testing.T) {
-	config := defaultConfig()
-	config["CPUs"] = 1 // hardware is customized, but CPU limit is not specified explicitly
-
-	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-iso_limit_test",
-		Template: acceptance.RenderConfig("vsphere-iso", config),
-		Teardown: func() error {
-			d, err := acceptance.TestConn()
-			if err != nil {
-				return fmt.Errorf("cannot connect %v", err)
-			}
-			return acceptance.CleanupVm(d, config["vm_name"].(string))
-		},
-		Check: func(buildCommand *exec.Cmd, logfile string) error {
-			if buildCommand.ProcessState != nil {
-				if buildCommand.ProcessState.ExitCode() != 0 {
-					return fmt.Errorf("bad exit code; logfile: %s", logfile)
-				}
-			}
-			return checkLimit(config["vm_name"].(string))
-		},
-	}
-	acctest.TestPlugin(t, testCase)
-}
-
-// checkLimit verifies a virtual machine unlimited CPU allocation limit.
-func checkLimit(name string) error {
-	d, err := acceptance.TestConn()
-	if err != nil {
-		return fmt.Errorf("cannot connect %v", err)
-	}
-	vm, err := d.FindVM(name)
-	if err != nil {
-		return fmt.Errorf("cannot find VM: %v", err)
-	}
-	vmInfo, err := vm.Info("config.cpuAllocation")
-	if err != nil {
-		return fmt.Errorf("cannot read VM properties: %v", err)
-	}
-
-	limit := *vmInfo.Config.CpuAllocation.Limit
-	if limit != -1 { // must be unlimited
-		return fmt.Errorf("unexpected CPU limit: expected '%v', but returned '%v'", -1, limit)
-	}
-
-	return nil
-}
-
-// TestAccISOBuilderAcc_sata acceptance test validates a SATA CD-ROM type.
-func TestAccISOBuilderAcc_sata(t *testing.T) {
-	config := defaultConfig()
-	config["cdrom_type"] = "sata"
-
-	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-iso_sata_test",
-		Template: acceptance.RenderConfig("vsphere-iso", config),
-		Teardown: func() error {
-			d, err := acceptance.TestConn()
-			if err != nil {
-				return fmt.Errorf("cannot connect %v", err)
-			}
-			return acceptance.CleanupVm(d, config["vm_name"].(string))
-		},
-		Check: func(buildCommand *exec.Cmd, logfile string) error {
-			if buildCommand.ProcessState != nil {
-				if buildCommand.ProcessState.ExitCode() != 0 {
-					return fmt.Errorf("bad exit code; logfile: %s", logfile)
-				}
-			}
-			return checkSata(config["vm_name"].(string))
-		},
-	}
-	acctest.TestPlugin(t, testCase)
-}
-
-// checkSata verifies a virtual machine SATA controller configuration.
-func checkSata(name string) error {
-	d, err := acceptance.TestConn()
-	if err != nil {
-		return fmt.Errorf("cannot connect %v", err)
-	}
-	vm, err := d.FindVM(name)
-	if err != nil {
-		return fmt.Errorf("cannot find VM: %v", err)
-	}
-
-	l, err := vm.Devices()
-	if err != nil {
-		return fmt.Errorf("cannot read VM devices: %v", err)
-	}
-
-	c := l.PickController((*types.VirtualAHCIController)(nil))
-	if c == nil {
-		return fmt.Errorf("vm has no SATA controllers")
-	}
-
-	return nil
-}
-
-// TestAccISOBuilderAcc_cdrom acceptance test validates a CD-ROM boot media.
-func TestAccISOBuilderAcc_cdrom(t *testing.T) {
-	config := defaultConfig()
-	config["iso_paths"] = []string{
-		"[datastore1] test0.iso",
-		"[datastore1] test1.iso",
-	}
-	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-iso_cdrom_test",
-		Template: acceptance.RenderConfig("vsphere-iso", config),
-		Teardown: func() error {
-			d, err := acceptance.TestConn()
-			if err != nil {
-				return fmt.Errorf("cannot connect %v", err)
-			}
-			return acceptance.CleanupVm(d, config["vm_name"].(string))
-		},
-		Check: func(buildCommand *exec.Cmd, logfile string) error {
-			if buildCommand.ProcessState != nil {
-				if buildCommand.ProcessState.ExitCode() != 0 {
-					return fmt.Errorf("bad exit code; logfile: %s", logfile)
-				}
-			}
-			return nil
-		},
-	}
-	acctest.TestPlugin(t, testCase)
-}
-
-// TestAccISOBuilderAcc_networkCard acceptance test validates a network card configuration.
-func TestAccISOBuilderAcc_networkCard(t *testing.T) {
-	config := defaultConfig()
-	config["network_adapters"] = map[string]interface{}{
-		"network_card": "vmxnet3",
-	}
-	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-iso_networkCard_test",
-		Template: acceptance.RenderConfig("vsphere-iso", config),
-		Teardown: func() error {
-			d, err := acceptance.TestConn()
-			if err != nil {
-				return fmt.Errorf("cannot connect %v", err)
-			}
-			return acceptance.CleanupVm(d, config["vm_name"].(string))
-		},
-		Check: func(buildCommand *exec.Cmd, logfile string) error {
-			if buildCommand.ProcessState != nil {
-				if buildCommand.ProcessState.ExitCode() != 0 {
-					return fmt.Errorf("bad exit code; logfile: %s", logfile)
-				}
-			}
-			return checkNetworkCard(config["vm_name"].(string))
-		},
-	}
-	acctest.TestPlugin(t, testCase)
-}
-
-// checkNetworkCard verifies a virtual machine network card configuration.
-func checkNetworkCard(name string) error {
-	d, err := acceptance.TestConn()
-	if err != nil {
-		return fmt.Errorf("cannot connect %v", err)
-	}
-	vm, err := d.FindVM(name)
-	if err != nil {
-		return fmt.Errorf("cannot find VM: %v", err)
-	}
-	devices, err := vm.Devices()
-	if err != nil {
-		return fmt.Errorf("cannot read VM properties: %v", err)
-	}
-
-	netCards := devices.SelectByType((*types.VirtualEthernetCard)(nil))
-	if len(netCards) == 0 {
-		return fmt.Errorf("cannot find the network card")
-	}
-	if len(netCards) > 1 {
-		return fmt.Errorf("found more than one network card")
-	}
-	if _, ok := netCards[0].(*types.VirtualVmxnet3); !ok {
-		return fmt.Errorf("unexpected network card type: %s", netCards[0])
-	}
-
-	return nil
-}
-
-// TestAccISOBuilderAcc_createFloppy acceptance test validates a floppy file creation.
-func TestAccISOBuilderAcc_createFloppy(t *testing.T) {
-	tmpFile, err := os.CreateTemp("", "packer-vsphere-iso-test")
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	_, err = fmt.Fprint(tmpFile, "Hello, World!")
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	err = tmpFile.Close()
-	if err != nil {
-		t.Fatalf("unexpected error: '%s'", err)
-	}
-	config := defaultConfig()
-	config["floppy_files"] = []string{tmpFile.Name()}
-	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-iso_createFloppy_test",
-		Template: acceptance.RenderConfig("vsphere-iso", config),
-		Teardown: func() error {
-			d, err := acceptance.TestConn()
-			if err != nil {
-				return fmt.Errorf("unexpected error: expected 'nil', but returned '%s'", err)
-			}
-			return acceptance.CleanupVm(d, config["vm_name"].(string))
-		},
-		Check: func(buildCommand *exec.Cmd, logfile string) error {
-			if buildCommand.ProcessState != nil {
-				if buildCommand.ProcessState.ExitCode() != 0 {
-					return fmt.Errorf("bad exit code; logfile: %s", logfile)
-				}
-			}
-			return nil
-		},
-	}
-	acctest.TestPlugin(t, testCase)
-}
-
-// TestAccISOBuilderAcc_full acceptance test validates the end-to-end functionality of builder.
-func TestAccISOBuilderAcc_full(t *testing.T) {
-	config := fullConfig()
-	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-iso_full_test",
-		Template: acceptance.RenderConfig("vsphere-iso", config),
-		Teardown: func() error {
-			d, err := acceptance.TestConn()
-			if err != nil {
-				return fmt.Errorf("cannot connect %v", err)
-			}
-			return acceptance.CleanupVm(d, config["vm_name"].(string))
-		},
-		Check: func(buildCommand *exec.Cmd, logfile string) error {
-			if buildCommand.ProcessState != nil {
-				if buildCommand.ProcessState.ExitCode() != 0 {
-					return fmt.Errorf("bad exit code; logfile: %s", logfile)
-				}
-			}
-			return checkFull(config["vm_name"].(string))
-		},
-	}
-	acctest.TestPlugin(t, testCase)
-}
-
-// fullConfig constructs and returns a full configuration map for setting up a virtual machine with default settings.
-func fullConfig() map[string]interface{} {
-	vcenter := env.GetenvOrDefault(env.EnvVcenterServer, env.DefaultVcenterServer)
-	username := env.GetenvOrDefault(env.EnvVsphereUsername, env.DefaultVsphereUsername)
-	password := env.GetenvOrDefault(env.EnvVspherePassword, env.DefaultVspherePassword)
-	host := env.GetenvOrDefault(env.EnvVsphereHost, env.DefaultVsphereHost)
-
-	config := map[string]interface{}{
-		"vcenter_server":      vcenter,
-		"username":            username,
-		"password":            password,
-		"host":                host,
-		"insecure_connection": true,
-
-		"vm_name": acceptance.NewVmName(),
-
-		"RAM": 512,
-		"disk_controller_type": []string{
-			"pvscsi",
-		},
-		"storage": map[string]interface{}{
-			"disk_size":             1024,
-			"disk_thin_provisioned": true,
-		},
-		"network_adapters": map[string]interface{}{
-			"network_card": "vmxnet3",
-		},
-		"guest_os_type": "other3xLinux64Guest",
-
-		"iso_paths": []string{
-			"[datastore1] ISO/alpine-standard-3.8.2-x86_64.iso",
-		},
-		"floppy_files": []string{
-			"../examples/alpine/answerfile",
-			"../examples/alpine/setup.sh",
-		},
-
-		"boot_wait": "20s",
-		"boot_command": []string{
-			"root<enter><wait>",
-			"mount -t vfat /dev/fd0 /media/floppy<enter><wait>",
-			"setup-alpine -f /media/floppy/answerfile<enter>",
-			"<wait5>",
-			"vmware<enter>",
-			"vmware<enter>",
-			"<wait5>",
-			"y<enter>",
-			"<wait10><wait10><wait10><wait10>",
-			"reboot<enter>",
-			"<wait10><wait10><wait10>",
-			"root<enter>",
-			"vmware<enter><wait>",
-			"mount -t vfat /dev/fd0 /media/floppy<enter><wait>",
-			"/media/floppy/SETUP.SH<enter>",
-		},
-
-		"ssh_username": "packer",
-		"ssh_password": "VMw@re1!",
-	}
-
-	return config
-}
-
-// checkFull verifies a virtual machine full configuration.
-func checkFull(name string) error {
-	d, err := acceptance.TestConn()
-	if err != nil {
-		return fmt.Errorf("cannot connect %v", err)
-	}
-	vm, err := d.FindVM(name)
-	if err != nil {
-		return fmt.Errorf("cannot find VM: %v", err)
-	}
-	vmInfo, err := vm.Info("config.bootOptions")
-	if err != nil {
-		return fmt.Errorf("cannot read VM properties: %v", err)
-	}
-
-	order := vmInfo.Config.BootOptions.BootOrder
-	if order != nil {
-		return fmt.Errorf("boot order must be empty")
+	if vmInfo.Snapshot == nil || vmInfo.Snapshot.RootSnapshotList == nil || len(vmInfo.Snapshot.RootSnapshotList) == 0 {
+		return fmt.Errorf("expected create_snapshot to leave a snapshot on the template")
 	}
 
 	devices, err := vm.Devices()
@@ -638,45 +384,50 @@ func checkFull(name string) error {
 		return fmt.Errorf("cannot read devices: %v", err)
 	}
 	cdroms := devices.SelectByType((*types.VirtualCdrom)(nil))
-	for _, cd := range cdroms {
-		_, ok := cd.(*types.VirtualCdrom).Backing.(*types.VirtualCdromRemotePassthroughBackingInfo)
-		if !ok {
-			return fmt.Errorf("wrong cdrom backing")
-		}
+	if len(cdroms) != 0 {
+		return fmt.Errorf("expected remove_cdrom to leave zero CD-ROM devices, got %d", len(cdroms))
+	}
+	videos := devices.SelectByType((*types.VirtualMachineVideoCard)(nil))
+	if len(videos) != 1 {
+		return fmt.Errorf("expected one video card")
+	}
+	if videos[0].(*types.VirtualMachineVideoCard).VideoRamSizeInKB != 8192 {
+		return fmt.Errorf("expected video_ram 8192")
 	}
 
-	return nil
+	return checkTagsByName(d, vm, acc.TagCategory, []string{acc.TagA, acc.TagB})
 }
 
-// TestAccISOBuilderAcc_bootOrder acceptance test validates a boot order configuration.
-func TestAccISOBuilderAcc_bootOrder(t *testing.T) {
-	config := fullConfig()
-	config["boot_order"] = "disk,cdrom,floppy"
+// ---------------------------------------------------------------------------
+// Matrix B — Datastore Cluster Placement
+// ---------------------------------------------------------------------------
 
+func TestAccISOBuilder_MatrixB(t *testing.T) {
+	acceptance.RequireAcceptance(t)
+	acc := env.AccFromEnv()
+	config := alpineExampleConfig()
+	alpineMatrixGuest(config)
+	delete(config, "datastore")
+	config["datastore_cluster"] = acc.DatastoreCluster
+
+	vmName := config["vm_name"].(string)
 	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-iso_bootOrder_test",
+		Name:     "vsphere-iso-matrix-b",
 		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := acceptance.TestConn()
-			if err != nil {
-				return fmt.Errorf("cannot connect %v", err)
-			}
-			return acceptance.CleanupVm(d, config["vm_name"].(string))
+			return teardownVM(vmName)
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
-			if buildCommand.ProcessState != nil {
-				if buildCommand.ProcessState.ExitCode() != 0 {
-					return fmt.Errorf("bad exit code; logfile: %s", logfile)
-				}
+			if err := checkBuildSucceeded(buildCommand, logfile); err != nil {
+				return err
 			}
-			return checkBootOrder(config["vm_name"].(string))
+			return checkMatrixB(vmName, acc)
 		},
 	}
 	acctest.TestPlugin(t, testCase)
 }
 
-// checkBootOrder verifies a virtual machine boot order configuration.
-func checkBootOrder(name string) error {
+func checkMatrixB(name string, acc env.AccConfig) error {
 	d, err := acceptance.TestConn()
 	if err != nil {
 		return fmt.Errorf("cannot connect %v", err)
@@ -685,75 +436,170 @@ func checkBootOrder(name string) error {
 	if err != nil {
 		return fmt.Errorf("cannot find VM: %v", err)
 	}
-
-	vmInfo, err := vm.Info("config.bootOptions")
+	vmInfo, err := vm.Info("name", "parent", "resourcePool", "datastore")
 	if err != nil {
 		return fmt.Errorf("cannot read VM properties: %v", err)
 	}
-
-	order := vmInfo.Config.BootOptions.BootOrder
-	if order == nil {
-		return fmt.Errorf("boot order must not be empty")
+	if err := checkFolderAndResourcePool(d, vmInfo.Parent, vmInfo.ResourcePool, acc, true); err != nil {
+		return err
 	}
-
+	if len(vmInfo.Datastore) == 0 {
+		return fmt.Errorf("expected datastore_cluster placement to assign a datastore")
+	}
 	return nil
 }
 
-// TestISOBuilderAcc_cluster acceptance test validates using a vSphere cluster and host configuration.
-func TestISOBuilderAcc_cluster(t *testing.T) {
-	config := defaultConfig()
-	config["cluster"] = "cluster1"
-	config["host"] = "esx02.example.com"
+// ---------------------------------------------------------------------------
+// Matrix C — Content Library VM Template
+// ---------------------------------------------------------------------------
+
+func TestAccISOBuilder_MatrixC(t *testing.T) {
+	acceptance.RequireAcceptance(t)
+	acc := env.AccFromEnv()
+	config := alpineExampleConfig()
+	alpineMatrixGuest(config)
+	vmName := config["vm_name"].(string)
+	clItemName := vmName + "-vm-template"
+
+	config["reattach_cdroms"] = 1
+	config["content_library_destination"] = map[string]interface{}{
+		"library": acc.ContentLibrary,
+		"name":    clItemName,
+		"ovf":     false,
+		"destroy": true,
+	}
+
 	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-iso_bootOrder_test",
+		Name:     "vsphere-iso-matrix-c",
 		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := acceptance.TestConn()
-			if err != nil {
-				return fmt.Errorf("cannot connect %v", err)
-			}
-			return acceptance.CleanupVm(d, config["vm_name"].(string))
+			_ = teardownVM(vmName)
+			return teardownContentLibraryItem(acc.ContentLibrary, clItemName)
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
-			if buildCommand.ProcessState != nil {
-				if buildCommand.ProcessState.ExitCode() != 0 {
-					return fmt.Errorf("bad exit code; logfile: %s", logfile)
-				}
+			if err := checkBuildSucceeded(buildCommand, logfile); err != nil {
+				return err
 			}
-			return nil
+			return checkMatrixC(vmName, acc.ContentLibrary, clItemName)
 		},
 	}
 	acctest.TestPlugin(t, testCase)
 }
 
-// TestISOBuilderAcc_clusterDRS acceptance test validates using a vSphere cluster with DRS enabled.
-func TestISOBuilderAcc_clusterDRS(t *testing.T) {
-	config := defaultConfig()
-	config["cluster"] = "cluster2"
-	config["host"] = ""
-	config["datastore"] = "datastore3" // bug #183
-	config["network_adapters"] = map[string]interface{}{
-		"network": "VM Network",
+func checkMatrixC(vmName, libraryName, itemName string) error {
+	d, err := acceptance.TestConn()
+	if err != nil {
+		return fmt.Errorf("cannot connect %v", err)
+	}
+
+	if _, err := d.FindVM(vmName); err == nil {
+		return fmt.Errorf("expected VM %q to be destroyed after content library import", vmName)
+	} else if !strings.Contains(err.Error(), "not found") {
+		return fmt.Errorf("unexpected FindVM error: %v", err)
+	}
+
+	item, err := d.ResolveContentLibraryItem(libraryName, itemName)
+	if err != nil {
+		return fmt.Errorf("expected content library VM template item: %v", err)
+	}
+	if item.Type == "ovf" {
+		return fmt.Errorf("unexpected content library item type %q for VMTX import", item.Type)
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// Matrix D — Content Library OVF Template
+// ---------------------------------------------------------------------------
+
+func TestAccISOBuilder_MatrixD(t *testing.T) {
+	acceptance.RequireAcceptance(t)
+	acc := env.AccFromEnv()
+	config := alpineExampleConfig()
+	alpineMatrixGuest(config)
+	vmName := config["vm_name"].(string)
+	clItemName := vmName + "-ovf-template"
+	exportDir := filepath.Join(os.TempDir(), vmName+"ovf-export")
+
+	config["reattach_cdroms"] = 1
+	config["content_library_destination"] = map[string]interface{}{
+		"library": acc.ContentLibrary,
+		"name":    clItemName,
+		"ovf":     true,
+	}
+	config["export"] = map[string]interface{}{
+		"force":            true,
+		"output_directory": exportDir,
+		"output_format":    "ovf",
 	}
 
 	testCase := &acctest.PluginTestCase{
-		Name:     "vsphere-iso_bootOrder_test",
+		Name:     "vsphere-iso-matrix-d",
 		Template: acceptance.RenderConfig("vsphere-iso", config),
 		Teardown: func() error {
-			d, err := acceptance.TestConn()
-			if err != nil {
-				return fmt.Errorf("cannot connect %v", err)
-			}
-			return acceptance.CleanupVm(d, config["vm_name"].(string))
+			_ = os.RemoveAll(exportDir)
+			_ = teardownVM(vmName)
+			return teardownContentLibraryItem(acc.ContentLibrary, clItemName)
 		},
 		Check: func(buildCommand *exec.Cmd, logfile string) error {
-			if buildCommand.ProcessState != nil {
-				if buildCommand.ProcessState.ExitCode() != 0 {
-					return fmt.Errorf("bad exit code; logfile: %s", logfile)
-				}
+			if err := checkBuildSucceeded(buildCommand, logfile); err != nil {
+				return err
 			}
-			return nil
+			return checkMatrixD(vmName, acc, acc.ContentLibrary, clItemName, exportDir)
 		},
 	}
 	acctest.TestPlugin(t, testCase)
+}
+
+func checkMatrixD(vmName string, acc env.AccConfig, libraryName, itemName, exportDir string) error {
+	d, err := acceptance.TestConn()
+	if err != nil {
+		return fmt.Errorf("cannot connect %v", err)
+	}
+
+	vm, err := d.FindVM(vmName)
+	if err != nil {
+		return fmt.Errorf("cannot find VM after OVF import/export: %v", err)
+	}
+
+	vmInfo, err := vm.Info("name", "parent", "resourcePool")
+	if err != nil {
+		return fmt.Errorf("cannot read VM properties: %v", err)
+	}
+	if err := checkFolderAndResourcePool(d, vmInfo.Parent, vmInfo.ResourcePool, acc, true); err != nil {
+		return err
+	}
+
+	devices, err := vm.Devices()
+	if err != nil {
+		return fmt.Errorf("cannot read devices: %v", err)
+	}
+	cdroms := devices.SelectByType((*types.VirtualCdrom)(nil))
+	if len(cdroms) != 1 {
+		return fmt.Errorf("expected reattach_cdroms=1 to leave one CD-ROM, got %d", len(cdroms))
+	}
+	_, ok := cdroms[0].(*types.VirtualCdrom).Backing.(*types.VirtualCdromRemotePassthroughBackingInfo)
+	if !ok {
+		return fmt.Errorf("expected reattached CD-ROM to have empty/passthrough backing")
+	}
+
+	item, err := d.ResolveContentLibraryItem(libraryName, itemName)
+	if err != nil {
+		return fmt.Errorf("expected content library OVF item: %v", err)
+	}
+	if !strings.EqualFold(item.Type, "ovf") {
+		return fmt.Errorf("unexpected content library item type %q, want ovf", item.Type)
+	}
+
+	ovfPath := filepath.Join(exportDir, vmName+".ovf")
+	if _, err := os.Stat(ovfPath); err != nil {
+		entries, _ := os.ReadDir(exportDir)
+		names := make([]string, 0, len(entries))
+		for _, e := range entries {
+			names = append(names, e.Name())
+		}
+		return fmt.Errorf("expected export OVF at %s (dir contents: %v): %v", ovfPath, names, err)
+	}
+
+	return nil
 }

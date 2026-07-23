@@ -6,6 +6,16 @@
 set -ex
 
 sed -i 's/#http/http/' /etc/apk/repositories
+
+# DHCP can lag after reboot; retry package index fetch before installing tools.
+i=0
+while [ "$i" -lt 12 ]; do
+	if apk update; then
+		break
+	fi
+	i=$((i + 1))
+	sleep 5
+done
 apk update
 
 apk add openssl
