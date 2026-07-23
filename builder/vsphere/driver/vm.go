@@ -36,6 +36,7 @@ type VirtualMachine interface {
 	AddPublicKeys(ctx context.Context, publicKeys string) error
 	Properties(ctx context.Context) (*mo.VirtualMachine, error)
 	Destroy() error
+	Unregister() error
 	Configure(config *HardwareConfig) error
 	Reconfigure(spec types.VirtualMachineConfigSpec) error
 	Customize(spec types.CustomizationSpec) error
@@ -579,6 +580,12 @@ func (vm *VirtualMachineDriver) Destroy() error {
 	}
 	_, err = task.WaitForResult(vm.driver.Ctx, nil)
 	return err
+}
+
+// Unregister removes the virtual machine from inventory without deleting its
+// files. Used when Destroy fails because the backing files are already gone.
+func (vm *VirtualMachineDriver) Unregister() error {
+	return vm.vm.Unregister(vm.driver.Ctx)
 }
 
 // Configure modifies the configuration of an existing virtual machine based on

@@ -6,7 +6,13 @@ COUNT?=1
 TEST?=$(shell go list ./...)
 HASHICORP_PACKER_PLUGIN_SDK_VERSION?=$(shell go list -m github.com/hashicorp/packer-plugin-sdk | cut -d " " -f2)
 
-.PHONY: dev build test install-packer-sdc plugin-check testacc generate docs-deps docs-prepare docs-test docs-test-links docs-test-internal-links docs-test-admonitions docs-test-example-labels docs-test-group-example-tabs docs-test-normalize docs-test-github-alerts docs-build docs-serve docs-serve-version docs-serve-mike docs-serve-mike-only docs-backfill
+.PHONY: dev build test install-packer-sdc plugin-check testacc \
+	testacc-datasource \
+	testacc-builder testacc-builder-iso testacc-builder-clone \
+	testacc-post-processor testacc-post-processor-vsphere testacc-post-processor-vsphere-template \
+	generate docs-deps docs-prepare docs-test docs-test-links docs-test-internal-links docs-test-admonitions \
+	docs-test-example-labels docs-test-group-example-tabs docs-test-normalize docs-test-github-alerts \
+	docs-build docs-serve docs-serve-version docs-serve-mike docs-serve-mike-only docs-backfill
 
 build:
 	@go build -o ${BINARY}
@@ -25,7 +31,31 @@ plugin-check: install-packer-sdc build
 	@packer-sdc plugin-check ${BINARY}
 
 testacc: dev
-	@PACKER_ACC=1 go test -count $(COUNT) -v $(TEST) -timeout=120m
+	@PACKER_ACC=1 go test -count $(COUNT) -v $(TEST) -timeout=180m
+
+TESTACC_DATASOURCE_RUN?=TestAccDatasource
+testacc-datasource:
+	@PACKER_ACC=1 go test ./datasource/... -count $(COUNT) -v -timeout=15m -run '$(TESTACC_DATASOURCE_RUN)'
+
+TESTACC_BUILDER_ISO_RUN?=TestAccISOBuilder_Matrix
+testacc-builder-iso: dev
+	@PACKER_ACC=1 go test ./builder/vsphere/iso -count $(COUNT) -v -timeout=180m -run '$(TESTACC_BUILDER_ISO_RUN)'
+
+TESTACC_BUILDER_CLONE_RUN?=TestAccCloneBuilder_Matrix
+testacc-builder-clone: dev
+	@PACKER_ACC=1 go test ./builder/vsphere/clone -count $(COUNT) -v -timeout=30m -run '$(TESTACC_BUILDER_CLONE_RUN)'
+
+testacc-builder: testacc-builder-iso testacc-builder-clone
+
+TESTACC_POST_PROCESSOR_VSPHERE_RUN?=TestAccPostProcessorVSphere_Matrix
+testacc-post-processor-vsphere: dev
+	@PACKER_ACC=1 go test ./post-processor/vsphere -count $(COUNT) -v -timeout=30m -run '$(TESTACC_POST_PROCESSOR_VSPHERE_RUN)'
+
+TESTACC_POST_PROCESSOR_VSPHERE_TEMPLATE_RUN?=TestAccPostProcessorVSphereTemplate_Matrix
+testacc-post-processor-vsphere-template: dev
+	@PACKER_ACC=1 go test ./post-processor/vsphere-template -count $(COUNT) -v -timeout=30m -run '$(TESTACC_POST_PROCESSOR_VSPHERE_TEMPLATE_RUN)'
+
+testacc-post-processor: testacc-post-processor-vsphere testacc-post-processor-vsphere-template
 
 generate: install-packer-sdc
 	@go generate ./...

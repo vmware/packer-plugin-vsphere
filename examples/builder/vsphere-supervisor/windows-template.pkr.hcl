@@ -41,7 +41,7 @@ variable "communicator" {
   default = "ssh"
 }
 variable "ssh_username" {
-  type    = string
+  type = string
 }
 variable "ssh_password" {
   type      = string

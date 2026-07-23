@@ -7,7 +7,7 @@ package acceptance
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
@@ -15,8 +15,7 @@ import (
 )
 
 func NewVmName() string {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	return fmt.Sprintf("test-%v", r.Intn(1000))
+	return fmt.Sprintf("acc-test-%s", time.Now().Format("20060102-150405"))
 }
 
 func RenderConfig(builderType string, config map[string]interface{}) string {
@@ -34,14 +33,13 @@ func RenderConfig(builderType string, config map[string]interface{}) string {
 }
 
 func TestConn() (driver.Driver, error) {
-	vcenter := env.GetenvOrDefault(env.EnvVcenterServer, env.DefaultVcenterServer)
-	username := env.GetenvOrDefault(env.EnvVsphereUsername, env.DefaultVsphereUsername)
-	password := env.GetenvOrDefault(env.EnvVspherePassword, env.DefaultVspherePassword)
+	acc := env.AccFromEnv()
 
 	d, err := driver.NewDriver(&driver.ConnectConfig{
-		VCenterServer:      vcenter,
-		Username:           username,
-		Password:           password,
+		VCenterServer:      acc.VCenterServer,
+		Username:           acc.Username,
+		Password:           acc.Password,
+		Datacenter:         acc.Datacenter,
 		InsecureConnection: true,
 	})
 	if err != nil {
@@ -50,18 +48,42 @@ func TestConn() (driver.Driver, error) {
 	return d, nil
 }
 
-func getVm(d driver.Driver, name string) (driver.VirtualMachine, error) {
+func CleanupVm(d driver.Driver, name string) error {
+	acc := env.AccFromEnv()
 	vm, err := d.FindVM(name)
 	if err != nil {
-		return nil, fmt.Errorf("error finding virtual machine: %v", err)
-	}
-	return vm, nil
-}
-
-func CleanupVm(d driver.Driver, name string) error {
-	vm, err := getVm(d, name)
-	if err != nil {
+		// Plugin may have already destroyed the virtual machine on failure, or
+		// the test was aborted before create completed.
+		if strings.Contains(err.Error(), "not found") {
+			return nil
+		}
 		return fmt.Errorf("error finding virtual machine: %v", err)
 	}
-	return vm.Destroy()
+
+	isTemplate, err := vm.IsTemplate()
+	if err == nil && isTemplate {
+		// Templates cannot be destroyed directly.
+		if err := vm.ConvertToVirtualMachine(acc.Cluster, acc.Host, acc.ResourcePool); err != nil {
+			// Backing may already be gone; drop the inventory entry.
+			if err2 := vm.Unregister(); err2 != nil {
+				return fmt.Errorf("error converting template (%v); unregister failed: %v", err, err2)
+			}
+			return nil
+		}
+	}
+
+	_ = vm.PowerOff()
+
+	if err := vm.Destroy(); err != nil {
+		// Destroy deletes datastore files. If those are already gone, the
+		// inventory object remains and must be unregistered.
+		_ = vm.PowerOff()
+		if err2 := vm.Destroy(); err2 == nil {
+			return nil
+		}
+		if err2 := vm.Unregister(); err2 != nil {
+			return fmt.Errorf("error destroying virtual machine (%v); unregister failed: %v", err, err2)
+		}
+	}
+	return nil
 }

@@ -57,7 +57,7 @@ Use GitHub pull requests to propose changes to the codebase using the following 
 5. You have modified the source based on logical units of work. Focus on the specific change
    you are contributing. Pull requests that contain multiple unrelated changes will be
    rejected.
-4. You have followed the existing style and conventions of the project. 
+4. You have followed the existing style and conventions of the project.
 5. You have added tests for your changes.
 5. You have generated the updated documentation and associated assets by running `make generate`.
 5. You have tested building the plugin by running `make build`.
@@ -72,7 +72,7 @@ When opening a pull request, ensure that:
 2. You provide a detailed description of the changes in the pull request template.
 2. You open any work-in-progress pull requests as a draft.
 3. You mark the pull request as ready for review when you are ready for it to be reviewed.
-4. You follow the status checks for the pull request to ensure that all checks are passing. 
+4. You follow the status checks for the pull request to ensure that all checks are passing.
 5. You stay involved in the conversation with the maintainers to ensure that your contribution
    can be reviewed.
 

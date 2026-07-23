@@ -1,11 +1,19 @@
-main
-dist/*
-.docs/*
-.vscode/*
-.idea/*
-packer-plugin-vsphere
-crash.log
+# Build and Generated Output
+/main
+/packer-plugin-vsphere
+/dist/
+/.docs/
+/crash.log
 
-# macOS
-## Ignore desktop services store files.
+# Acceptance Tests Artifacts
+**/packer_log_*.txt
+**/packer_init_log_*.txt
+builder/vsphere/**/vsphere-*-matrix-*.json
+builder/vsphere/**/vsphere-*-matrix-*.pkr.hcl
+
+# Editor Configuration
+/.idea/
+/.vscode/
+
+# Operating System Files
 **/.DS_Store

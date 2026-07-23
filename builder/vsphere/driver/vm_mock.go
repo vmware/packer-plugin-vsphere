@@ -138,6 +138,10 @@ func (vm *VirtualMachineMock) Destroy() error {
 	return nil
 }
 
+func (vm *VirtualMachineMock) Unregister() error {
+	return nil
+}
+
 func (vm *VirtualMachineMock) Configure(config *HardwareConfig) error {
 	vm.ConfigureCalled = true
 	vm.ConfigureHardwareConfig = config
