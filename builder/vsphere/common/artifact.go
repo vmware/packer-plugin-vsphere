@@ -119,11 +119,16 @@ func (a *Artifact) stateHCPPackerRegistryMetadata() interface{} {
 	return img
 }
 
+// Destroy removes the output directory (if any) and destroys the source
+// virtual machine.
 func (a *Artifact) Destroy() error {
 	if a.Outconfig != nil {
 		if err := os.RemoveAll(a.Outconfig.OutputDir); err != nil {
 			log.Printf("[WARN] Failed to remove output directory: %v", err)
 		}
 	}
-	return a.VM.Destroy()
+	if err := a.VM.Destroy(); err != nil {
+		log.Printf("[WARN] Failed to destroy virtual machine %q: %v", a.Name, err)
+	}
+	return nil
 }
