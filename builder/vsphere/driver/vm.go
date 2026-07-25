@@ -576,10 +576,12 @@ func (vm *VirtualMachineDriver) Properties(ctx context.Context) (*mo.VirtualMach
 func (vm *VirtualMachineDriver) Destroy() error {
 	task, err := vm.vm.Destroy(vm.driver.Ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("error destroying virtual machine: %s", err)
 	}
-	_, err = task.WaitForResult(vm.driver.Ctx, nil)
-	return err
+	if _, err = task.WaitForResult(vm.driver.Ctx, nil); err != nil {
+		return fmt.Errorf("error destroying virtual machine: %s", err)
+	}
+	return nil
 }
 
 // Unregister removes the virtual machine from inventory without deleting its
