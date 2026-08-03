@@ -45,30 +45,3 @@ jobs:
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           API_VERSION: ${{ steps.plugin_describe.outputs.api_version }}
-  release-docs:
-    needs: release-plugin
-    if: ${{ !contains(github.ref_name, '-rc') && !contains(github.ref_name, '-beta') && !contains(github.ref_name, '-alpha') }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: main
-          fetch-depth: 0
-      - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.x'
-      - name: Install Documentation Dependencies
-        run: make docs-deps
-      - name: Configure GitHub Actions Bot Author
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-      - name: Deploy Documentation with Mike
-        env:
-          VERSION: ${{ github.ref_name }}
-        run: |
-          version="${VERSION#v}"
-          chmod +x docs-site/scripts/mike-deploy.sh
-          ./docs-site/scripts/mike-deploy.sh "$version" --update-latest
