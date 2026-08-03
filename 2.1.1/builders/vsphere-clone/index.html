@@ -1281,6 +1281,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../community/release-verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Release Verification
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="https://github.com/vmware/packer-plugin-vsphere/discussions" class="md-nav__link">
         
   
@@ -1894,7 +1921,7 @@ references, which are necessary for a build to succeed and can be found further 
 <li>
 <p><code>content_library_destination</code> (*common.ContentLibraryDestinationConfig) - The configuration for importing a VM template or OVF template to a
   content library. The template will not be imported if no
-  <a href="#content-library-configuration">content library import configuration</a>
+  <a href="#content-library-destination-configuration">content library import configuration</a>
   is specified. If set, <code>convert_to_template</code> must be set to <code>false</code>.</p>
 </li>
 <li>
@@ -1922,14 +1949,14 @@ disks are not supported.</p>
 <li>
 <p><code>network</code> (string) - The network to which the virtual machine will connect.
   For example:</p>
-</li>
+<ul>
 <li>Name: <code>&lt;NetworkName&gt;</code></li>
 <li>Inventory Path: <code>/&lt;DatacenterName&gt;/&lt;FolderName&gt;/&lt;NetworkName&gt;</code></li>
 <li>Managed Object ID (Port Group): <code>Network:network-&lt;xxxxx&gt;</code></li>
 <li>Managed Object ID (Distributed Port Group): <code>DistributedVirtualPortgroup::dvportgroup-&lt;xxxxx&gt;</code></li>
 <li>Logical Switch UUID: <code>&lt;uuid&gt;</code></li>
-<li>
-<p>Segment ID: <code>/infra/segments/&lt;SegmentID&gt;</code></p>
+<li>Segment ID: <code>/infra/segments/&lt;SegmentID&gt;</code></li>
+</ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If more than one network resolves to the same name, either
@@ -2477,10 +2504,10 @@ command, they will be replaced by the proper key:</p>
 </li>
 <li>
 <p><code>&lt;home&gt; &lt;end&gt;</code> - Simulates pressing the home and end keys.</p>
-</li>
-<li>
-<p><code>&lt;pageUp&gt; &lt;pageDown&gt;</code> - Simulates pressing the page up and page down
-    keys.</p>
+<ul>
+<li><code>&lt;pageUp&gt; &lt;pageDown&gt;</code> - Simulates pressing the page up and page down
+keys.</li>
+</ul>
 </li>
 <li>
 <p><code>&lt;menu&gt;</code> - Simulates pressing the Menu key.</p>
@@ -2496,26 +2523,34 @@ command, they will be replaced by the proper key:</p>
 </li>
 <li>
 <p><code>&lt;leftSuper&gt; &lt;rightSuper&gt;</code> - Simulates pressing the ⌘ or Windows key.</p>
+<ul>
+<li>
+<p><code>&lt;wait&gt; &lt;wait5&gt; &lt;wait10&gt;</code> - Adds a 1, 5 or 10 second pause before
+sending any additional keys. This is useful if you have to generally
+wait for the UI to update before typing more.</p>
 </li>
-<li><code>&lt;wait&gt; &lt;wait5&gt; &lt;wait10&gt;</code> - Adds a 1, 5 or 10 second pause before
-    sending any additional keys. This is useful if you have to generally
-    wait for the UI to update before typing more.</li>
-<li><code>&lt;waitXX&gt;</code> - Add an arbitrary pause before sending any additional keys.
-    The format of <code>XX</code> is a sequence of positive decimal numbers, each with
-    optional fraction and a unit suffix, such as <code>300ms</code>, <code>1.5h</code> or <code>2h45m</code>.
-    Valid time units are <code>ns</code>, <code>us</code> (or <code>µs</code>), <code>ms</code>, <code>s</code>, <code>m</code>, <code>h</code>. For
-    example <code>&lt;wait10m&gt;</code> or <code>&lt;wait1m20s&gt;</code>.</li>
-<li><code>&lt;XXXOn&gt; &lt;XXXOff&gt;</code> - Any printable keyboard character, and of these
-    "special" expressions, with the exception of the <code>&lt;wait&gt;</code> types, can
-    also be toggled on or off. For example, to simulate ctrl+c, use
-    <code>&lt;leftCtrlOn&gt;c&lt;leftCtrlOff&gt;</code>. Be sure to release them, otherwise they
-    will be held down until the machine reboots. To hold the <code>c</code> key down,
-    you would use <code>&lt;cOn&gt;</code>. Likewise, <code>&lt;cOff&gt;</code> to release.</li>
+<li>
+<p><code>&lt;waitXX&gt;</code> - Add an arbitrary pause before sending any additional keys.
+The format of <code>XX</code> is a sequence of positive decimal numbers, each with
+optional fraction and a unit suffix, such as <code>300ms</code>, <code>1.5h</code> or <code>2h45m</code>.
+Valid time units are <code>ns</code>, <code>us</code> (or <code>µs</code>), <code>ms</code>, <code>s</code>, <code>m</code>, <code>h</code>. For
+example <code>&lt;wait10m&gt;</code> or <code>&lt;wait1m20s&gt;</code>.</p>
+</li>
+<li>
+<p><code>&lt;XXXOn&gt; &lt;XXXOff&gt;</code> - Any printable keyboard character, and of these
+"special" expressions, with the exception of the <code>&lt;wait&gt;</code> types, can
+also be toggled on or off. For example, to simulate ctrl+c, use
+<code>&lt;leftCtrlOn&gt;c&lt;leftCtrlOff&gt;</code>. Be sure to release them, otherwise they
+will be held down until the machine reboots. To hold the <code>c</code> key down,
+you would use <code>&lt;cOn&gt;</code>. Likewise, <code>&lt;cOff&gt;</code> to release.</p>
+</li>
 <li>
 <p><code>{{ .HTTPIP }} {{ .HTTPPort }}</code> - The IP and port, respectively of an
-    HTTP server that is started serving the directory specified by the
-    <code>http_directory</code> configuration parameter. If <code>http_directory</code> isn't
-    specified, these will be blank!</p>
+HTTP server that is started serving the directory specified by the
+<code>http_directory</code> configuration parameter. If <code>http_directory</code> isn't
+specified, these will be blank!</p>
+</li>
+</ul>
 </li>
 <li>
 <p><code>{{ .Name }}</code> - The name of the VM.</p>
@@ -2930,15 +2965,28 @@ boot time.</p>
   will be copied onto the CD recursively, preserving directory structure
   hierarchy. Symlinks will have the link's target copied into the directory
   tree on the CD where the symlink was. File globbing is allowed.</p>
-<p><div class="language-hcl highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="na">cd_files</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;./somedirectory/meta-data&quot;, &quot;./somedirectory/user-data&quot;</span><span class="p">]</span>
+<div class="tabbed-set tabbed-alternate" data-tabs="11:2"><input checked="checked" id="__tabbed_11_1" name="__tabbed_11" type="radio" /><input id="__tabbed_11_2" name="__tabbed_11" type="radio" /><div class="tabbed-labels"><label for="__tabbed_11_1">HCL</label><label for="__tabbed_11_2">JSON</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="na">cd_files</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;./somedirectory/meta-data&quot;, &quot;./somedirectory/user-data&quot;</span><span class="p">]</span>
 </span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="na">cd_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cidata&quot;</span>
 </span></code></pre></div>
-  The above will create a CD with two files, user-data and meta-data in the
+</div>
+<div class="tabbed-block">
+<div class="language-json highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="nt">&quot;iso_paths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="w">  </span><span class="s2">&quot;[nfs] iso/ubuntu-server-amd64.iso&quot;</span><span class="p">,</span>
+</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="w">  </span><span class="s2">&quot;Example Content Library/ubuntu-server-amd64/ubuntu-server-amd64.iso&quot;</span>
+</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="p">]</span>
+</span></code></pre></div>
+</div>
+</div>
+</div>
+<p>The above will create a CD with two files, user-data and meta-data in the
   CD root. This specific example is how you would create a CD that can be
   used for an Ubuntu 20.04 autoinstall.
   Since globbing is also supported,
-  <div class="language-hcl highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="na">cd_files</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;./somedirectory/*&quot;</span><span class="p">]</span>
-</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="na">cd_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cidata&quot;</span>
+  <div class="language-hcl highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="na">cd_files</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;./somedirectory/*&quot;</span><span class="p">]</span>
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="na">cd_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cidata&quot;</span>
 </span></code></pre></div>
   Would also be an acceptable way to define the above cd. The difference
   between providing the directory with or without the glob is whether the
@@ -2958,22 +3006,22 @@ boot time.</p>
   contents. It can be used alongside <code>cd_files</code>, which is useful to add large
   files without loading them into memory. If any paths are specified by both,
   the contents in <code>cd_content</code> will take precedence.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="11:2"><input checked="checked" id="__tabbed_11_1" name="__tabbed_11" type="radio" /><input id="__tabbed_11_2" name="__tabbed_11" type="radio" /><div class="tabbed-labels"><label for="__tabbed_11_1">HCL</label><label for="__tabbed_11_2">JSON</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="12:2"><input checked="checked" id="__tabbed_12_1" name="__tabbed_12" type="radio" /><input id="__tabbed_12_2" name="__tabbed_12" type="radio" /><div class="tabbed-labels"><label for="__tabbed_12_1">HCL</label><label for="__tabbed_12_2">JSON</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="na">cd_files</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;vendor-data&quot;</span><span class="p">]</span>
-</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="nb">cd_content</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">  </span><span class="s2">&quot;meta-data&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">jsonencode</span><span class="p">(</span><span class="nv">local.instance_data</span><span class="p">)</span>
-</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">  </span><span class="s2">&quot;user-data&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">templatefile</span><span class="p">(</span><span class="s2">&quot;user-data&quot;, { packages = [&quot;nginx&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">})</span>
-</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="p">}</span>
-</span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="na">cd_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cidata&quot;</span>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="na">cd_files</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;vendor-data&quot;</span><span class="p">]</span>
+</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="nb">cd_content</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="w">  </span><span class="s2">&quot;meta-data&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">jsonencode</span><span class="p">(</span><span class="nv">local.instance_data</span><span class="p">)</span>
+</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="w">  </span><span class="s2">&quot;user-data&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">templatefile</span><span class="p">(</span><span class="s2">&quot;user-data&quot;, { packages = [&quot;nginx&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">})</span>
+</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="p">}</span>
+</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="na">cd_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cidata&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="nt">&quot;iso_paths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="w">  </span><span class="s2">&quot;[nfs] iso/ubuntu-server-amd64.iso&quot;</span><span class="p">,</span>
-</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="w">  </span><span class="s2">&quot;Example Content Library/ubuntu-server-amd64/ubuntu-server-amd64.iso&quot;</span>
-</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="p">]</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="nt">&quot;iso_paths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="w">  </span><span class="s2">&quot;[nfs] iso/ubuntu-server-amd64.iso&quot;</span><span class="p">,</span>
+</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w">  </span><span class="s2">&quot;Example Content Library/ubuntu-server-amd64/ubuntu-server-amd64.iso&quot;</span>
+</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="p">]</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -2989,20 +3037,20 @@ boot time.</p>
 <li>
 <p><code>iso_paths</code> ([]string) - A list of paths to ISO files in either a datastore or a content library
   that will be attached to the virtual machine.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="12:2"><input checked="checked" id="__tabbed_12_1" name="__tabbed_12" type="radio" /><input id="__tabbed_12_2" name="__tabbed_12" type="radio" /><div class="tabbed-labels"><label for="__tabbed_12_1">HCL</label><label for="__tabbed_12_2">JSON</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="13:2"><input checked="checked" id="__tabbed_13_1" name="__tabbed_13" type="radio" /><input id="__tabbed_13_2" name="__tabbed_13" type="radio" /><div class="tabbed-labels"><label for="__tabbed_13_1">HCL</label><label for="__tabbed_13_2">JSON</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="na">iso_paths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="w">  </span><span class="s2">&quot;[nfs] iso/ubuntu-server-amd64.iso&quot;</span><span class="p">,</span>
-</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w">  </span><span class="s2">&quot;Example Content Library/ubuntu-server-amd64/ubuntu-server-amd64.iso&quot;</span>
-</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="p">]</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="nt">&quot;iso_paths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="na">iso_paths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 </span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="w">  </span><span class="s2">&quot;[nfs] iso/ubuntu-server-amd64.iso&quot;</span><span class="p">,</span>
 </span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">  </span><span class="s2">&quot;Example Content Library/ubuntu-server-amd64/ubuntu-server-amd64.iso&quot;</span>
 </span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="p">]</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-json highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="nt">&quot;iso_paths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">  </span><span class="s2">&quot;[nfs] iso/ubuntu-server-amd64.iso&quot;</span><span class="p">,</span>
+</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="w">  </span><span class="s2">&quot;Example Content Library/ubuntu-server-amd64/ubuntu-server-amd64.iso&quot;</span>
+</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="p">]</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -3028,14 +3076,16 @@ library or use the <code>govc</code> vSphere CLI.</p>
 <h4 id="common">Common<a class="headerlink" href="#common" title="Permanent link">&para;</a></h4>
 <p><strong>Optional:</strong></p>
 <ul>
-<li><code>communicator</code> (string) - Packer currently supports three kinds of communicators:</li>
+<li>
+<p><code>communicator</code> (string) - Packer currently supports three kinds of communicators:</p>
+<ul>
 <li>
 <p><code>none</code> - No communicator will be used. If this is set, most
-      provisioners also can't be used.</p>
+  provisioners also can't be used.</p>
 </li>
 <li>
 <p><code>ssh</code> - An SSH connection will be established to the machine. This
-      is usually the default.</p>
+  is usually the default.</p>
 </li>
 <li>
 <p><code>winrm</code> - A WinRM connection will be established.
@@ -3043,6 +3093,8 @@ library or use the <code>govc</code> vSphere CLI.</p>
   can use. For example, the Docker builder has a "docker" communicator
   that uses <code>docker exec</code> and <code>docker cp</code> to execute scripts and copy
   files.</p>
+</li>
+</ul>
 </li>
 <li>
 <p><code>pause_before_connecting</code> (duration string | ex: "1h5m2s") - We recommend that you enable SSH or WinRM as the very last step in your
@@ -3281,37 +3333,37 @@ Refer to the <a href="https://docs.cloud-init.io/en/latest/reference/data-source
 <h3 id="export-configuration">Export Configuration<a class="headerlink" href="#export-configuration" title="Permanent link">&para;</a></h3>
 <p>You can export an image in Open Virtualization Format (OVF) to the Packer
 host.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="13:2"><input checked="checked" id="__tabbed_13_1" name="__tabbed_13" type="radio" /><input id="__tabbed_13_2" name="__tabbed_13" type="radio" /><div class="tabbed-labels"><label for="__tabbed_13_1">HCL</label><label for="__tabbed_13_2">JSON</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="14:2"><input checked="checked" id="__tabbed_14_1" name="__tabbed_14" type="radio" /><input id="__tabbed_14_2" name="__tabbed_14" type="radio" /><div class="tabbed-labels"><label for="__tabbed_14_1">HCL</label><label for="__tabbed_14_2">JSON</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="c1"># ...</span>
-</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="na">vm_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example-ubuntu&quot;</span>
-</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="c1"># ...</span>
-</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="nb">export</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="w">  </span><span class="na">force</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">true</span>
-</span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="w">  </span><span class="na">output_directory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;./output-artifacts&quot;</span>
-</span><span id="__span-31-7"><a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a><span class="p">}</span>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="c1"># ...</span>
+</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="na">vm_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example-ubuntu&quot;</span>
+</span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="c1"># ...</span>
+</span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="nb">export</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a><span class="w">  </span><span class="na">force</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">true</span>
+</span><span id="__span-32-6"><a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a><span class="w">  </span><span class="na">output_directory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;./output-artifacts&quot;</span>
+</span><span id="__span-32-7"><a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="err">...</span>
-</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>
-</span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="w">    </span><span class="nt">&quot;vm_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example-ubuntu&quot;</span><span class="p">,</span>
-</span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>
-</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a><span class="err">...</span>
-</span><span id="__span-32-6"><a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>
-</span><span id="__span-32-7"><a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a><span class="w">    </span><span class="nt">&quot;export&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-32-8"><a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a><span class="w">      </span><span class="nt">&quot;force&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-</span><span id="__span-32-9"><a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a><span class="w">      </span><span class="nt">&quot;output_directory&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;./output-artifacts&quot;</span>
-</span><span id="__span-32-10"><a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a><span class="w">    </span><span class="p">},</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="err">...</span>
+</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>
+</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="w">    </span><span class="nt">&quot;vm_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example-ubuntu&quot;</span><span class="p">,</span>
+</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>
+</span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a><span class="err">...</span>
+</span><span id="__span-33-6"><a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a>
+</span><span id="__span-33-7"><a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a><span class="w">    </span><span class="nt">&quot;export&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-33-8"><a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a><span class="w">      </span><span class="nt">&quot;force&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-33-9"><a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a><span class="w">      </span><span class="nt">&quot;output_directory&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;./output-artifacts&quot;</span>
+</span><span id="__span-33-10"><a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a><span class="w">    </span><span class="p">},</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
 <p>The above configuration would create the following files:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>./output-artifacts/example-ubuntu-disk-0.vmdk
-</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>./output-artifacts/example-ubuntu.mf
-</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>./output-artifacts/example-ubuntu.ovf
+<div class="language-text highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>./output-artifacts/example-ubuntu-disk-0.vmdk
+</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>./output-artifacts/example-ubuntu.mf
+</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>./output-artifacts/example-ubuntu.ovf
 </span></code></pre></div>
 <p><strong>Optional:</strong></p>
 <ul>
@@ -3353,24 +3405,29 @@ drives, and SCSI controllers are not exported.
   For example, adding the following export configuration option outputs the
   MAC addresses for each Ethernet device in the OVF descriptor:</li>
 </ul>
-<div class="tabbed-set tabbed-alternate" data-tabs="14:2"><input checked="checked" id="__tabbed_14_1" name="__tabbed_14" type="radio" /><input id="__tabbed_14_2" name="__tabbed_14" type="radio" /><div class="tabbed-labels"><label for="__tabbed_14_1">HCL</label><label for="__tabbed_14_2">JSON</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="15:2"><input checked="checked" id="__tabbed_15_1" name="__tabbed_15" type="radio" /><input id="__tabbed_15_2" name="__tabbed_15" type="radio" /><div class="tabbed-labels"><label for="__tabbed_15_1">HCL</label><label for="__tabbed_15_2">JSON</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="p">...</span>
-</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="w">  </span><span class="nb">export</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="w">    </span><span class="na">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;mac&quot;</span><span class="p">]</span>
-</span><span id="__span-34-4"><a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="w">  </span><span class="p">}</span>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="p">...</span>
+</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="w">  </span><span class="nb">export</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="w">    </span><span class="na">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;mac&quot;</span><span class="p">]</span>
+</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="w">  </span><span class="p">}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="err">...</span>
-</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="w">  </span><span class="nt">&quot;export&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="w">    </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;mac&quot;</span><span class="p">]</span>
-</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="w">  </span><span class="p">},</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="nt">&quot;content_library_destination&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="w">    </span><span class="nt">&quot;library&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Example Content Library&quot;</span>
+</span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
+<p>JSON: Example:
+  <div class="language-json highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="err">...</span>
+</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a><span class="w">  </span><span class="nt">&quot;export&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="w">    </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;mac&quot;</span><span class="p">]</span>
+</span><span id="__span-37-4"><a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a><span class="w">  </span><span class="p">},</span>
+</span></code></pre></div></p>
 </li>
 <li>
 <p><code>output_format</code> (string) - The output format for the exported virtual machine image.
@@ -3431,7 +3488,7 @@ the build is complete.</p>
 <p class="admonition-title">Note</p>
 <p>It's not possible to update existing content library items
 with a new VM template. If updating an existing content library item is
-necessary, use an OVF template instead by setting the <a href="#content-library-configuration">ovf</a> option
+necessary, use an OVF template instead by setting the <a href="#content-library-destination-configuration">ovf</a> option
 as <code>true</code>.</p>
 </div>
 </li>
@@ -3486,18 +3543,18 @@ as <code>true</code>.</p>
   Known values: <code>EXTRA_CONFIG</code>, <code>PRESERVE_MAC</code>.</p>
 </li>
 </ul>
-<div class="tabbed-set tabbed-alternate" data-tabs="15:2"><input checked="checked" id="__tabbed_15_1" name="__tabbed_15" type="radio" /><input id="__tabbed_15_2" name="__tabbed_15" type="radio" /><div class="tabbed-labels"><label for="__tabbed_15_1">HCL</label><label for="__tabbed_15_2">JSON</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="16:2"><input checked="checked" id="__tabbed_16_1" name="__tabbed_16" type="radio" /><input id="__tabbed_16_2" name="__tabbed_16" type="radio" /><div class="tabbed-labels"><label for="__tabbed_16_1">HCL</label><label for="__tabbed_16_2">JSON</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="nb">content_library_destination</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="w">    </span><span class="na">library</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Example Content Library&quot;</span>
-</span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a><span class="p">}</span>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="nb">content_library_destination</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a><span class="w">    </span><span class="na">library</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Example Content Library&quot;</span>
+</span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="nt">&quot;content_library_destination&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a><span class="w">    </span><span class="nt">&quot;library&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Example Content Library&quot;</span>
-</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="nt">&quot;content_library_destination&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="w">    </span><span class="nt">&quot;library&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Example Content Library&quot;</span>
+</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -3505,48 +3562,48 @@ as <code>true</code>.</p>
 <h2 id="working-with-clusters-and-hosts">Working with Clusters and Hosts<a class="headerlink" href="#working-with-clusters-and-hosts" title="Permanent link">&para;</a></h2>
 <h3 id="standalone-esxi-hosts">Standalone ESXi Hosts<a class="headerlink" href="#standalone-esxi-hosts" title="Permanent link">&para;</a></h3>
 <p>Only use the <code>host</code> option. Optionally, specify a <code>resource_pool</code>:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="16:2"><input checked="checked" id="__tabbed_16_1" name="__tabbed_16" type="radio" /><input id="__tabbed_16_2" name="__tabbed_16" type="radio" /><div class="tabbed-labels"><label for="__tabbed_16_1">HCL</label><label for="__tabbed_16_2">JSON</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="17:2"><input checked="checked" id="__tabbed_17_1" name="__tabbed_17" type="radio" /><input id="__tabbed_17_2" name="__tabbed_17" type="radio" /><div class="tabbed-labels"><label for="__tabbed_17_1">HCL</label><label for="__tabbed_17_2">JSON</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="na">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;esxi-01.example.com&quot;</span>
-</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a><span class="na">resource_pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="na">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;esxi-01.example.com&quot;</span>
+</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a><span class="na">resource_pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;esxi-01.example.com&quot;</span><span class="p">,</span>
-</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="nt">&quot;resource_pool&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span><span class="p">,</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;esxi-01.example.com&quot;</span><span class="p">,</span>
+</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a><span class="nt">&quot;resource_pool&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span><span class="p">,</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
 <h3 id="clusters-with-distributed-resource-scheduler-enabled">Clusters with Distributed Resource Scheduler Enabled<a class="headerlink" href="#clusters-with-distributed-resource-scheduler-enabled" title="Permanent link">&para;</a></h3>
 <p>Only use the <code>cluster</code> option. Optionally, specify a <code>resource_pool</code>:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="17:2"><input checked="checked" id="__tabbed_17_1" name="__tabbed_17" type="radio" /><input id="__tabbed_17_2" name="__tabbed_17" type="radio" /><div class="tabbed-labels"><label for="__tabbed_17_1">HCL</label><label for="__tabbed_17_2">JSON</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="18:2"><input checked="checked" id="__tabbed_18_1" name="__tabbed_18" type="radio" /><input id="__tabbed_18_2" name="__tabbed_18" type="radio" /><div class="tabbed-labels"><label for="__tabbed_18_1">HCL</label><label for="__tabbed_18_2">JSON</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="na">cluster</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span>
-</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a><span class="na">resource_pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="na">cluster</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span>
+</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="na">resource_pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="nt">&quot;cluster&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span><span class="p">,</span>
-</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a><span class="nt">&quot;resource_pool&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span><span class="p">,</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="nt">&quot;cluster&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span><span class="p">,</span>
+</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a><span class="nt">&quot;resource_pool&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span><span class="p">,</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
 <h3 id="clusters-without-distributed-resource-scheduler-enabled">Clusters without Distributed Resource Scheduler Enabled<a class="headerlink" href="#clusters-without-distributed-resource-scheduler-enabled" title="Permanent link">&para;</a></h3>
 <p>Use the <code>cluster</code> and <code>host</code> parameters:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="18:2"><input checked="checked" id="__tabbed_18_1" name="__tabbed_18" type="radio" /><input id="__tabbed_18_2" name="__tabbed_18" type="radio" /><div class="tabbed-labels"><label for="__tabbed_18_1">HCL</label><label for="__tabbed_18_2">JSON</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="19:2"><input checked="checked" id="__tabbed_19_1" name="__tabbed_19" type="radio" /><input id="__tabbed_19_2" name="__tabbed_19" type="radio" /><div class="tabbed-labels"><label for="__tabbed_19_1">HCL</label><label for="__tabbed_19_2">JSON</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="na">cluster</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span>
-</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="na">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;esxi-01.example.com&quot;</span>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="na">cluster</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span>
+</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="na">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;esxi-01.example.com&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="nt">&quot;cluster&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span><span class="p">,</span>
-</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;esxi-01.example.com&quot;</span><span class="p">,</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="nt">&quot;cluster&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span><span class="p">,</span>
+</span><span id="__span-45-2"><a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;esxi-01.example.com&quot;</span><span class="p">,</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -3555,48 +3612,48 @@ as <code>true</code>.</p>
 <ul>
 <li>
 <p>VM folder (this object and children):
-  <div class="language-text highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>Virtual machine &gt; Inventory
-</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>Virtual machine &gt; Configuration
-</span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a>Virtual machine &gt; Interaction
-</span><span id="__span-44-4"><a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a>Virtual machine &gt; Snapshot management
-</span><span id="__span-44-5"><a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a>Virtual machine &gt; Provisioning
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a>Virtual machine &gt; Inventory
+</span><span id="__span-46-2"><a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a>Virtual machine &gt; Configuration
+</span><span id="__span-46-3"><a id="__codelineno-46-3" name="__codelineno-46-3" href="#__codelineno-46-3"></a>Virtual machine &gt; Interaction
+</span><span id="__span-46-4"><a id="__codelineno-46-4" name="__codelineno-46-4" href="#__codelineno-46-4"></a>Virtual machine &gt; Snapshot management
+</span><span id="__span-46-5"><a id="__codelineno-46-5" name="__codelineno-46-5" href="#__codelineno-46-5"></a>Virtual machine &gt; Provisioning
 </span></code></pre></div></p>
 </li>
 <li>
 <p>Resource pool, host, or cluster (this object):
-  <div class="language-text highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a>Resource -&gt; Assign virtual machine to resource pool
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a>Resource -&gt; Assign virtual machine to resource pool
 </span></code></pre></div></p>
 </li>
 <li>
 <p>Host in clusters without DRS (this object):
-  <div class="language-text highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a>Read-only
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a>Read-only
 </span></code></pre></div></p>
 </li>
 <li>
 <p>Datastore (this object):
-  <div class="language-text highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a>Datastore &gt; Allocate space
-</span><span id="__span-47-2"><a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a>Datastore &gt; Browse datastore
-</span><span id="__span-47-3"><a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a>Datastore &gt; Low level file operations
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a>Datastore &gt; Allocate space
+</span><span id="__span-49-2"><a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a>Datastore &gt; Browse datastore
+</span><span id="__span-49-3"><a id="__codelineno-49-3" name="__codelineno-49-3" href="#__codelineno-49-3"></a>Datastore &gt; Low level file operations
 </span></code></pre></div></p>
 </li>
 <li>
 <p>Network (this object):
-  <div class="language-text highlight"><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a>Network &gt; Assign network
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a>Network &gt; Assign network
 </span></code></pre></div></p>
 </li>
 <li>
 <p>Distributed switch (this object):
-  <div class="language-text highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a>Read-only
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-51-1"><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a>Read-only
 </span></code></pre></div></p>
 </li>
 <li>
 <p>Datacenter (this object):
-  <div class="language-text highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a>Datastore &gt; Low level file operations
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-52-1"><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a>Datastore &gt; Low level file operations
 </span></code></pre></div></p>
 </li>
 <li>
 <p>Host (this object):
-  <div class="language-text highlight"><pre><span></span><code><span id="__span-51-1"><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a>Host &gt; Configuration &gt; System Management
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-53-1"><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a>Host &gt; Configuration &gt; System Management
 </span></code></pre></div></p>
 </li>
 </ul>
