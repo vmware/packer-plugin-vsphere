@@ -842,6 +842,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../community/release-verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Release Verification
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="https://github.com/vmware/packer-plugin-vsphere/discussions" class="md-nav__link">
         
   
@@ -1250,12 +1277,20 @@ be a few extraneous privileges that are not strictly required.</p>
 <li><code>VApp.Import</code></li>
 <li><code>VirtualMachine.Config.AddNewDisk</code></li>
 <li><code>VirtualMachine.Config.AdvancedConfig</code></li>
-<li><code>VirtualMachine.Inventory.Delete</code>
-  and either (if <code>reregister_vm</code> is <code>false</code>):</li>
-<li><code>VirtualMachine.Provisioning.MarkAsTemplate</code>
-  or (if <code>reregister_vm</code> is <code>true</code> or unset):</li>
-<li><code>VirtualMachine.Inventory.Register</code></li>
+<li>
+<p><code>VirtualMachine.Inventory.Delete</code>
+  and either (if <code>reregister_vm</code> is <code>false</code>):</p>
+<ul>
+<li>
+<p><code>VirtualMachine.Provisioning.MarkAsTemplate</code>
+  or (if <code>reregister_vm</code> is <code>true</code> or unset):</p>
+</li>
+<li>
+<p><code>VirtualMachine.Inventory.Register</code></p>
+</li>
 <li><code>VirtualMachine.Inventory.Unregister</code></li>
+</ul>
+</li>
 </ul>
 <p>The role must be authorized on the:</p>
 <ul>

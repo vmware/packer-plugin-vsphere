@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://vmware.github.io/packer-plugin-vsphere/2.0.0/community/contributing/">
+        <link rel="canonical" href="https://vmware.github.io/packer-plugin-vsphere/2.0.0/community/release-verification/">
       
       
-        <link rel="prev" href="../support/">
+        <link rel="prev" href="https://github.com/vmware/packer-plugin-vsphere/releases">
       
       
-        <link rel="next" href="../code-of-conduct/">
+        <link rel="next" href="https://github.com/vmware/packer-plugin-vsphere/discussions">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Contributing - Packer Plugin for VMware vSphere</title>
+        <title>Release Verification - Packer Plugin for VMware vSphere</title>
       
     
     
@@ -83,7 +83,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#contributing-guidelines" class="md-skip">
+        <a href="#pgp-public-key" class="md-skip">
           Skip to content
         </a>
       
@@ -136,7 +136,7 @@
           <div class="md-header__topic" data-md-component="header-topic">
             <span class="md-ellipsis">
               
-                Contributing
+                Release Verification
               
             </span>
           </div>
@@ -656,36 +656,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  Contributing
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="././" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
         
   
   
@@ -700,49 +674,6 @@
   
 
       </a>
-      
-        
-
-
-<nav class="md-nav md-nav--secondary" aria-label="On this page">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      On this page
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Issues
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pull-requests" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Pull Requests
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -806,10 +737,34 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../release-verification/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Release Verification
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
         
   
   
@@ -824,6 +779,69 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pgp-public-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        PGP Public Key
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Example
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#expected-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Expected Output
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mark-the-key-as-trusted-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Mark the Key as Trusted (Optional)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -958,8 +976,6 @@
                     
                     
                     
-                      
-                    
                     
                       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
                       <div class="md-sidebar-button__wrapper">
@@ -975,8 +991,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -985,10 +999,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#issues" class="md-nav__link">
+  <a href="#pgp-public-key" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Issues
+        PGP Public Key
       </span>
     </span>
   </a>
@@ -996,10 +1010,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pull-requests" class="md-nav__link">
+  <a href="#example" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Pull Requests
+        Example
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#expected-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Expected Output
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mark-the-key-as-trusted-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Mark the Key as Trusted (Optional)
       </span>
     </span>
   </a>
@@ -1029,135 +1065,107 @@
   
 
 
-<h1 id="contributing-guidelines">Contributing Guidelines<a class="headerlink" href="#contributing-guidelines" title="Permanent link">&para;</a></h1>
-<p>We greatly value feedback and contributions from our community.</p>
-<p>Please review this document before submitting any issues or pull requests to ensure we have all the
-necessary information to effectively collaborate on your contribution.</p>
-<h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
-<p>Use <a href="https://github.com/vmware/packer-plugin-vsphere/issues">GitHub issues</a> to report bugs or suggest enhancements using the
-following guidelines.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Issues that do not follow the guidelines may be closed by the maintainers without
-further investigation.</p>
-</div>
-<p>Before opening an issue, please <a href="https://github.com/vmware/packer-plugin-vsphere/issues?q=is%3Aissue+is%3Aopen+label%3Abug">search existing issues</a>
-to avoid duplicates.</p>
-<p>When opening an issue, use the provided issue form to ensure that you provide all the
-necessary details. These details are important for maintainers to understand and
-reproduce the issue.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<ul>
-<li>Ensure that you are using a recent version of the plugin.</li>
-<li>Ensure that you are using a supported version of VMware vSphere. The plugin supports versions in accordance with the <a href="https://support.broadcom.com/group/ecx/productlifecycle">Broadcom Product Lifecycle</a>.</li>
-</ul>
-</div>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<ul>
-<li>Learn about <a href="https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#quoting-code">formatting code on GitHub</a>.</li>
-<li>Learn about <a href="https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#referencing-issues-and-pull-requests">referencing issues</a>.</li>
-<li>Learn about <a href="https://docs.github.com/en/get-started/writing-on-github/editing-and-sharing-content-with-gists/creating-gists">creating a GitHub Gist</a>.</li>
-</ul>
-</div>
-<h2 id="pull-requests">Pull Requests<a class="headerlink" href="#pull-requests" title="Permanent link">&para;</a></h2>
-<p>Use GitHub pull requests to propose changes to the codebase using the following guidelines.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Pull requests that do not follow the guidelines may be closed by the maintainers
-without further review.</p>
-</div>
-<p><strong>Before</strong> submitting a pull request, ensure that:</p>
+  <h1 id="__skip">Release Verification</h1>
+
+<p>Release archives are published on <a href="https://github.com/vmware/packer-plugin-vsphere/releases">GitHub Releases</a>.</p>
+<p>Each release includes platform archives, a <code>SHA256SUMS</code> checksum file, and a detached PGP signature
+(<code>.sig</code>).</p>
+<p>Only the <code>SHA256SUMS</code> file is signed. The archives themselves are not signed, but are hashed. To
+verify the integrity of a particular archive:</p>
 <ol>
-<li>You have <a href="https://github.com/vmware/packer-plugin-vsphere/discussions">opened a discussion</a> to discuss any <strong>significant</strong> work with
-   the maintainer(s). This ensures that your contribution is aligned with the
-   project's direction and avoids unnecessary work.</li>
-<li>You have identified or <a href="https://github.com/vmware/packer-plugin-vsphere/issues">open an issue</a>. This ensures that your contribution
-   focuses on a specific topic and avoids duplicating effort.</li>
-<li>You have forked the repository. Refer to the <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo">GitHub documentation</a> for help.</li>
-<li>You are working against the latest source on the <code>main</code> branch. You may need to
-   rebase your branch against the latest <code>main</code> branch.</li>
-<li>You have created a topic branch based on <code>main</code>. Do not work directly on the <code>main</code> branch.</li>
-<li>You have modified the source based on logical units of work. Focus on the specific change
-   you are contributing. Pull requests that contain multiple unrelated changes will be
-   rejected.</li>
-<li>You have followed the existing style and conventions of the project.</li>
-<li>You have added tests for your changes.</li>
-<li>You have generated the updated documentation and associated assets by running <code>make generate</code>.</li>
-<li>You have tested building the plugin by running <code>make build</code>.</li>
-<li>You have tested your changes with a local build of the plugin by running <code>make dev</code>.</li>
-<li>You have verified all new and existing tests are passing by running <code>make test</code>.</li>
-<li>You have used <a href="https://conventionalcommits.org">Conventional Commits</a> format for commit messages.</li>
-<li>You have signed-off and committed your changes <a href="https://cbea.ms/git-commit">using clear commit messages</a>.</li>
+<li>Download the archive, <code>SHA256SUMS</code>, and <code>SHA256SUMS.sig</code> files from the release.</li>
+<li>Verify the <code>SHA256SUMS</code> file is properly signed.</li>
+<li>Verify the checksum in the file matches the archive.</li>
 </ol>
-<p>When opening a pull request, ensure that:</p>
-<ol>
-<li>You title your pull request using the <a href="https://conventionalcommits.org">Conventional Commits</a> format.</li>
-<li>You provide a detailed description of the changes in the pull request template.</li>
-<li>You open any work-in-progress pull requests as a draft.</li>
-<li>You mark the pull request as ready for review when you are ready for it to be reviewed.</li>
-<li>You follow the status checks for the pull request to ensure that all checks are passing.</li>
-<li>You stay involved in the conversation with the maintainers to ensure that your contribution
-   can be reviewed.</li>
-</ol>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>If you have any questions about the contribution process, open a <a href="https://github.com/vmware/packer-plugin-vsphere/discussions">discussion</a>.</p>
+<h2 id="pgp-public-key">PGP Public Key<a class="headerlink" href="#pgp-public-key" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Applies to all releases signed by Broadcom after the project transferred from HashiCorp. This
+includes v2.1.0 and later.</p>
 </div>
-<p><strong>Contributor Flow</strong></p>
-<p>This is an outline of the contributor workflow:</p>
-<p>Example:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span>upstream<span class="w"> </span>https://github.com/&lt;org-name&gt;/&lt;repo-name&gt;.git
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>feat/add-x<span class="w"> </span>main
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>git<span class="w"> </span>commit<span class="w"> </span>--signoff<span class="w"> </span>--message<span class="w"> </span><span class="s2">&quot;feat: add support for x</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="s2">  Added support for x.</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="s2">  Signed-off-by: Jane Doe &lt;jdoe@example.com&gt;</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="s2">  Ref: #123&quot;</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>feat/add-x
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Key Name</strong></td>
+<td><code>Packer Plugins by Broadcom</code></td>
+</tr>
+<tr>
+<td><strong>Email</strong></td>
+<td><code>oss-packer-plugins.pdl@broadcom.com</code></td>
+</tr>
+<tr>
+<td><strong>Fingerprint</strong></td>
+<td><code>35A7 8567 9DBC D9EC 5380 63E5 1417 BA83 3615 A23D</code></td>
+</tr>
+<tr>
+<td><strong>Key ID</strong></td>
+<td><code>3615A23D</code></td>
+</tr>
+<tr>
+<td><strong>Long Key ID</strong></td>
+<td><code>1417BA833615A23D</code></td>
+</tr>
+</tbody>
+</table>
+<p>The public key can be obtained from <a href="https://keys.openpgp.org/search?q=oss-packer-plugins.pdl@broadcom.com"><code>keys.openpgp.org</code></a>.</p>
+<h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
+<p>The following example verifies a release archive.</p>
+<p>Substitute <code>VERSION</code>, <code>OS</code>, and <code>ARCH</code> for the target release.</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Set the release target and derived paths.</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nv">FINGERPRINT</span><span class="o">=</span>35A785679DBCD9EC538063E51417BA833615A23D
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nv">VERSION</span><span class="o">=</span><span class="m">2</span>.1.0
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nv">OS</span><span class="o">=</span>linux
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nv">ARCH</span><span class="o">=</span>amd64
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nv">BASE_URL</span><span class="o">=</span><span class="s2">&quot;https://github.com/vmware/packer-plugin-vsphere/releases/download/v</span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="nv">PREFIX</span><span class="o">=</span><span class="s2">&quot;packer-plugin-vsphere_v</span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="nv">ARCHIVE</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PREFIX</span><span class="si">}</span><span class="s2">_x5.0_</span><span class="si">${</span><span class="nv">OS</span><span class="si">}</span><span class="s2">_</span><span class="si">${</span><span class="nv">ARCH</span><span class="si">}</span><span class="s2">.zip&quot;</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nv">CHECKSUMS</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PREFIX</span><span class="si">}</span><span class="s2">_SHA256SUMS&quot;</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="nv">CHECKSUMS_SIG</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">CHECKSUMS</span><span class="si">}</span><span class="s2">.sig&quot;</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># Import the public key.</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>gpg<span class="w"> </span>--keyserver<span class="w"> </span>keys.openpgp.org<span class="w"> </span>--recv-keys<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">FINGERPRINT</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="c1"># Download the archive and signature files.</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>curl<span class="w"> </span>-LO<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">BASE_URL</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">ARCHIVE</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>curl<span class="w"> </span>-LO<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">BASE_URL</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">CHECKSUMS</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>curl<span class="w"> </span>-LO<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">BASE_URL</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">CHECKSUMS_SIG</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="c1"># Verify the signature file is untampered.</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>gpg<span class="w"> </span>--verify<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">CHECKSUMS_SIG</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">CHECKSUMS</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="c1"># Verify the checksum matches the archive.</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>shasum<span class="w"> </span>-a<span class="w"> </span><span class="m">256</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">CHECKSUMS</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>--ignore-missing
 </span></code></pre></div>
-<p><strong>Formatting Commit Messages</strong></p>
-<p>Follow the conventions on <a href="https://cbea.ms/git-commit">How to Write a Git Commit Message</a> and use
-<a href="https://conventionalcommits.org">Conventional Commits</a>.</p>
-<p>Be sure to include any related GitHub issue references in the commit message.</p>
-<p>Example:</p>
-<div class="language-markdown highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>feat: add support for x
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Added support for x.
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>Signed-off-by: Jane Doe &lt;jdoe@example.com&gt;
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>Ref: <span class="ni">#123</span>
+<h2 id="expected-output">Expected Output<a class="headerlink" href="#expected-output" title="Permanent link">&para;</a></h2>
+<p>A successful signature verification reports a good signature:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>gpg: Good signature from &quot;Packer Plugins by Broadcom &lt;oss-packer-plugins.pdl@broadcom.com&gt;&quot; [unknown]
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>gpg: WARNING: This key is not certified with a trusted signature!
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>gpg:          There is no indication that the signature belongs to the owner.
 </span></code></pre></div>
-<p><strong>Stay In Sync With Upstream</strong></p>
-<p>When your branch gets out of sync with the <code>upstream/main</code> branch, use the
-following to update:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>git<span class="w"> </span>checkout<span class="w"> </span>feat/add-x
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>git<span class="w"> </span>fetch<span class="w"> </span>--all
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>git<span class="w"> </span>pull<span class="w"> </span>--rebase<span class="w"> </span>upstream<span class="w"> </span>main
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>git<span class="w"> </span>push<span class="w"> </span>--force-with-lease<span class="w"> </span>origin<span class="w"> </span>feat/add-x
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The trust warning is <strong>normal</strong> for a freshly imported key. It means GPG cannot confirm the key
+owner's identity through its web of trust, not that the signature failed. As long as you
+imported the key using the fingerprint above and the output reports <code>Good signature</code>, the
+checksum file is authentic.</p>
+</div>
+<p>A successful checksum verification ends with the following structure:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>packer-plugin-vsphere_v&lt;version&gt;_x5.0_&lt;os&gt;_&lt;arch&gt;.zip: OK
 </span></code></pre></div>
-<p><strong>Updating Pull Requests</strong></p>
-<p>If your pull request fails to pass or needs changes based on code review, you'll
-most likely want to squash these changes into existing commits.</p>
-<p>If your pull request contains a single commit or your changes are related to the
-most recent commit, you can simply amend the commit.</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>git<span class="w"> </span>add<span class="w"> </span>.
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>git<span class="w"> </span>commit<span class="w"> </span>--amend
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>git<span class="w"> </span>push<span class="w"> </span>--force-with-lease<span class="w"> </span>origin<span class="w"> </span>feat/add-x
+<h2 id="mark-the-key-as-trusted-optional">Mark the Key as Trusted (Optional)<a class="headerlink" href="#mark-the-key-as-trusted-optional" title="Permanent link">&para;</a></h2>
+<p>To trust the key for future verifications, confirm the fingerprint and set a local trust level:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nv">FINGERPRINT</span><span class="o">=</span>35A785679DBCD9EC538063E51417BA833615A23D
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>gpg<span class="w"> </span>--fingerprint<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">FINGERPRINT</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>gpg<span class="w"> </span>--edit-key<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">FINGERPRINT</span><span class="si">}</span><span class="s2">&quot;</span>
 </span></code></pre></div>
-<p>If you need to squash changes into an earlier commit, you can use:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>git<span class="w"> </span>add<span class="w"> </span>.
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>git<span class="w"> </span>commit<span class="w"> </span>--fixup<span class="w"> </span>&lt;commit&gt;
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>git<span class="w"> </span>rebase<span class="w"> </span>--interactive<span class="w"> </span>--autosquash<span class="w"> </span>upstream/main
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>git<span class="w"> </span>push<span class="w"> </span>--force-with-lease<span class="w"> </span>origin<span class="w"> </span>feat/add-x
-</span></code></pre></div>
-<p>When resolving review comments, mark the conversation as resolved and note the commit
-SHA that addresses the review comment. This helps maintainers verify the issue has been
-resolved.</p>
-<p>Request a review from the maintainers when you are ready for a follow-up review.</p>
+<p>At the <code>gpg&gt;</code> prompt, run <code>trust</code>, choose <code>4</code> (I trust fully), confirm with <code>y</code>, then run <code>quit</code>.</p>
 
 
 
