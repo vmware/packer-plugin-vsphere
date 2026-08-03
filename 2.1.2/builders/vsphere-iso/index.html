@@ -1226,6 +1226,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../community/release-verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Release Verification
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="https://github.com/vmware/packer-plugin-vsphere/discussions" class="md-nav__link">
         
   
@@ -1927,7 +1954,7 @@ a nested path might resemble 'rp-packer/rp-linux-images'.</p>
 </li>
 <li>
 <p><code>content_library_destination</code> (*common.ContentLibraryDestinationConfig) - Import the virtual machine as a VM template or OVF template to a content library.
-  The template will not be imported if no <a href="#content-library-configuration">content library import configuration</a> is specified.
+  The template will not be imported if no <a href="#content-library-destination-configuration">content library import configuration</a> is specified.
   If set, <code>convert_to_template</code> must be set to <code>false</code>.</p>
 </li>
 <li>
@@ -2059,10 +2086,10 @@ operations are skipped.</p>
 <li>
 <p><code>usb_controller</code> ([]string) - The USB controllers for the virtual machine.
   The available options for this setting are: <code>usb</code> and <code>xhci</code>.</p>
-</li>
+<ul>
 <li><code>usb</code>: USB 2.0</li>
-<li>
-<p><code>xhci</code>: USB 3.0</p>
+<li><code>xhci</code>: USB 3.0</li>
+</ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>A maximum of one of each controller type can be defined.</p>
@@ -2418,15 +2445,17 @@ will not work, so it's advised to define one.</p>
 </ul>
 <p><strong>Optional</strong>:</p>
 <ul>
-<li><code>network</code> (string) - The network to which the virtual machine will connect.
-  For example:</li>
+<li>
+<p><code>network</code> (string) - The network to which the virtual machine will connect.
+  For example:</p>
+<ul>
 <li>Name: <code>&lt;NetworkName&gt;</code></li>
 <li>Inventory Path: <code>/&lt;DatacenterName&gt;/&lt;FolderName&gt;/&lt;NetworkName&gt;</code></li>
 <li>Managed Object ID (Port Group): <code>Network:network-&lt;xxxxx&gt;</code></li>
 <li>Managed Object ID (Distributed Port Group): <code>DistributedVirtualPortgroup::dvportgroup-&lt;xxxxx&gt;</code></li>
 <li>Logical Switch UUID: <code>&lt;uuid&gt;</code></li>
-<li>
-<p>Segment ID: <code>/infra/segments/&lt;SegmentID&gt;</code></p>
+<li>Segment ID: <code>/infra/segments/&lt;SegmentID&gt;</code></li>
+</ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If more than one network resolves to the same name, either
@@ -2607,10 +2636,10 @@ command, they will be replaced by the proper key:</p>
 </li>
 <li>
 <p><code>&lt;home&gt; &lt;end&gt;</code> - Simulates pressing the home and end keys.</p>
-</li>
-<li>
-<p><code>&lt;pageUp&gt; &lt;pageDown&gt;</code> - Simulates pressing the page up and page down
-    keys.</p>
+<ul>
+<li><code>&lt;pageUp&gt; &lt;pageDown&gt;</code> - Simulates pressing the page up and page down
+keys.</li>
+</ul>
 </li>
 <li>
 <p><code>&lt;menu&gt;</code> - Simulates pressing the Menu key.</p>
@@ -2626,26 +2655,34 @@ command, they will be replaced by the proper key:</p>
 </li>
 <li>
 <p><code>&lt;leftSuper&gt; &lt;rightSuper&gt;</code> - Simulates pressing the ⌘ or Windows key.</p>
+<ul>
+<li>
+<p><code>&lt;wait&gt; &lt;wait5&gt; &lt;wait10&gt;</code> - Adds a 1, 5 or 10 second pause before
+sending any additional keys. This is useful if you have to generally
+wait for the UI to update before typing more.</p>
 </li>
-<li><code>&lt;wait&gt; &lt;wait5&gt; &lt;wait10&gt;</code> - Adds a 1, 5 or 10 second pause before
-    sending any additional keys. This is useful if you have to generally
-    wait for the UI to update before typing more.</li>
-<li><code>&lt;waitXX&gt;</code> - Add an arbitrary pause before sending any additional keys.
-    The format of <code>XX</code> is a sequence of positive decimal numbers, each with
-    optional fraction and a unit suffix, such as <code>300ms</code>, <code>1.5h</code> or <code>2h45m</code>.
-    Valid time units are <code>ns</code>, <code>us</code> (or <code>µs</code>), <code>ms</code>, <code>s</code>, <code>m</code>, <code>h</code>. For
-    example <code>&lt;wait10m&gt;</code> or <code>&lt;wait1m20s&gt;</code>.</li>
-<li><code>&lt;XXXOn&gt; &lt;XXXOff&gt;</code> - Any printable keyboard character, and of these
-    "special" expressions, with the exception of the <code>&lt;wait&gt;</code> types, can
-    also be toggled on or off. For example, to simulate ctrl+c, use
-    <code>&lt;leftCtrlOn&gt;c&lt;leftCtrlOff&gt;</code>. Be sure to release them, otherwise they
-    will be held down until the machine reboots. To hold the <code>c</code> key down,
-    you would use <code>&lt;cOn&gt;</code>. Likewise, <code>&lt;cOff&gt;</code> to release.</li>
+<li>
+<p><code>&lt;waitXX&gt;</code> - Add an arbitrary pause before sending any additional keys.
+The format of <code>XX</code> is a sequence of positive decimal numbers, each with
+optional fraction and a unit suffix, such as <code>300ms</code>, <code>1.5h</code> or <code>2h45m</code>.
+Valid time units are <code>ns</code>, <code>us</code> (or <code>µs</code>), <code>ms</code>, <code>s</code>, <code>m</code>, <code>h</code>. For
+example <code>&lt;wait10m&gt;</code> or <code>&lt;wait1m20s&gt;</code>.</p>
+</li>
+<li>
+<p><code>&lt;XXXOn&gt; &lt;XXXOff&gt;</code> - Any printable keyboard character, and of these
+"special" expressions, with the exception of the <code>&lt;wait&gt;</code> types, can
+also be toggled on or off. For example, to simulate ctrl+c, use
+<code>&lt;leftCtrlOn&gt;c&lt;leftCtrlOff&gt;</code>. Be sure to release them, otherwise they
+will be held down until the machine reboots. To hold the <code>c</code> key down,
+you would use <code>&lt;cOn&gt;</code>. Likewise, <code>&lt;cOff&gt;</code> to release.</p>
+</li>
 <li>
 <p><code>{{ .HTTPIP }} {{ .HTTPPort }}</code> - The IP and port, respectively of an
-    HTTP server that is started serving the directory specified by the
-    <code>http_directory</code> configuration parameter. If <code>http_directory</code> isn't
-    specified, these will be blank!</p>
+HTTP server that is started serving the directory specified by the
+<code>http_directory</code> configuration parameter. If <code>http_directory</code> isn't
+specified, these will be blank!</p>
+</li>
+</ul>
 </li>
 <li>
 <p><code>{{ .Name }}</code> - The name of the VM.</p>
@@ -2805,14 +2842,16 @@ build completion.</p>
 <p><strong>Optional</strong>:</p>
 <h5 id="common">Common<a class="headerlink" href="#common" title="Permanent link">&para;</a></h5>
 <ul>
-<li><code>communicator</code> (string) - Packer currently supports three kinds of communicators:</li>
+<li>
+<p><code>communicator</code> (string) - Packer currently supports three kinds of communicators:</p>
+<ul>
 <li>
 <p><code>none</code> - No communicator will be used. If this is set, most
-      provisioners also can't be used.</p>
+  provisioners also can't be used.</p>
 </li>
 <li>
 <p><code>ssh</code> - An SSH connection will be established to the machine. This
-      is usually the default.</p>
+  is usually the default.</p>
 </li>
 <li>
 <p><code>winrm</code> - A WinRM connection will be established.
@@ -2820,6 +2859,8 @@ build completion.</p>
   can use. For example, the Docker builder has a "docker" communicator
   that uses <code>docker exec</code> and <code>docker cp</code> to execute scripts and copy
   files.</p>
+</li>
+</ul>
 </li>
 <li>
 <p><code>pause_before_connecting</code> (duration string | ex: "1h5m2s") - We recommend that you enable SSH or WinRM as the very last step in your
@@ -3101,14 +3142,19 @@ drives, and SCSI controllers are not exported.
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="err">...</span>
-</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a><span class="w">  </span><span class="nt">&quot;export&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a><span class="w">    </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;mac&quot;</span><span class="p">]</span>
-</span><span id="__span-38-4"><a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a><span class="w">  </span><span class="p">},</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="nt">&quot;content_library_destination&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a><span class="w">    </span><span class="nt">&quot;library&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Example Content Library&quot;</span>
+</span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
+<p>JSON: Example:
+  <div class="language-json highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="err">...</span>
+</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="w">  </span><span class="nt">&quot;export&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="w">    </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;mac&quot;</span><span class="p">]</span>
+</span><span id="__span-39-4"><a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a><span class="w">  </span><span class="p">},</span>
+</span></code></pre></div></p>
 </li>
 <li>
 <p><code>output_format</code> (string) - The output format for the exported virtual machine image.
@@ -3169,7 +3215,7 @@ the build is complete.</p>
 <p class="admonition-title">Note</p>
 <p>It's not possible to update existing content library items
 with a new VM template. If updating an existing content library item is
-necessary, use an OVF template instead by setting the <a href="#content-library-configuration">ovf</a> option
+necessary, use an OVF template instead by setting the <a href="#content-library-destination-configuration">ovf</a> option
 as <code>true</code>.</p>
 </div>
 </li>
@@ -3228,15 +3274,15 @@ as <code>true</code>.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="15:2"><input checked="checked" id="__tabbed_15_1" name="__tabbed_15" type="radio" /><input id="__tabbed_15_2" name="__tabbed_15" type="radio" /><div class="tabbed-labels"><label for="__tabbed_15_1">HCL</label><label for="__tabbed_15_2">JSON</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="nb">content_library_destination</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="w">        </span><span class="na">library</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Example Content Library&quot;</span>
-</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="p">}</span>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="nb">content_library_destination</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a><span class="w">        </span><span class="na">library</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Example Content Library&quot;</span>
+</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="nt">&quot;content_library_destination&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a><span class="w">    </span><span class="nt">&quot;library&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Example Content Library&quot;</span>
-</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="nt">&quot;content_library_destination&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a><span class="w">    </span><span class="nt">&quot;library&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Example Content Library&quot;</span>
+</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -3245,17 +3291,17 @@ as <code>true</code>.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="16:2"><input checked="checked" id="__tabbed_16_1" name="__tabbed_16" type="radio" /><input id="__tabbed_16_2" name="__tabbed_16" type="radio" /><div class="tabbed-labels"><label for="__tabbed_16_1">HCL</label><label for="__tabbed_16_2">JSON</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="nb">content_library_destination</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a><span class="w">        </span><span class="na">library</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Example Content Library&quot;</span>
-</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a><span class="w">        </span><span class="na">ovf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">true</span>
-</span><span id="__span-41-4"><a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a><span class="p">}</span>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="nb">content_library_destination</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="w">        </span><span class="na">library</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Example Content Library&quot;</span>
+</span><span id="__span-42-3"><a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="w">        </span><span class="na">ovf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">true</span>
+</span><span id="__span-42-4"><a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="nt">&quot;content_library_destination&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="w">    </span><span class="nt">&quot;library&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Example Content Library&quot;</span><span class="p">,</span>
-</span><span id="__span-42-3"><a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="w">    </span><span class="nt">&quot;ovf&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-</span><span id="__span-42-4"><a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="nt">&quot;content_library_destination&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a><span class="w">    </span><span class="nt">&quot;library&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Example Content Library&quot;</span><span class="p">,</span>
+</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a><span class="w">    </span><span class="nt">&quot;ovf&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+</span><span id="__span-43-4"><a id="__codelineno-43-4" name="__codelineno-43-4" href="#__codelineno-43-4"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -3269,19 +3315,19 @@ as <code>true</code>.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="17:2"><input checked="checked" id="__tabbed_17_1" name="__tabbed_17" type="radio" /><input id="__tabbed_17_2" name="__tabbed_17" type="radio" /><div class="tabbed-labels"><label for="__tabbed_17_1">HCL</label><label for="__tabbed_17_2">JSON</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="nb">configuration_parameters</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a><span class="w">  </span><span class="s2">&quot;disk.EnableUUID&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;TRUE&quot;</span>
-</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a><span class="w">  </span><span class="s2">&quot;svga.autodetect&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;TRUE&quot;</span>
-</span><span id="__span-43-4"><a id="__codelineno-43-4" name="__codelineno-43-4" href="#__codelineno-43-4"></a><span class="w">  </span><span class="s2">&quot;log.keepOld&quot;</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;15&quot;</span>
-</span><span id="__span-43-5"><a id="__codelineno-43-5" name="__codelineno-43-5" href="#__codelineno-43-5"></a><span class="p">}</span>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="nb">configuration_parameters</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="w">  </span><span class="s2">&quot;disk.EnableUUID&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;TRUE&quot;</span>
+</span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a><span class="w">  </span><span class="s2">&quot;svga.autodetect&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;TRUE&quot;</span>
+</span><span id="__span-44-4"><a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a><span class="w">  </span><span class="s2">&quot;log.keepOld&quot;</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;15&quot;</span>
+</span><span id="__span-44-5"><a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="nt">&quot;configuration_parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="w">  </span><span class="nt">&quot;disk.EnableUUID&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TRUE&quot;</span><span class="p">,</span>
-</span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a><span class="w">  </span><span class="nt">&quot;svga.autodetect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TRUE&quot;</span><span class="p">,</span>
-</span><span id="__span-44-4"><a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a><span class="w">  </span><span class="nt">&quot;log.keepOld&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;15&quot;</span>
-</span><span id="__span-44-5"><a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="nt">&quot;configuration_parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-45-2"><a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a><span class="w">  </span><span class="nt">&quot;disk.EnableUUID&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TRUE&quot;</span><span class="p">,</span>
+</span><span id="__span-45-3"><a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a><span class="w">  </span><span class="nt">&quot;svga.autodetect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TRUE&quot;</span><span class="p">,</span>
+</span><span id="__span-45-4"><a id="__codelineno-45-4" name="__codelineno-45-4" href="#__codelineno-45-4"></a><span class="w">  </span><span class="nt">&quot;log.keepOld&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;15&quot;</span>
+</span><span id="__span-45-5"><a id="__codelineno-45-5" name="__codelineno-45-5" href="#__codelineno-45-5"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -3328,13 +3374,13 @@ in the vSphere API documentation.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="18:2"><input checked="checked" id="__tabbed_18_1" name="__tabbed_18" type="radio" /><input id="__tabbed_18_2" name="__tabbed_18" type="radio" /><div class="tabbed-labels"><label for="__tabbed_18_1">HCL</label><label for="__tabbed_18_2">JSON</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="na">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;esxi-01.example.com&quot;&quot;</span>
-</span><span id="__span-45-2"><a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a><span class="na">resource_pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="na">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;esxi-01.example.com&quot;&quot;</span>
+</span><span id="__span-46-2"><a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a><span class="na">resource_pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;esxi-01.example.com&quot;</span><span class="p">,</span>
-</span><span id="__span-46-2"><a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a><span class="nt">&quot;resource_pool&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span><span class="p">,</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;esxi-01.example.com&quot;</span><span class="p">,</span>
+</span><span id="__span-47-2"><a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a><span class="nt">&quot;resource_pool&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span><span class="p">,</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -3344,13 +3390,13 @@ in the vSphere API documentation.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="19:2"><input checked="checked" id="__tabbed_19_1" name="__tabbed_19" type="radio" /><input id="__tabbed_19_2" name="__tabbed_19" type="radio" /><div class="tabbed-labels"><label for="__tabbed_19_1">HCL</label><label for="__tabbed_19_2">JSON</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="na">cluster</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span>
-</span><span id="__span-47-2"><a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a><span class="na">resource_pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="na">cluster</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span>
+</span><span id="__span-48-2"><a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a><span class="na">resource_pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="nt">&quot;cluster&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span><span class="p">,</span>
-</span><span id="__span-48-2"><a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a><span class="nt">&quot;resource_pool&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span><span class="p">,</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="nt">&quot;cluster&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span><span class="p">,</span>
+</span><span id="__span-49-2"><a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a><span class="nt">&quot;resource_pool&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example_resource_pool&quot;</span><span class="p">,</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -3360,13 +3406,13 @@ in the vSphere API documentation.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="20:2"><input checked="checked" id="__tabbed_20_1" name="__tabbed_20" type="radio" /><input id="__tabbed_20_2" name="__tabbed_20" type="radio" /><div class="tabbed-labels"><label for="__tabbed_20_1">HCL</label><label for="__tabbed_20_2">JSON</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="na">cluster</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span>
-</span><span id="__span-49-2"><a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a><span class="na">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;esxi-01.example.com&quot;</span>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="na">cluster</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span>
+</span><span id="__span-50-2"><a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a><span class="na">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;esxi-01.example.com&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="nt">&quot;cluster&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span><span class="p">,</span>
-</span><span id="__span-50-2"><a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;esxi-01.example.com&quot;</span><span class="p">,</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-51-1"><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="nt">&quot;cluster&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cluster-01&quot;</span><span class="p">,</span>
+</span><span id="__span-51-2"><a id="__codelineno-51-2" name="__codelineno-51-2" href="#__codelineno-51-2"></a><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;esxi-01.example.com&quot;</span><span class="p">,</span>
 </span></code></pre></div>
 </div>
 </div>

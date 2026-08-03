@@ -43,6 +43,9 @@
         <loc>https://vmware.github.io/packer-plugin-vsphere/2.1.2/community/code-of-conduct/</loc>
       </url>
       <url>
+        <loc>https://vmware.github.io/packer-plugin-vsphere/2.1.2/community/release-verification/</loc>
+      </url>
+      <url>
         <loc>https://vmware.github.io/packer-plugin-vsphere/2.1.2/community/license/</loc>
       </url>
 </urlset>
