@@ -89,6 +89,9 @@ type VirtualMachineMock struct {
 	CloneConfig    *CloneConfig
 	CloneError     error
 	CloneReturnNil bool
+
+	DevicesReturn object.VirtualDeviceList
+	DevicesErr    error
 }
 
 func (vm *VirtualMachineMock) Info(params ...string) (*mo.VirtualMachine, error) {
@@ -96,7 +99,10 @@ func (vm *VirtualMachineMock) Info(params ...string) (*mo.VirtualMachine, error)
 }
 
 func (vm *VirtualMachineMock) Devices() (object.VirtualDeviceList, error) {
-	return object.VirtualDeviceList{}, nil
+	if vm.DevicesReturn != nil {
+		return vm.DevicesReturn, vm.DevicesErr
+	}
+	return object.VirtualDeviceList{}, vm.DevicesErr
 }
 
 func (vm *VirtualMachineMock) FloppyDevices() (object.VirtualDeviceList, error) {

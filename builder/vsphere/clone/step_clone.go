@@ -255,6 +255,14 @@ func (c *CloneConfig) Prepare() []error {
 
 	errs = append(errs, c.StorageConfig.Prepare()...)
 
+	// disk_controller_unit is validated for both `template` and
+	// `content_library_source` VM templates; a `content_library_source` OVF
+	// template rejects `storage` entirely once the item type is resolved at
+	// deploy time (see validateContentLibrarySourceOptions).
+	if c.Template != "" || c.ContentLibrarySource != nil {
+		errs = append(errs, c.prepareStorage()...)
+	}
+
 	if c.LinkedClone && c.DiskSize != 0 {
 		errs = append(errs, fmt.Errorf("'linked_clone' and 'disk_size' cannot be used together"))
 	}
@@ -386,6 +394,24 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 	}
 }
 
+// disksFromStorageConfig converts the configured storage blocks into driver.Disk
+// values, preserving both the legacy disk_controller_index and explicit
+// disk_controller_unit addressing so callers don't have to duplicate (and risk
+// diverging on) this mapping.
+func disksFromStorageConfig(storage []common.DiskConfig) []driver.Disk {
+	var disks []driver.Disk
+	for _, disk := range storage {
+		disks = append(disks, driver.Disk{
+			DiskSize:            disk.DiskSize,
+			DiskEagerlyScrub:    disk.DiskEagerlyScrub,
+			DiskThinProvisioned: disk.DiskThinProvisioned,
+			ControllerIndex:     disk.DiskControllerIndex,
+			ControllerUnit:      disk.DiskControllerUnit,
+		})
+	}
+	return disks
+}
+
 // cloneFromTemplate handles traditional template-based cloning for backward compatibility.
 func (s *StepCloneVM) cloneFromTemplate(ctx context.Context, state multistep.StateBag) multistep.StepAction {
 	ui := state.Get("ui").(packersdk.Ui)
@@ -406,14 +432,12 @@ func (s *StepCloneVM) cloneFromTemplate(ctx context.Context, state multistep.Sta
 	}
 
 	ui.Say("Cloning virtual machine...")
-	var disks []driver.Disk
-	for _, disk := range s.Config.StorageConfig.Storage {
-		disks = append(disks, driver.Disk{
-			DiskSize:            disk.DiskSize,
-			DiskEagerlyScrub:    disk.DiskEagerlyScrub,
-			DiskThinProvisioned: disk.DiskThinProvisioned,
-			ControllerIndex:     disk.DiskControllerIndex,
-		})
+	disks := disksFromStorageConfig(s.Config.StorageConfig.Storage)
+
+	templateDevices, err := template.Devices()
+	if err != nil {
+		state.Put("error", fmt.Errorf("error reading template devices: %s", err))
+		return multistep.ActionHalt
 	}
 
 	datastoreName, primaryDatastore := s.resolveDatastore(state)
@@ -425,8 +449,16 @@ func (s *StepCloneVM) cloneFromTemplate(ctx context.Context, state multistep.Sta
 	}
 
 	// Handle multi-disk placement when using a datastore cluster.
+	placementInput := driver.StoragePlacementInput{
+		StorageConfig: driver.StorageConfig{
+			DiskControllerType: s.Config.StorageConfig.DiskControllerType,
+			Storage:            disks,
+		},
+		ExistingDevices: driver.StorageExistingDevices(templateDevices),
+		PrimaryDiskSize: s.Config.DiskSize,
+	}
 	datastoreName, datastoreRefs := common.ResolveMultiDiskDatastoreRefs(
-		ui, d, s.Location.DatastoreCluster, disks, primaryDatastore, datastoreName,
+		ui, d, s.Location.DatastoreCluster, placementInput, primaryDatastore, datastoreName,
 	)
 
 	vm, err := template.Clone(ctx, &driver.CloneConfig{
@@ -494,22 +526,21 @@ func (s *StepCloneVM) deployFromContentLibrary(ctx context.Context, state multis
 		return multistep.ActionHalt
 	}
 
-	var disks []driver.Disk
-	for _, disk := range s.Config.StorageConfig.Storage {
-		disks = append(disks, driver.Disk{
-			DiskSize:            disk.DiskSize,
-			DiskEagerlyScrub:    disk.DiskEagerlyScrub,
-			DiskThinProvisioned: disk.DiskThinProvisioned,
-			ControllerIndex:     disk.DiskControllerIndex,
-		})
-	}
+	disks := disksFromStorageConfig(s.Config.StorageConfig.Storage)
 
 	var datastoreRefs []*types.ManagedObjectReference
 	if item.Type == library.ItemTypeVMTX && s.Location.DatastoreCluster != "" && len(disks) > 1 {
 		if vcDriver, ok := d.(*driver.VCenterDriver); ok {
 			ui.Sayf("Requesting Storage DRS recommendations for %d disks...", len(disks))
 
-			diskDatastores, method, err := vcDriver.SelectDatastoresForDisks(s.Location.DatastoreCluster, disks)
+			placementInput := driver.StoragePlacementInput{
+				StorageConfig: driver.StorageConfig{
+					DiskControllerType: s.Config.StorageConfig.DiskControllerType,
+					Storage:            disks,
+				},
+				PrimaryDiskSize: s.Config.DiskSize,
+			}
+			diskDatastores, method, err := vcDriver.SelectDatastoresForDisks(s.Location.DatastoreCluster, placementInput)
 			if err != nil {
 				ui.Errorf("Warning: Failed to get Storage DRS recommendations: %s. Using primary datastore.", err)
 				if primaryDatastore != nil {

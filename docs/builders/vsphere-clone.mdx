@@ -119,17 +119,18 @@ clone options apply when deploying from a `content_library_source`.
 
 @include 'builder/vsphere/common/DiskConfig-not-required.mdx'
 
-The following example creates a 15GB and a 20GB disk on the virtual machine.
-The second disk is thin provisioned:
+The following example creates a 10 GiB (15360 MiB) disk and a 20 GiB
+(20480 MiB) disk on the virtual machine. The second disk is thin
+provisioned:
 
 HCL Example:
 
 ```hcl
 storage {
-  disk_size = 15000
+  disk_size = 10240
 }
 storage {
-  disk_size             = 20000
+  disk_size             = 20480
   disk_thin_provisioned = true
 }
 ```
@@ -139,14 +140,262 @@ JSON Example:
 ```json
 "storage": [
   {
-    "disk_size": 15000
+    "disk_size": 10240
   },
   {
-    "disk_size": 20000,
+    "disk_size": 20480,
     "disk_thin_provisioned": true
   }
 ]
 ```
+
+The following example adds disks to an existing template controller at explicit
+units without creating a new controller. `disk_controller_type` only matters
+when a new controller must be created, so it is not required here, since
+every address (`scsi0:1`, `scsi0:2`) targets a bus that already exists on the
+template:
+
+HCL Example:
+
+```hcl
+storage {
+  disk_size            = 10240
+  disk_controller_unit = "scsi0:1"
+}
+storage {
+  disk_size            = 20480
+  disk_controller_unit = "scsi0:2"
+}
+```
+
+JSON Example:
+
+```json
+"storage": [
+  {
+    "disk_size": 10240,
+    "disk_controller_unit": "scsi0:1"
+  },
+  {
+    "disk_size": 20480,
+    "disk_controller_unit": "scsi0:2"
+  }
+]
+```
+
+~> **Note:** `disk_controller_unit` is only supported by the `vsphere-clone`
+builder when cloning from a `template` or deploying a VM template
+`content_library_source` (the "Template-backed" group in
+[Source Compatibility](#source-compatibility)). It is mutually exclusive with
+`disk_controller_index` on the same `storage` block.
+
+When every `storage` block uses `disk_controller_unit` and some addresses
+reference controllers that do not exist on the template, add matching entries
+to `disk_controller_type` for on-demand controller creation. The first entry
+creates the controller for the first missing bus, and so on.
+
+HCL Example:
+
+```hcl
+disk_controller_type = ["pvscsi"]
+storage {
+  disk_size            = 10240
+  disk_controller_unit = "scsi1:0"
+}
+```
+
+JSON Example:
+
+```json
+"disk_controller_type": ["pvscsi"],
+"storage": [
+  {
+    "disk_size": 10240,
+    "disk_controller_unit": "scsi1:0"
+  }
+]
+```
+
+The following example combines legacy `disk_controller_index` placement with
+explicit `disk_controller_unit` addresses in one clone. When any storage block
+uses `disk_controller_index`, every entry in `disk_controller_type` is created
+as a new controller before explicit disks are attached. On-demand controller
+creation for explicit units then uses any additional `disk_controller_type`
+entries beyond that initial list.
+
+HCL Example:
+
+```hcl
+disk_controller_type = ["pvscsi", "pvscsi"]
+storage {
+  disk_size             = 10240
+  disk_controller_index = 0
+}
+storage {
+  disk_size            = 20480
+  disk_controller_unit = "scsi0:1"
+}
+```
+
+JSON Example:
+
+```json
+"disk_controller_type": ["pvscsi", "pvscsi"],
+"storage": [
+  {
+    "disk_size": 10240,
+    "disk_controller_index": 0
+  },
+  {
+    "disk_size": 20480,
+    "disk_controller_unit": "scsi0:1"
+  }
+]
+```
+
+The following example extends a template that already has `scsi0` and `scsi1`,
+attaches disks to existing controllers at explicit units, and creates a new
+`scsi2` controller for an additional disk:
+
+HCL Example:
+
+```hcl
+disk_controller_type = ["pvscsi"]
+storage {
+  disk_size            = 10240
+  disk_controller_unit = "scsi0:1"
+}
+storage {
+  disk_size            = 20480
+  disk_controller_unit = "scsi1:0"
+}
+storage {
+  disk_size            = 40960
+  disk_controller_unit = "scsi2:0"
+}
+```
+
+JSON Example:
+
+```json
+"disk_controller_type": ["pvscsi"],
+"storage": [
+  {
+    "disk_size": 10240,
+    "disk_controller_unit": "scsi0:1"
+  },
+  {
+    "disk_size": 20480,
+    "disk_controller_unit": "scsi1:0"
+  },
+  {
+    "disk_size": 40960,
+    "disk_controller_unit": "scsi2:0"
+  }
+]
+```
+
+~> **Note:** PVSCSI controllers support units 0-6 and 8-64. Unit 7 is
+reserved for the controller device. LSI Logic, LSI Logic SAS, and BusLogic
+controllers support units 0-6 and 8-15.
+
+The following example creates two new controllers of *different* types.
+`disk_controller_type` entries are consumed in the order distinct new buses
+are first referenced by a `storage` block: `scsi1` is created first, so it
+uses `disk_controller_type[0]` (LSI Logic, unit range 0-6 and 8-15), and
+`scsi2` is created next, so it uses `disk_controller_type[1]` (PVSCSI, unit
+range 0-6 and 8-64). Multiple `storage` blocks that reference the same bus
+share its type without consuming an additional `disk_controller_type` entry:
+
+HCL Example:
+
+```hcl
+disk_controller_type = ["lsilogic", "pvscsi"]
+storage {
+  disk_size            = 10240
+  disk_controller_unit = "scsi1:0"
+}
+storage {
+  disk_size            = 20480
+  disk_controller_unit = "scsi2:0"
+}
+storage {
+  disk_size            = 40960
+  disk_controller_unit = "scsi2:50"
+}
+```
+
+JSON Example:
+
+```json
+"disk_controller_type": ["lsilogic", "pvscsi"],
+"storage": [
+  {
+    "disk_size": 10240,
+    "disk_controller_unit": "scsi1:0"
+  },
+  {
+    "disk_size": 20480,
+    "disk_controller_unit": "scsi2:0"
+  },
+  {
+    "disk_size": 40960,
+    "disk_controller_unit": "scsi2:50"
+  }
+]
+```
+
+`disk_controller_type` entries are consumed in bus-reference order across
+*all* controller kinds combined, not per-kind. The following example creates
+a new SCSI, SATA, and NVMe controller in the same clone: `scsi1` is
+referenced first, so it uses `disk_controller_type[0]` (PVSCSI); `sata0` is
+referenced next, so it uses `disk_controller_type[1]` (SATA); and `nvme0` is
+referenced last, so it uses `disk_controller_type[2]` (NVMe):
+
+HCL Example:
+
+```hcl
+disk_controller_type = ["pvscsi", "sata", "nvme"]
+storage {
+  disk_size            = 10240
+  disk_controller_unit = "scsi1:0"
+}
+storage {
+  disk_size            = 20480
+  disk_controller_unit = "sata0:0"
+}
+storage {
+  disk_size            = 40960
+  disk_controller_unit = "nvme0:0"
+}
+```
+
+JSON Example:
+
+```json
+"disk_controller_type": ["pvscsi", "sata", "nvme"],
+"storage": [
+  {
+    "disk_size": 10240,
+    "disk_controller_unit": "scsi1:0"
+  },
+  {
+    "disk_size": 20480,
+    "disk_controller_unit": "sata0:0"
+  },
+  {
+    "disk_size": 40960,
+    "disk_controller_unit": "nvme0:0"
+  }
+]
+```
+
+~> **Note:** Because the `disk_controller_type` index is assigned by
+reference order rather than by kind, the entry at that index must match the
+kind of the bus being created (SCSI, SATA, or NVMe). For example, referencing
+`nvme0` before `scsi1` while `disk_controller_type` is
+`["lsilogic", "nvme"]` would place `nvme0` at index `0` (`lsilogic`), a
+SCSI-family type. This mismatch is rejected at `packer validate` time.
 
 The following example uses two PVSCSI controllers and two disks on each
 controller:
@@ -156,19 +405,19 @@ HCL Example:
 ```hcl
 disk_controller_type = ["pvscsi", "pvscsi"]
 storage {
-  disk_size             = 15000
+  disk_size             = 10240
   disk_controller_index = 0
 }
 storage {
-  disk_size             = 15000
+  disk_size             = 20480
   disk_controller_index = 0
 }
 storage {
-  disk_size             = 15000
+  disk_size             = 40960
   disk_controller_index = 1
 }
 storage {
-  disk_size             = 15000
+  disk_size             = 81920
   disk_controller_index = 1
 }
 ```
@@ -179,19 +428,19 @@ JSON Example:
 "disk_controller_type": ["pvscsi", "pvscsi"],
 "storage": [
   {
-    "disk_size": 15000,
+    "disk_size": 10240,
     "disk_controller_index": 0
   },
   {
-    "disk_size": 15000,
+    "disk_size": 20480,
     "disk_controller_index": 0
   },
   {
-    "disk_size": 15000,
+    "disk_size": 40960,
     "disk_controller_index": 1
   },
   {
-    "disk_size": 15000,
+    "disk_size": 81920,
     "disk_controller_index": 1
   }
 ]

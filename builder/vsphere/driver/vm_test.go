@@ -212,6 +212,180 @@ func TestVirtualMachineDriver_CloneWithPrimaryDiskResize(t *testing.T) {
 	}
 }
 
+func TestVirtualMachineDriver_CloneWithExplicitControllerUnit(t *testing.T) {
+	sim := mustVPXSimulator(t)
+
+	_, datastore := mustPreCreatedDatastore(t, sim)
+	vm, _ := mustPreCreatedVM(t, sim)
+
+	config := &CloneConfig{
+		Name:      "mock name",
+		Host:      "DC0_H0",
+		Datastore: datastore.Name,
+		StorageConfig: StorageConfig{
+			Storage: []Disk{
+				{
+					DiskSize:       4096,
+					ControllerUnit: "scsi0:1",
+				},
+			},
+		},
+	}
+
+	clonedVM, err := vm.Clone(context.TODO(), config)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	devices, err := clonedVM.Devices()
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	var disks []*types.VirtualDisk
+	for _, device := range devices {
+		if disk, ok := device.(*types.VirtualDisk); ok {
+			disks = append(disks, disk)
+		}
+	}
+
+	if len(disks) != 2 {
+		t.Fatalf("unexpected result: expected '2', but returned '%d'", len(disks))
+	}
+
+	var added *types.VirtualDisk
+	for _, disk := range disks {
+		if disk.UnitNumber != nil && *disk.UnitNumber == 1 {
+			added = disk
+			break
+		}
+	}
+	if added == nil {
+		t.Fatal("expected to find disk attached at scsi0:1")
+	}
+	if added.CapacityInKB != 4096*1024 {
+		t.Fatalf("unexpected result: expected '%d', but returned '%d'", 4096*1024, added.CapacityInKB)
+	}
+
+	controllers := devices.SelectByType((*types.VirtualSCSIController)(nil))
+	if len(controllers) != 1 {
+		t.Fatalf("unexpected result: expected '1' SCSI controller, but returned '%d'", len(controllers))
+	}
+}
+
+func TestVirtualMachineDriver_CloneWithExplicitUnitNewController(t *testing.T) {
+	sim := mustVPXSimulator(t)
+
+	_, datastore := mustPreCreatedDatastore(t, sim)
+	vm, _ := mustPreCreatedVM(t, sim)
+
+	config := &CloneConfig{
+		Name:      "mock name",
+		Host:      "DC0_H0",
+		Datastore: datastore.Name,
+		StorageConfig: StorageConfig{
+			DiskControllerType: []string{"pvscsi"},
+			Storage: []Disk{
+				{
+					DiskSize:       4096,
+					ControllerUnit: "scsi1:0",
+				},
+			},
+		},
+	}
+
+	clonedVM, err := vm.Clone(context.TODO(), config)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	devices, err := clonedVM.Devices()
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	controllers := devices.SelectByType((*types.VirtualSCSIController)(nil))
+	if len(controllers) != 2 {
+		t.Fatalf("unexpected result: expected '2' SCSI controllers, but returned '%d'", len(controllers))
+	}
+
+	var added *types.VirtualDisk
+	for _, device := range devices {
+		disk, ok := device.(*types.VirtualDisk)
+		if !ok {
+			continue
+		}
+		if disk.UnitNumber != nil && *disk.UnitNumber == 0 {
+			controllerKey := disk.GetVirtualDevice().ControllerKey
+			for _, controllerDevice := range devices {
+				controller, ok := controllerDevice.(types.BaseVirtualSCSIController)
+				if !ok {
+					continue
+				}
+				if controller.GetVirtualSCSIController().Key == controllerKey &&
+					controller.GetVirtualSCSIController().BusNumber == 1 {
+					added = disk
+					break
+				}
+			}
+		}
+	}
+	if added == nil {
+		t.Fatal("expected to find disk attached at scsi1:0")
+	}
+}
+
+func TestVirtualMachineDriver_CloneWithMixedLegacyAndExplicit(t *testing.T) {
+	sim := mustVPXSimulator(t)
+
+	_, datastore := mustPreCreatedDatastore(t, sim)
+	vm, _ := mustPreCreatedVM(t, sim)
+
+	config := &CloneConfig{
+		Name:      "mock name",
+		Host:      "DC0_H0",
+		Datastore: datastore.Name,
+		StorageConfig: StorageConfig{
+			DiskControllerType: []string{"pvscsi", "pvscsi"},
+			Storage: []Disk{
+				{
+					DiskSize:        2048,
+					ControllerIndex: 0,
+				},
+				{
+					DiskSize:       4096,
+					ControllerUnit: "scsi0:1",
+				},
+			},
+		},
+	}
+
+	clonedVM, err := vm.Clone(context.TODO(), config)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	devices, err := clonedVM.Devices()
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	var explicitDisk *types.VirtualDisk
+	for _, device := range devices {
+		disk, ok := device.(*types.VirtualDisk)
+		if !ok {
+			continue
+		}
+		if disk.UnitNumber != nil && *disk.UnitNumber == 1 {
+			explicitDisk = disk
+			break
+		}
+	}
+	if explicitDisk == nil {
+		t.Fatal("expected explicit disk at scsi0:1")
+	}
+}
+
 func TestVirtualMachineDriver_CloneWithMacAddress(t *testing.T) {
 	sim := mustVPXSimulator(t)
 

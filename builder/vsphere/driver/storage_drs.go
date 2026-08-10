@@ -69,13 +69,11 @@ func (d *VCenterDriver) RequestStoragePlacement(
 	return &res.Returnval, nil
 }
 
-// SelectDatastoresForDisks requests Storage DRS recommendations for multiple
-// disks at once. This allows Storage DRS to make optimal placement decisions.
-// Returns a slice of datastores (one per disk), selection method, and any
-// error.
+// SelectDatastoresForDisks requests Storage DRS recommendations using the same
+// storage device topology that clone and create apply at runtime.
 func (d *VCenterDriver) SelectDatastoresForDisks(
 	clusterName string,
-	disks []Disk,
+	input StoragePlacementInput,
 ) ([]Datastore, string, error) {
 	cluster, err := d.FindDatastoreCluster(clusterName)
 	if err != nil {
@@ -91,8 +89,17 @@ func (d *VCenterDriver) SelectDatastoresForDisks(
 		return nil, "", fmt.Errorf("datastore cluster '%s' contains no available datastores", clusterName)
 	}
 
-	// Create a virtual machine spec with multiple disks for Storage DRS to
-	// evaluate for placement.
+	fallback := datastores[0]
+	diskCount := len(input.StorageConfig.Storage)
+	if diskCount == 0 {
+		return nil, "", fmt.Errorf("no disks provided for storage placement")
+	}
+
+	deviceChanges, newDiskKeys, err := BuildStoragePlacementConfigSpec(input)
+	if err != nil {
+		return nil, "", err
+	}
+
 	vmSpec := types.VirtualMachineConfigSpec{
 		Name:     fmt.Sprintf("packer-placement-request-%d", time.Now().UnixNano()),
 		NumCPUs:  1,
@@ -100,106 +107,159 @@ func (d *VCenterDriver) SelectDatastoresForDisks(
 		Files: &types.VirtualMachineFileInfo{
 			VmPathName: fmt.Sprintf("[%s]", clusterName),
 		},
+		DeviceChange: deviceChanges,
 	}
 
-	// Add disk device specs to the virtual machine config using actual disk
-	// configurations.
-	deviceList := object.VirtualDeviceList{}
-	controller, err := deviceList.CreateSCSIController("pvscsi")
-	if err != nil {
-		return nil, "", fmt.Errorf("error creating controller for DRS request: %s", err)
-	}
-	deviceList = append(deviceList, controller)
-
-	for i, diskConfig := range disks {
-		disk := &types.VirtualDisk{
-			VirtualDevice: types.VirtualDevice{
-				Key: int32(-100 - i),
-				Backing: &types.VirtualDiskFlatVer2BackingInfo{
-					DiskMode:        string(types.VirtualDiskModePersistent),
-					ThinProvisioned: types.NewBool(diskConfig.DiskThinProvisioned),
-					EagerlyScrub:    types.NewBool(diskConfig.DiskEagerlyScrub),
-				},
-			},
-			CapacityInKB: diskConfig.DiskSize * 1024,
-		}
-		deviceList.AssignController(disk, controller.(types.BaseVirtualController))
-		deviceList = append(deviceList, disk)
-	}
-
-	deviceSpecs, err := deviceList.ConfigSpec(types.VirtualDeviceConfigSpecOperationAdd)
-	if err != nil {
-		return nil, "", fmt.Errorf("error creating device specs for DRS request: %s", err)
-	}
-	vmSpec.DeviceChange = deviceSpecs
-
-	// Get resource pool for the Storage DRS request.
-	var resourcePoolRef *types.ManagedObjectReference
-	if len(datastores) > 0 {
-		dsInfo, err := datastores[0].Info("host")
-		if err == nil && len(dsInfo.Host) > 0 {
-			hostRef := dsInfo.Host[0].Key
-			host := object.NewHostSystem(d.Client.Client, hostRef)
-			hostInfo, err := host.ResourcePool(d.Ctx)
-			if err == nil {
-				ref := hostInfo.Reference()
-				resourcePoolRef = &ref
-			}
-		}
-	}
+	resourcePoolRef := resourcePoolFromDatastores(d, datastores)
 
 	placementResult, err := d.RequestStoragePlacement(cluster.Reference(), vmSpec, resourcePoolRef)
 	if err == nil && placementResult != nil && len(placementResult.Recommendations) > 0 {
 		recommendation := placementResult.Recommendations[0]
+		if diskDatastores, ok := d.datastoresForNewDisks(recommendation, newDiskKeys, fallback); ok {
+			return diskDatastores, SelectionMethodDRS, nil
+		}
+	}
 
-		if len(recommendation.Action) > 0 {
-			// Storage DRS typically returns one action when all disks should go
-			// to the same datastore.
-			var recommendedDatastore Datastore
+	if err != nil {
+		log.Printf("[WARN] Storage DRS failed for cluster '%s': %s. Using first-available fallback.", clusterName, err)
+	}
+	return duplicateDatastore(fallback, diskCount), SelectionMethodFallback, nil
+}
 
-			for _, action := range recommendation.Action {
-				if relocateAction, ok := action.(*types.StoragePlacementAction); ok {
-					datastoreObj := object.NewDatastore(d.Client.Client, relocateAction.Destination)
-					dsDriver := &DatastoreDriver{
-						ds:     datastoreObj,
-						driver: d,
-					}
-					info, err := dsDriver.Info("name")
-					if err != nil {
-						log.Printf("[WARN] Failed to get datastore name: %s", err)
-						continue
-					}
+func resourcePoolFromDatastores(d *VCenterDriver, datastores []Datastore) *types.ManagedObjectReference {
+	if len(datastores) == 0 {
+		return nil
+	}
 
-					ds, err := d.Finder.Datastore(d.Ctx, info.Name)
-					if err != nil {
-						log.Printf("[WARN] Failed to find datastore '%s': %s. Using direct reference.", info.Name, err)
-						recommendedDatastore = dsDriver
-					} else {
-						recommendedDatastore = &DatastoreDriver{ds: ds, driver: d}
-					}
-					break
-				}
+	dsInfo, err := datastores[0].Info("host")
+	if err != nil || len(dsInfo.Host) == 0 {
+		return nil
+	}
+
+	hostRef := dsInfo.Host[0].Key
+	host := object.NewHostSystem(d.Client.Client, hostRef)
+	hostInfo, err := host.ResourcePool(d.Ctx)
+	if err != nil {
+		return nil
+	}
+
+	ref := hostInfo.Reference()
+	return &ref
+}
+
+func (d *VCenterDriver) resolveDatastoreRef(ref types.ManagedObjectReference) (Datastore, error) {
+	datastoreObj := object.NewDatastore(d.Client.Client, ref)
+	dsDriver := &DatastoreDriver{
+		ds:     datastoreObj,
+		driver: d,
+	}
+	info, err := dsDriver.Info("name")
+	if err != nil {
+		return dsDriver, nil
+	}
+
+	ds, err := d.Finder.Datastore(d.Ctx, info.Name)
+	if err != nil {
+		log.Printf("[WARN] Failed to find datastore '%s': %s. Using direct reference.", info.Name, err)
+		return dsDriver, nil
+	}
+
+	return &DatastoreDriver{ds: ds, driver: d}, nil
+}
+
+func (d *VCenterDriver) datastoresForNewDisks(
+	recommendation types.ClusterRecommendation,
+	newDiskKeys []int32,
+	fallback Datastore,
+) ([]Datastore, bool) {
+	if len(newDiskKeys) == 0 {
+		return duplicateDatastore(fallback, 1), true
+	}
+
+	result := make([]Datastore, len(newDiskKeys))
+	resolved := make([]bool, len(newDiskKeys))
+	keyIndex := map[int32]int{}
+	for i, key := range newDiskKeys {
+		keyIndex[key] = i
+	}
+
+	for _, mapping := range diskDatastoreMappingsFromRecommendation(recommendation) {
+		idx, ok := keyIndex[mapping.diskKey]
+		if !ok {
+			continue
+		}
+		ds, err := d.resolveDatastoreRef(mapping.ref)
+		if err != nil {
+			continue
+		}
+		result[idx] = ds
+		resolved[idx] = true
+	}
+
+	unresolvedIdx := 0
+	for _, destination := range destinationOnlyActions(recommendation) {
+		ds, err := d.resolveDatastoreRef(destination)
+		if err != nil {
+			continue
+		}
+
+		if len(newDiskKeys) == 1 {
+			result[0] = ds
+			resolved[0] = true
+			break
+		}
+
+		for unresolvedIdx < len(newDiskKeys) && resolved[unresolvedIdx] {
+			unresolvedIdx++
+		}
+		if unresolvedIdx >= len(newDiskKeys) {
+			break
+		}
+		result[unresolvedIdx] = ds
+		resolved[unresolvedIdx] = true
+		unresolvedIdx++
+	}
+
+	if !allResolved(resolved) {
+		var first Datastore
+		for i, ok := range resolved {
+			if ok {
+				first = result[i]
+				break
 			}
-
-			if recommendedDatastore != nil {
-				result := make([]Datastore, len(disks))
-				for i := range len(disks) {
-					result[i] = recommendedDatastore
+		}
+		if first != nil {
+			for i := range result {
+				if !resolved[i] {
+					result[i] = first
+					resolved[i] = true
 				}
-				return result, SelectionMethodDRS, nil
 			}
 		}
 	}
 
-	// Fallback: Return first available datastore for all disks.
-	if err != nil {
-		log.Printf("[WARN] Storage DRS failed for cluster '%s': %s. Using first-available fallback.", clusterName, err)
+	if allResolved(resolved) {
+		return result, true
 	}
-	result := make([]Datastore, len(disks))
-	for i := range len(disks) {
-		result[i] = datastores[0]
+
+	return nil, false
+}
+
+func allResolved(resolved []bool) bool {
+	for _, ok := range resolved {
+		if !ok {
+			return false
+		}
 	}
-	return result, SelectionMethodFallback, nil
+	return true
+}
+
+func duplicateDatastore(datastore Datastore, count int) []Datastore {
+	result := make([]Datastore, count)
+	for i := 0; i < count; i++ {
+		result[i] = datastore
+	}
+	return result
 }
 
 // SelectDatastoreFromCluster selects a datastore from a cluster using Storage
@@ -222,9 +282,6 @@ func (d *VCenterDriver) SelectDatastoreFromCluster(
 		return nil, "", fmt.Errorf("datastore cluster '%s' contains no available datastores", clusterName)
 	}
 
-	// Create a minimal virtual machine spec for the Storage DRS placement
-	// request. Use a timestamp to make each request unique for proper Storage
-	// DRS evaluation.
 	vmSpec := types.VirtualMachineConfigSpec{
 		Name:     fmt.Sprintf("packer-placement-request-%d", time.Now().UnixNano()),
 		NumCPUs:  1,
@@ -234,21 +291,7 @@ func (d *VCenterDriver) SelectDatastoreFromCluster(
 		},
 	}
 
-	// Storage DRS requires a resource pool. Return one from the first
-	// datastore's host.
-	var resourcePoolRef *types.ManagedObjectReference
-	if len(datastores) > 0 {
-		dsInfo, err := datastores[0].Info("host")
-		if err == nil && len(dsInfo.Host) > 0 {
-			hostRef := dsInfo.Host[0].Key
-			host := object.NewHostSystem(d.Client.Client, hostRef)
-			hostInfo, err := host.ResourcePool(d.Ctx)
-			if err == nil {
-				ref := hostInfo.Reference()
-				resourcePoolRef = &ref
-			}
-		}
-	}
+	resourcePoolRef := resourcePoolFromDatastores(d, datastores)
 
 	placementResult, err := d.RequestStoragePlacement(cluster.Reference(), vmSpec, resourcePoolRef)
 	if err == nil && placementResult != nil && len(placementResult.Recommendations) > 0 {
@@ -257,29 +300,13 @@ func (d *VCenterDriver) SelectDatastoreFromCluster(
 		if len(recommendation.Action) > 0 {
 			for _, action := range recommendation.Action {
 				if relocateAction, ok := action.(*types.StoragePlacementAction); ok {
-					datastoreObj := object.NewDatastore(d.Client.Client, relocateAction.Destination)
-					dsDriver := &DatastoreDriver{
-						ds:     datastoreObj,
-						driver: d,
-					}
-					info, err := dsDriver.Info("name")
-					if err != nil {
-						log.Printf("[WARN] Failed to get datastore name: %s", err)
+					ds, err := d.resolveDatastoreRef(relocateAction.Destination)
+					if err != nil || relocateAction.Destination.Type == "" {
 						continue
 					}
 					log.Printf("[INFO] Storage DRS recommended datastore '%s' for cluster '%s'",
-						info.Name, clusterName)
-
-					ds, err := d.Finder.Datastore(d.Ctx, info.Name)
-					if err != nil {
-						log.Printf("[WARN] Failed to find datastore '%s': %s. Using direct reference.", info.Name, err)
-						return dsDriver, SelectionMethodDRS, nil
-					}
-
-					return &DatastoreDriver{
-						ds:     ds,
-						driver: d,
-					}, SelectionMethodDRS, nil
+						ds.Name(), clusterName)
+					return ds, SelectionMethodDRS, nil
 				}
 			}
 		}
