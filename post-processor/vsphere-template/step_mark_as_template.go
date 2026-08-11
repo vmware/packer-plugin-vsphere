@@ -73,6 +73,12 @@ func (s *StepMarkAsTemplate) Run(ctx context.Context, state multistep.StateBag) 
 		ui.Errorf("%s", err)
 		return multistep.ActionHalt
 	}
+	if vm == nil {
+		err := fmt.Errorf("virtual machine %q not found", s.VMName)
+		state.Put("error", err)
+		ui.Errorf("%s", err)
+		return multistep.ActionHalt
+	}
 
 	templateName := s.getEffectiveTemplateName()
 

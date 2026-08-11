@@ -105,7 +105,7 @@ func TestWithRetry_NonRetryableError(t *testing.T) {
 	err := withRetry(ctx, config, operation)
 
 	if err == nil {
-		t.Error("Expected error, got nil")
+		t.Fatal("Expected error, got nil")
 	}
 
 	if !strings.Contains(err.Error(), "non-retryable error") {
@@ -135,7 +135,7 @@ func TestWithRetry_MaxAttemptsExceeded(t *testing.T) {
 	err := withRetry(ctx, config, operation)
 
 	if err == nil {
-		t.Error("Expected error, got nil")
+		t.Fatal("Expected error, got nil")
 	}
 
 	if !strings.Contains(err.Error(), "operation failed after 3 attempts") {
@@ -168,7 +168,7 @@ func TestWithRetry_ContextCancelled(t *testing.T) {
 	err := withRetry(ctx, config, operation)
 
 	if err == nil {
-		t.Error("Expected error, got nil")
+		t.Fatal("Expected error, got nil")
 	}
 
 	if !strings.Contains(err.Error(), "operation cancelled") {

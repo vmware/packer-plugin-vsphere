@@ -528,19 +528,17 @@ func (sim *Simulator) ApplyResourcePoolConfiguration(poolConfigs []SimulatedReso
 
 		parent := root
 		segments := strings.Split(cfg.Path, "/")
-		var current *object.ResourcePool
 		for _, segment := range segments {
 			if segment == "" || segment == "." {
 				return fmt.Errorf("invalid resource pool path %q", cfg.Path)
 			}
-			current, err = ensureChildResourcePool(sim, parent, segment)
+			parent, err = ensureChildResourcePool(sim, parent, segment)
 			if err != nil {
 				return err
 			}
-			parent = current
 		}
 
-		ref := current.Reference()
+		ref := parent.Reference()
 		for _, tag := range cfg.Tags {
 			catID, err := ensureCategory(sim.Ctx, tagMan, tag.Category)
 			if err != nil {
