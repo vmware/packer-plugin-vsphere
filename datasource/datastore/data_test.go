@@ -13,23 +13,20 @@ import (
 	"github.com/vmware/packer-plugin-vsphere/testing/vcsim"
 )
 
-//go:fix inline
-func int64Ptr(v int64) *int64 { return new(v) }
-
 func TestDatasource_Execute(t *testing.T) {
 	datastoresToPrepare := []vcsim.SimulatedDatastoreConfig{
 		{
 			Name:      "w01-cl01-vsan01",
-			Capacity:  int64Ptr(int64(200 * units.GB)),
-			FreeSpace: int64Ptr(int64(50 * units.GB)),
+			Capacity:  new(int64(200 * units.GB)),
+			FreeSpace: new(int64(50 * units.GB)),
 			Tags: []vcsim.Tag{
 				{Category: "env", Name: "Packer"},
 			},
 		},
 		{
 			Name:      "w01-cl01-vsan02",
-			Capacity:  int64Ptr(int64(500 * units.GB)),
-			FreeSpace: int64Ptr(int64(300 * units.GB)),
+			Capacity:  new(int64(500 * units.GB)),
+			FreeSpace: new(int64(300 * units.GB)),
 			Tags: []vcsim.Tag{
 				{Category: "env", Name: "Packer"},
 				{Category: "tier", Name: "gold"},
@@ -37,8 +34,8 @@ func TestDatasource_Execute(t *testing.T) {
 		},
 		{
 			Name:      "w01-cl01-nfs01",
-			Capacity:  int64Ptr(int64(1000 * units.GB)),
-			FreeSpace: int64Ptr(int64(900 * units.GB)),
+			Capacity:  new(int64(1000 * units.GB)),
+			FreeSpace: new(int64(900 * units.GB)),
 			Tags: []vcsim.Tag{
 				{Category: "tier", Name: "bronze"},
 			},

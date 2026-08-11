@@ -13,30 +13,27 @@ import (
 	"github.com/vmware/packer-plugin-vsphere/testing/vcsim"
 )
 
-//go:fix inline
-func int64Ptr(v int64) *int64 { return new(v) }
-
 func TestDatasource_Execute(t *testing.T) {
 	datastoresToPrepare := []vcsim.SimulatedDatastoreConfig{
 		{
 			Name:      "w01-cl01-ds01",
-			Capacity:  int64Ptr(int64(200 * units.GB)),
-			FreeSpace: int64Ptr(int64(50 * units.GB)),
+			Capacity:  new(int64(200 * units.GB)),
+			FreeSpace: new(int64(50 * units.GB)),
 		},
 		{
 			Name:      "w01-cl01-ds02",
-			Capacity:  int64Ptr(int64(200 * units.GB)),
-			FreeSpace: int64Ptr(int64(100 * units.GB)),
+			Capacity:  new(int64(200 * units.GB)),
+			FreeSpace: new(int64(100 * units.GB)),
 		},
 		{
 			Name:      "w01-cl01-ds03",
-			Capacity:  int64Ptr(int64(500 * units.GB)),
-			FreeSpace: int64Ptr(int64(400 * units.GB)),
+			Capacity:  new(int64(500 * units.GB)),
+			FreeSpace: new(int64(400 * units.GB)),
 		},
 		{
 			Name:      "w01-cl01-ds04",
-			Capacity:  int64Ptr(int64(500 * units.GB)),
-			FreeSpace: int64Ptr(int64(300 * units.GB)),
+			Capacity:  new(int64(500 * units.GB)),
+			FreeSpace: new(int64(300 * units.GB)),
 		},
 	}
 
