@@ -208,12 +208,21 @@ func (s *StepCreateVM) Run(_ context.Context, state multistep.StateBag) multiste
 
 	var disks []driver.Disk
 	for _, disk := range s.Config.StorageConfig.Storage {
-		disks = append(disks, driver.Disk{
+		dd := driver.Disk{
 			DiskSize:            disk.DiskSize,
 			DiskEagerlyScrub:    disk.DiskEagerlyScrub,
 			DiskThinProvisioned: disk.DiskThinProvisioned,
 			ControllerIndex:     disk.DiskControllerIndex,
-		})
+		}
+		if disk.StoragePolicyName != "" {
+			id, err := d.FindStoragePolicyID(disk.StoragePolicyName)
+			if err != nil {
+				state.Put("error", fmt.Errorf("error resolving storage policy %q: %v", disk.StoragePolicyName, err))
+				return multistep.ActionHalt
+			}
+			dd.StoragePolicyID = id
+		}
+		disks = append(disks, dd)
 	}
 
 	datastoreName := s.Location.Datastore
@@ -223,12 +232,6 @@ func (s *StepCreateVM) Run(_ context.Context, state multistep.StateBag) multiste
 		datastoreName = primaryDatastore.Name()
 	}
 
-	// If no datastore was resolved and no datastore was specified, return an error.
-	if datastoreName == "" && s.Location.DatastoreCluster == "" {
-		state.Put("error", fmt.Errorf("no datastore specified and no datastore resolved from cluster"))
-		return multistep.ActionHalt
-	}
-
 	// Handle multi-disk placement when using a datastore cluster.
 	placementInput := driver.StoragePlacementInput{
 		StorageConfig: driver.StorageConfig{
@@ -236,15 +239,31 @@ func (s *StepCreateVM) Run(_ context.Context, state multistep.StateBag) multiste
 			Storage:            disks,
 		},
 	}
-	datastoreName, datastoreRefs := common.ResolveMultiDiskDatastoreRefs(
+	datastoreName, diskDatastores := common.ResolveMultiDiskDatastorePlacement(
 		ui, d, s.Location.DatastoreCluster, placementInput, primaryDatastore, datastoreName,
 	)
+
+	if len(diskDatastores) == 0 {
+		var err error
+		datastoreName, diskDatastores, err = common.ResolveStoragePolicyDatastorePlacement(
+			d, s.Location.Host, s.Location.Cluster, disks, primaryDatastore, datastoreName, s.Location.Datastore, s.Location.DatastoreCluster, common.StoragePolicyIDFromState(state),
+		)
+		if err != nil {
+			state.Put("error", err)
+			return multistep.ActionHalt
+		}
+	}
+
+	if datastoreName == "" && s.Location.DatastoreCluster == "" {
+		state.Put("error", fmt.Errorf("no datastore specified and no datastore resolved from cluster or storage policy"))
+		return multistep.ActionHalt
+	}
 
 	vm, err := d.CreateVM(&driver.CreateConfig{
 		StorageConfig: driver.StorageConfig{
 			DiskControllerType: s.Config.StorageConfig.DiskControllerType,
 			Storage:            disks,
-			DatastoreRefs:      datastoreRefs,
+			DiskDatastores:     diskDatastores,
 		},
 		Annotation:    s.Config.Notes,
 		Name:          s.Location.VMName,

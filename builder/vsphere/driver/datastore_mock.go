@@ -56,7 +56,14 @@ func (ds *DatastoreMock) Name() string {
 }
 
 func (ds *DatastoreMock) Reference() types.ManagedObjectReference {
-	return types.ManagedObjectReference{}
+	value := ds.NameReturn
+	if value == "" {
+		value = "datastore-mock"
+	}
+	return types.ManagedObjectReference{
+		Type:  "Datastore",
+		Value: value,
+	}
 }
 
 func (ds *DatastoreMock) ResolvePath(path string) string {

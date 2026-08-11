@@ -18,17 +18,37 @@ type Disk struct {
 	DiskThinProvisioned bool
 	ControllerIndex     int
 	ControllerUnit      string
+	// StoragePolicyID is the UUID of the vSphere storage policy to associate
+	// with this disk. Empty means no explicit policy; the datastore default applies.
+	StoragePolicyID string
+}
+
+// DiskDatastore is per-disk placement for create/clone. Name is required so
+// FileName can be set to "[datastore]" — vSphere ignores Datastore alone on
+// create and would otherwise place the disk on the VM home datastore.
+type DiskDatastore struct {
+	Name string
+	Ref  *types.ManagedObjectReference
+}
+
+// DiskDatastoreFrom builds placement from a resolved datastore.
+func DiskDatastoreFrom(ds Datastore) DiskDatastore {
+	ref := ds.Reference()
+	return DiskDatastore{Name: ds.Name(), Ref: &ref}
 }
 
 type StorageConfig struct {
 	DiskControllerType []string
 	Storage            []Disk
-	DatastoreRefs      []*types.ManagedObjectReference
+	// DiskDatastores is optional per-disk placement (index-aligned with Storage).
+	DiskDatastores []DiskDatastore
 }
 
 // AddStorageDevices adds virtual storage devices to an existing device list.
 // Disks with ControllerUnit attach at explicit addresses; disks without use
 // disk_controller_index against newly created controllers from DiskControllerType.
+// When a disk has a StoragePolicyID, a VirtualMachineDefinedProfileSpec is attached
+// to that disk's device config spec.
 func (c *StorageConfig) AddStorageDevices(existingDevices object.VirtualDeviceList) ([]types.BaseVirtualDeviceConfigSpec, error) {
 	return c.addStorageDevices(existingDevices, storageAttachOptions{linkControllerDevices: true, validateAggregate: true})
 }
@@ -52,6 +72,7 @@ func (c *StorageConfig) addStorageDevices(existingDevices object.VirtualDeviceLi
 
 	newDevices := object.VirtualDeviceList{}
 	typeIndex := 0
+	policyByKey := map[int32]string{}
 
 	var legacyDisks []int
 	var explicitDisks []int
@@ -97,6 +118,9 @@ func (c *StorageConfig) addStorageDevices(existingDevices object.VirtualDeviceLi
 			existingDevices.AssignController(disk, controller)
 			existingDevices = append(existingDevices, disk)
 			newDevices = append(newDevices, disk)
+			if c.Storage[i].StoragePolicyID != "" {
+				policyByKey[disk.Key] = c.Storage[i].StoragePolicyID
+			}
 		}
 
 		typeIndex = len(c.DiskControllerType)
@@ -158,6 +182,9 @@ func (c *StorageConfig) addStorageDevices(existingDevices object.VirtualDeviceLi
 		assignDiskAtUnit(existingDevices, disk, controller, int32(addr.Unit), opts.linkControllerDevices)
 		existingDevices = append(existingDevices, disk)
 		newDevices = append(newDevices, disk)
+		if c.Storage[i].StoragePolicyID != "" {
+			policyByKey[disk.Key] = c.Storage[i].StoragePolicyID
+		}
 		pendingUnits[raw] = struct{}{}
 	}
 
@@ -167,7 +194,26 @@ func (c *StorageConfig) addStorageDevices(existingDevices object.VirtualDeviceLi
 		}
 	}
 
-	return newDevices.ConfigSpec(types.VirtualDeviceConfigSpecOperationAdd)
+	specs, err := newDevices.ConfigSpec(types.VirtualDeviceConfigSpecOperationAdd)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, spec := range specs {
+		vdcs, ok := spec.(*types.VirtualDeviceConfigSpec)
+		if !ok || vdcs.Device == nil {
+			continue
+		}
+		if policyID, ok := policyByKey[vdcs.Device.GetVirtualDevice().Key]; ok {
+			vdcs.Profile = []types.BaseVirtualMachineProfileSpec{
+				&types.VirtualMachineDefinedProfileSpec{
+					ProfileId: policyID,
+				},
+			}
+		}
+	}
+
+	return specs, nil
 }
 
 func (c *StorageConfig) buildDisk(devices object.VirtualDeviceList, dc Disk, index int) *types.VirtualDisk {
@@ -177,8 +223,14 @@ func (c *StorageConfig) buildDisk(devices object.VirtualDeviceList, dc Disk, ind
 		EagerlyScrub:    types.NewBool(dc.DiskEagerlyScrub),
 	}
 
-	if index < len(c.DatastoreRefs) && c.DatastoreRefs[index] != nil {
-		backing.Datastore = c.DatastoreRefs[index]
+	if index < len(c.DiskDatastores) {
+		placement := c.DiskDatastores[index]
+		if placement.Name != "" {
+			backing.FileName = fmt.Sprintf("[%s]", placement.Name)
+		}
+		if placement.Ref != nil {
+			backing.Datastore = placement.Ref
+		}
 	}
 
 	return &types.VirtualDisk{

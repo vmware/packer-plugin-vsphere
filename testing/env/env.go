@@ -33,6 +33,9 @@ const (
 	DefaultTagCategory          = "color"
 	DefaultTagA                 = "blue"
 	DefaultTagB                 = "red"
+	DefaultStoragePolicyA       = "blue"
+	DefaultStoragePolicyB       = "green"
+	DefaultStoragePolicyC       = "" // Optional; set VSPHERE_STORAGE_POLICY_C (e.g. red) for a third disk.
 	DefaultNotes                = "Built by Acceptance Tests"
 	DefaultOVFURL               = "" // OVF/OVA HTTPS URLs; Acceptance test skip when unset.
 	DefaultOVAURL               = "" // OVF/OVA HTTPS URLs; Acceptance test skip when unset.
@@ -64,6 +67,9 @@ const (
 	EnvTagCategory          = "VSPHERE_TAG_CATEGORY"
 	EnvTagA                 = "VSPHERE_TAG_A"
 	EnvTagB                 = "VSPHERE_TAG_B"
+	EnvStoragePolicyA       = "VSPHERE_STORAGE_POLICY_A"
+	EnvStoragePolicyB       = "VSPHERE_STORAGE_POLICY_B"
+	EnvStoragePolicyC       = "VSPHERE_STORAGE_POLICY_C"
 	EnvNotes                = "VSPHERE_NOTES"
 	EnvOVFURL               = "VSPHERE_OVF_URL"
 	EnvOVAURL               = "VSPHERE_OVA_URL"

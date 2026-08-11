@@ -15,6 +15,7 @@ type FlatDiskConfig struct {
 	DiskEagerlyScrub    *bool   `mapstructure:"disk_eagerly_scrub" cty:"disk_eagerly_scrub" hcl:"disk_eagerly_scrub"`
 	DiskControllerIndex *int    `mapstructure:"disk_controller_index" cty:"disk_controller_index" hcl:"disk_controller_index"`
 	DiskControllerUnit  *string `mapstructure:"disk_controller_unit" cty:"disk_controller_unit" hcl:"disk_controller_unit"`
+	StoragePolicyName   *string `mapstructure:"storage_policy" cty:"storage_policy" hcl:"storage_policy"`
 }
 
 // FlatMapstructure returns a new FlatDiskConfig.
@@ -34,6 +35,7 @@ func (*FlatDiskConfig) HCL2Spec() map[string]hcldec.Spec {
 		"disk_eagerly_scrub":    &hcldec.AttrSpec{Name: "disk_eagerly_scrub", Type: cty.Bool, Required: false},
 		"disk_controller_index": &hcldec.AttrSpec{Name: "disk_controller_index", Type: cty.Number, Required: false},
 		"disk_controller_unit":  &hcldec.AttrSpec{Name: "disk_controller_unit", Type: cty.String, Required: false},
+		"storage_policy":        &hcldec.AttrSpec{Name: "storage_policy", Type: cty.String, Required: false},
 	}
 	return s
 }

@@ -603,3 +603,55 @@ func checkMatrixD(vmName string, acc env.AccConfig, libraryName, itemName, expor
 
 	return nil
 }
+
+// ---------------------------------------------------------------------------
+// Matrix E — Storage Policy PBM Placement
+// ---------------------------------------------------------------------------
+
+func TestAccISOBuilder_MatrixE(t *testing.T) {
+	acceptance.RequireAcceptance(t)
+	acc := env.AccFromEnv()
+	policies := acc.StoragePolicies()
+
+	config := alpineExampleConfig()
+	alpineMatrixGuest(config)
+	delete(config, "datastore")
+
+	disks := make([]map[string]interface{}, 0, len(policies))
+	for _, policy := range policies {
+		disks = append(disks, map[string]interface{}{
+			"disk_size":             2048,
+			"disk_thin_provisioned": true,
+			"storage_policy":        policy,
+		})
+	}
+	config["storage"] = disks
+
+	vmName := config["vm_name"].(string)
+	testCase := &acctest.PluginTestCase{
+		Name:     "vsphere-iso-matrix-e",
+		Template: acceptance.RenderConfig("vsphere-iso", config),
+		Teardown: func() error {
+			return teardownVM(vmName)
+		},
+		Check: func(buildCommand *exec.Cmd, logfile string) error {
+			if err := checkBuildSucceeded(buildCommand, logfile); err != nil {
+				return err
+			}
+			return checkMatrixE(vmName, policies)
+		},
+	}
+	acctest.TestPlugin(t, testCase)
+}
+
+func checkMatrixE(name string, policies []string) error {
+	d, err := acceptance.TestConn()
+	if err != nil {
+		return fmt.Errorf("cannot connect %v", err)
+	}
+	vm, err := d.FindVM(name)
+	if err != nil {
+		return fmt.Errorf("cannot find VM: %v", err)
+	}
+	return acceptance.CheckStoragePolicyDiskPlacements(d, vm, policies)
+}

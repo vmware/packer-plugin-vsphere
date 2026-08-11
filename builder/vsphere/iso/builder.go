@@ -53,6 +53,9 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		&common.StepResolveDatastore{
 			Datastore:        b.config.Datastore,
 			DatastoreCluster: b.config.DatastoreCluster,
+			StoragePolicy:    b.config.StorageConfig.FirstStoragePolicyName(),
+			Host:             b.config.Host,
+			Cluster:          b.config.Cluster,
 			DiskCount:        len(b.config.StorageConfig.Storage),
 		},
 		&common.StepDownload{

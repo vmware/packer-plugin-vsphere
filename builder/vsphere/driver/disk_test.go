@@ -262,3 +262,89 @@ func TestAddStorageDevicesTypePoolExhausted(t *testing.T) {
 		t.Fatalf("expected type pool exhausted error, got %v", err)
 	}
 }
+
+// TestAddStorageDevices_WithStoragePolicy verifies that a disk with a
+// StoragePolicyID gets a VirtualMachineDefinedProfileSpec in its config spec,
+// while a disk without a policy gets no profile entry.
+func TestAddStorageDevices_WithStoragePolicy(t *testing.T) {
+	const policyUUID = "aaaabbbb-cccc-dddd-eeee-ffffffffffff"
+
+	config := &StorageConfig{
+		DiskControllerType: []string{"pvscsi"},
+		Storage: []Disk{
+			{DiskSize: 10240, DiskThinProvisioned: true, ControllerIndex: 0, StoragePolicyID: policyUUID},
+			{DiskSize: 20480, DiskThinProvisioned: true, ControllerIndex: 0},
+		},
+	}
+
+	specs, err := config.AddStorageDevices(object.VirtualDeviceList{})
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	// 1 controller + 2 disks
+	if len(specs) != 3 {
+		t.Fatalf("expected 3 specs, got %d", len(specs))
+	}
+
+	// specs[0] = controller (no profile expected)
+	// specs[1] = first disk (policy set)
+	// specs[2] = second disk (no policy)
+	disk0spec := specs[1].(*types.VirtualDeviceConfigSpec)
+	if len(disk0spec.Profile) != 1 {
+		t.Fatalf("expected 1 profile on disk 0, got %d", len(disk0spec.Profile))
+	}
+	profileSpec, ok := disk0spec.Profile[0].(*types.VirtualMachineDefinedProfileSpec)
+	if !ok {
+		t.Fatal("expected VirtualMachineDefinedProfileSpec on disk 0")
+	}
+	if profileSpec.ProfileId != policyUUID {
+		t.Fatalf("expected profile ID %q, got %q", policyUUID, profileSpec.ProfileId)
+	}
+
+	disk1spec := specs[2].(*types.VirtualDeviceConfigSpec)
+	if len(disk1spec.Profile) != 0 {
+		t.Fatalf("expected no profile on disk 1, got %d", len(disk1spec.Profile))
+	}
+}
+
+// TestAddStorageDevices_WithDiskDatastores verifies FileName is set from
+// DiskDatastores so vSphere places each disk on the intended datastore.
+func TestAddStorageDevices_WithDiskDatastores(t *testing.T) {
+	blueRef := types.ManagedObjectReference{Type: "Datastore", Value: "ds-blue"}
+	greenRef := types.ManagedObjectReference{Type: "Datastore", Value: "ds-green"}
+
+	config := &StorageConfig{
+		DiskControllerType: []string{"pvscsi"},
+		Storage: []Disk{
+			{DiskSize: 10240, DiskThinProvisioned: true, ControllerIndex: 0},
+			{DiskSize: 20480, DiskThinProvisioned: true, ControllerIndex: 0},
+		},
+		DiskDatastores: []DiskDatastore{
+			{Name: "blue-ds", Ref: &blueRef},
+			{Name: "green-ds", Ref: &greenRef},
+		},
+	}
+
+	specs, err := config.AddStorageDevices(object.VirtualDeviceList{})
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	if len(specs) != 3 {
+		t.Fatalf("expected 3 specs, got %d", len(specs))
+	}
+
+	disk0 := specs[1].(*types.VirtualDeviceConfigSpec).Device.(*types.VirtualDisk)
+	backing0 := disk0.Backing.(*types.VirtualDiskFlatVer2BackingInfo)
+	if backing0.FileName != "[blue-ds]" {
+		t.Fatalf("expected FileName [blue-ds], got %q", backing0.FileName)
+	}
+	if backing0.Datastore == nil || backing0.Datastore.Value != "ds-blue" {
+		t.Fatalf("unexpected Datastore on disk 0: %+v", backing0.Datastore)
+	}
+
+	disk1 := specs[2].(*types.VirtualDeviceConfigSpec).Device.(*types.VirtualDisk)
+	backing1 := disk1.Backing.(*types.VirtualDiskFlatVer2BackingInfo)
+	if backing1.FileName != "[green-ds]" {
+		t.Fatalf("expected FileName [green-ds], got %q", backing1.FileName)
+	}
+}

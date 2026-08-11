@@ -108,6 +108,75 @@ func TestStepResolveDatastore_Run(t *testing.T) {
 			expectError:    true,
 			errorContains:  "error resolving datastore from cluster 'missing-cluster'",
 		},
+		{
+			name: "Resolve from storage policy via PBM",
+			step: &StepResolveDatastore{
+				StoragePolicy: "gold-policy",
+				Host:          "esxi-1",
+				Cluster:       "cluster-1",
+			},
+			driverMock: func() *VCenterDriverMock {
+				m := NewVCenterDriverMock()
+				m.FindStoragePolicyIDResult = "aaaabbbb-cccc-dddd-eeee-ffffffffffff"
+				m.FindCompatibleDatastoreResult = &driver.DatastoreMock{
+					NameReturn: "policy-datastore",
+				}
+				return m
+			}(),
+			expectedAction:    multistep.ActionContinue,
+			expectedDatastore: "policy-datastore",
+			expectedMethod:    driver.SelectionMethodStoragePolicy,
+			expectError:       false,
+		},
+		{
+			name: "Explicit datastore wins over storage policy",
+			step: &StepResolveDatastore{
+				Datastore:     "explicit-datastore",
+				StoragePolicy: "gold-policy",
+			},
+			driverMock: func() *VCenterDriverMock {
+				m := NewVCenterDriverMock()
+				m.DatastoreMock = &driver.DatastoreMock{
+					NameReturn: "explicit-datastore",
+				}
+				return m
+			}(),
+			expectedAction:    multistep.ActionContinue,
+			expectedDatastore: "explicit-datastore",
+			expectedMethod:    "direct",
+			expectError:       false,
+		},
+		{
+			name: "Error when storage policy not found",
+			step: &StepResolveDatastore{
+				StoragePolicy: "missing-policy",
+				Host:          "esxi-1",
+			},
+			driverMock: func() *VCenterDriverMock {
+				m := NewVCenterDriverMock()
+				m.FindStoragePolicyIDErr = fmt.Errorf("not found")
+				return m
+			}(),
+			expectedAction: multistep.ActionHalt,
+			expectError:    true,
+			errorContains:  "error resolving storage policy \"missing-policy\"",
+		},
+		{
+			name: "Error when no compatible datastore for storage policy",
+			step: &StepResolveDatastore{
+				StoragePolicy: "gold-policy",
+				Cluster:       "cluster-1",
+			},
+			driverMock: func() *VCenterDriverMock {
+				m := NewVCenterDriverMock()
+				m.FindStoragePolicyIDResult = "aaaabbbb-cccc-dddd-eeee-ffffffffffff"
+				m.FindCompatibleDatastoreErr = fmt.Errorf("no datastore compatible")
+				return m
+			}(),
+			expectedAction: multistep.ActionHalt,
+			expectError:    true,
+			errorContains:  "error resolving datastore for storage policy \"gold-policy\"",
+		},
 	}
 
 	for _, c := range tc {
@@ -148,6 +217,14 @@ func TestStepResolveDatastore_Run(t *testing.T) {
 				if method != c.expectedMethod {
 					t.Fatalf("unexpected selection method: expected '%s', but got '%s'", c.expectedMethod, method)
 				}
+
+				if c.step.Datastore == "" && c.step.DatastoreCluster == "" && c.step.StoragePolicy != "" {
+					if got := StoragePolicyIDFromState(state); got != c.driverMock.FindStoragePolicyIDResult {
+						t.Fatalf("unexpected storage_policy_id: expected %q, got %q", c.driverMock.FindStoragePolicyIDResult, got)
+					}
+				} else if _, ok := state.GetOk("storage_policy_id"); ok {
+					t.Fatal("expected storage_policy_id unset when not using PBM placement")
+				}
 			}
 
 			// Verify mock was called correctly
@@ -157,7 +234,47 @@ func TestStepResolveDatastore_Run(t *testing.T) {
 			if c.step.DatastoreCluster != "" && !c.driverMock.SelectDatastoreCalled {
 				t.Fatal("expected SelectDatastoreFromCluster to be called, but it wasn't")
 			}
+			if c.step.Datastore == "" && c.step.DatastoreCluster == "" && c.step.StoragePolicy != "" {
+				if !c.driverMock.FindStoragePolicyIDCalled {
+					t.Fatal("expected FindStoragePolicyID to be called, but it wasn't")
+				}
+				if !c.expectError && !c.driverMock.FindCompatibleDatastoreCalled {
+					t.Fatal("expected FindCompatibleDatastore to be called, but it wasn't")
+				}
+			}
+			if c.step.Datastore != "" && c.driverMock.FindCompatibleDatastoreCalled {
+				t.Fatal("expected FindCompatibleDatastore not to be called when datastore is set")
+			}
 		})
+	}
+}
+
+func TestStepResolveDatastore_NoDatastoreOrPolicyContinues(t *testing.T) {
+	state := basicStateBag(nil)
+	state.Put("driver", NewVCenterDriverMock())
+
+	step := &StepResolveDatastore{}
+	if action := step.Run(context.TODO(), state); action != multistep.ActionContinue {
+		t.Fatalf("unexpected action: %#v", action)
+	}
+	if _, ok := state.GetOk("datastore"); ok {
+		t.Fatal("expected no datastore in state when nothing is configured")
+	}
+}
+
+func TestStorageConfig_FirstStoragePolicyName(t *testing.T) {
+	cfg := &StorageConfig{
+		Storage: []DiskConfig{
+			{DiskSize: 1024},
+			{DiskSize: 2048, StoragePolicyName: "gold"},
+			{DiskSize: 4096, StoragePolicyName: "silver"},
+		},
+	}
+	if got := cfg.FirstStoragePolicyName(); got != "gold" {
+		t.Fatalf("unexpected first storage policy: got %q, want %q", got, "gold")
+	}
+	if got := (&StorageConfig{}).FirstStoragePolicyName(); got != "" {
+		t.Fatalf("expected empty policy name, got %q", got)
 	}
 }
 
@@ -169,7 +286,7 @@ func TestStepResolveDatastore_Cleanup(t *testing.T) {
 	step.Cleanup(state)
 }
 
-func TestResolveMultiDiskDatastoreRefs(t *testing.T) {
+func TestResolveMultiDiskDatastorePlacement(t *testing.T) {
 	ui := &packersdk.BasicUi{
 		Reader: new(bytes.Buffer),
 		Writer: new(bytes.Buffer),
@@ -191,7 +308,7 @@ func TestResolveMultiDiskDatastoreRefs(t *testing.T) {
 		},
 	}
 
-	datastoreName, refs := ResolveMultiDiskDatastoreRefs(
+	datastoreName, placements := ResolveMultiDiskDatastorePlacement(
 		ui, mock, "test-cluster", input, ds1, "initial-datastore",
 	)
 
@@ -204,12 +321,15 @@ func TestResolveMultiDiskDatastoreRefs(t *testing.T) {
 	if datastoreName != "datastore-1" {
 		t.Fatalf("unexpected datastore name: %q", datastoreName)
 	}
-	if len(refs) != 2 {
-		t.Fatalf("expected 2 datastore refs, got %d", len(refs))
+	if len(placements) != 2 {
+		t.Fatalf("expected 2 placements, got %d", len(placements))
+	}
+	if placements[0].Name != "datastore-1" || placements[1].Name != "datastore-2" {
+		t.Fatalf("unexpected placements: %+v", placements)
 	}
 }
 
-func TestResolveMultiDiskDatastoreRefsSkipsSingleDisk(t *testing.T) {
+func TestResolveMultiDiskDatastorePlacementSkipsSingleDisk(t *testing.T) {
 	mock := NewVCenterDriverMock()
 	input := driver.StoragePlacementInput{
 		StorageConfig: driver.StorageConfig{
@@ -217,7 +337,7 @@ func TestResolveMultiDiskDatastoreRefsSkipsSingleDisk(t *testing.T) {
 		},
 	}
 
-	_, refs := ResolveMultiDiskDatastoreRefs(
+	_, placements := ResolveMultiDiskDatastorePlacement(
 		&packersdk.BasicUi{Reader: new(bytes.Buffer), Writer: new(bytes.Buffer)},
 		mock, "test-cluster", input, nil, "initial-datastore",
 	)
@@ -225,8 +345,174 @@ func TestResolveMultiDiskDatastoreRefsSkipsSingleDisk(t *testing.T) {
 	if mock.SelectDatastoresForDisksCalled {
 		t.Fatal("expected SelectDatastoresForDisks not to be called for single disk")
 	}
-	if refs != nil {
-		t.Fatal("expected nil datastore refs for single disk")
+	if placements != nil {
+		t.Fatal("expected nil placements for single disk")
+	}
+}
+
+func TestResolveStoragePolicyDatastorePlacement_PerDisk(t *testing.T) {
+	blueDS := &driver.DatastoreMock{NameReturn: "blue-ds"}
+	greenDS := &driver.DatastoreMock{NameReturn: "green-ds"}
+	redDS := &driver.DatastoreMock{NameReturn: "red-ds"}
+
+	mock := NewVCenterDriverMock()
+	mock.FindCompatibleDatastoreByPolicy = map[string]driver.Datastore{
+		"policy-blue":  blueDS,
+		"policy-green": greenDS,
+		"policy-red":   redDS,
+	}
+
+	disks := []driver.Disk{
+		{DiskSize: 4096, StoragePolicyID: "policy-blue"},
+		{DiskSize: 4096, StoragePolicyID: "policy-green"},
+		{DiskSize: 4096, StoragePolicyID: "policy-red"},
+	}
+
+	name, placements, err := ResolveStoragePolicyDatastorePlacement(
+		mock, "esxi-1", "cluster-1", disks, blueDS, "blue-ds", "", "", "",
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if name != "blue-ds" {
+		t.Fatalf("expected primary datastore name blue-ds, got %q", name)
+	}
+	if len(placements) != 3 {
+		t.Fatalf("expected 3 placements, got %d", len(placements))
+	}
+	want := []string{"blue-ds", "green-ds", "red-ds"}
+	for i, w := range want {
+		if placements[i].Name != w || placements[i].Ref == nil || placements[i].Ref.Value != w {
+			t.Fatalf("placement %d: unexpected %+v, want %q", i, placements[i], w)
+		}
+	}
+	if len(mock.FindCompatibleDatastoreCalls) != 3 {
+		t.Fatalf("expected 3 PBM lookups, got %d: %v", len(mock.FindCompatibleDatastoreCalls), mock.FindCompatibleDatastoreCalls)
+	}
+}
+
+func TestResolveStoragePolicyDatastorePlacement_CachesSamePolicy(t *testing.T) {
+	goldDS := &driver.DatastoreMock{NameReturn: "gold-ds"}
+	mock := NewVCenterDriverMock()
+	mock.FindCompatibleDatastoreByPolicy = map[string]driver.Datastore{
+		"policy-gold": goldDS,
+	}
+
+	disks := []driver.Disk{
+		{DiskSize: 4096, StoragePolicyID: "policy-gold"},
+		{DiskSize: 8192, StoragePolicyID: "policy-gold"},
+	}
+
+	_, placements, err := ResolveStoragePolicyDatastorePlacement(mock, "esxi-1", "", disks, goldDS, "gold-ds", "", "", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(placements) != 2 {
+		t.Fatalf("expected 2 placements, got %d", len(placements))
+	}
+	if len(mock.FindCompatibleDatastoreCalls) != 1 {
+		t.Fatalf("expected 1 cached PBM lookup, got %d", len(mock.FindCompatibleDatastoreCalls))
+	}
+}
+
+func TestResolveStoragePolicyDatastorePlacement_SeedsPrimaryPolicy(t *testing.T) {
+	blueDS := &driver.DatastoreMock{NameReturn: "blue-ds"}
+	greenDS := &driver.DatastoreMock{NameReturn: "green-ds"}
+	mock := NewVCenterDriverMock()
+	mock.FindCompatibleDatastoreByPolicy = map[string]driver.Datastore{
+		"policy-green": greenDS,
+	}
+
+	disks := []driver.Disk{
+		{DiskSize: 4096, StoragePolicyID: "policy-blue"},
+		{DiskSize: 4096, StoragePolicyID: "policy-green"},
+	}
+
+	_, placements, err := ResolveStoragePolicyDatastorePlacement(
+		mock, "esxi-1", "", disks, blueDS, "blue-ds", "", "", "policy-blue",
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if placements[0].Name != "blue-ds" || placements[1].Name != "green-ds" {
+		t.Fatalf("unexpected placements: %+v", placements)
+	}
+	if len(mock.FindCompatibleDatastoreCalls) != 1 || mock.FindCompatibleDatastoreCalls[0] != "policy-green" {
+		t.Fatalf("expected only green PBM lookup, got %v", mock.FindCompatibleDatastoreCalls)
+	}
+}
+
+func TestResolveStoragePolicyDatastorePlacement_NoPolicyDiskUsesPrimary(t *testing.T) {
+	primary := &driver.DatastoreMock{NameReturn: "primary-ds"}
+	greenDS := &driver.DatastoreMock{NameReturn: "green-ds"}
+	mock := NewVCenterDriverMock()
+	mock.FindCompatibleDatastoreByPolicy = map[string]driver.Datastore{
+		"policy-green": greenDS,
+	}
+
+	disks := []driver.Disk{
+		{DiskSize: 4096},
+		{DiskSize: 4096, StoragePolicyID: "policy-green"},
+	}
+
+	_, placements, err := ResolveStoragePolicyDatastorePlacement(mock, "esxi-1", "", disks, primary, "primary-ds", "", "", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if placements[0].Name != "primary-ds" || placements[1].Name != "green-ds" {
+		t.Fatalf("unexpected placements: %+v", placements)
+	}
+}
+
+func TestResolveStoragePolicyDatastorePlacement_SkipsDatastoreCluster(t *testing.T) {
+	mock := NewVCenterDriverMock()
+	disks := []driver.Disk{{DiskSize: 4096, StoragePolicyID: "policy-blue"}}
+
+	_, placements, err := ResolveStoragePolicyDatastorePlacement(
+		mock, "esxi-1", "", disks, nil, "ds", "", "my-cluster", "",
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if placements != nil {
+		t.Fatal("expected nil placements when datastore_cluster is set")
+	}
+	if mock.FindCompatibleDatastoreCalled {
+		t.Fatal("expected FindCompatibleDatastore not to be called for datastore_cluster")
+	}
+}
+
+func TestResolveStoragePolicyDatastorePlacement_SkipsExplicitDatastore(t *testing.T) {
+	mock := NewVCenterDriverMock()
+	disks := []driver.Disk{{DiskSize: 4096, StoragePolicyID: "policy-blue"}}
+
+	_, placements, err := ResolveStoragePolicyDatastorePlacement(
+		mock, "esxi-1", "", disks, nil, "explicit-ds", "explicit-ds", "", "",
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if placements != nil {
+		t.Fatal("expected nil placements when explicit datastore is set")
+	}
+	if mock.FindCompatibleDatastoreCalled {
+		t.Fatal("expected FindCompatibleDatastore not to be called for explicit datastore")
+	}
+}
+
+func TestResolveStoragePolicyDatastorePlacement_ErrorPropagates(t *testing.T) {
+	mock := NewVCenterDriverMock()
+	mock.FindCompatibleDatastoreErr = fmt.Errorf("no compatible datastore")
+	disks := []driver.Disk{{DiskSize: 4096, StoragePolicyID: "policy-blue"}}
+
+	_, _, err := ResolveStoragePolicyDatastorePlacement(
+		mock, "esxi-1", "", disks, nil, "", "", "", "",
+	)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), "policy-blue") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

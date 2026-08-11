@@ -269,6 +269,19 @@ func (d *VCenterDriver) CreateVM(config *CreateConfig) (VirtualMachine, error) {
 	}
 	createSpec.DeviceChange = append(createSpec.DeviceChange, storageConfigSpec...)
 
+	// Use the first disk's policy for the VM home so the entire VM lives on
+	// compatible storage.
+	for _, disk := range config.StorageConfig.Storage {
+		if disk.StoragePolicyID != "" {
+			createSpec.VmProfile = []types.BaseVirtualMachineProfileSpec{
+				&types.VirtualMachineDefinedProfileSpec{
+					ProfileId: disk.StoragePolicyID,
+				},
+			}
+			break
+		}
+	}
+
 	devices, err = addNetwork(d, devices, config)
 	if err != nil {
 		return nil, err

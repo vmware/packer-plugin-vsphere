@@ -14,6 +14,7 @@ import (
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
+	"github.com/vmware/govmomi/pbm"
 	"github.com/vmware/govmomi/session"
 	"github.com/vmware/govmomi/vapi/library"
 	"github.com/vmware/govmomi/vapi/rest"
@@ -55,6 +56,13 @@ type Driver interface {
 	GetOvfOptions(ctx context.Context, config *OvfDeployConfig) ([]types.OvfOptionInfo, error)
 	ResolveContentLibraryItem(libraryName, itemName string) (*library.Item, error)
 	DeployContentLibraryItem(ctx context.Context, config *ContentLibraryDeployConfig, ui packersdk.Ui) (VirtualMachine, error)
+
+	// FindStoragePolicyID resolves a storage policy name to its profile UUID.
+	// Returns an error if the policy does not exist on vCenter.
+	FindStoragePolicyID(name string) (string, error)
+	// FindCompatibleDatastore selects a datastore compatible with the given
+	// storage policy profile UUID via PBM. Host or cluster scopes candidates.
+	FindCompatibleDatastore(policyID, host, cluster string) (Datastore, error)
 	Cleanup() (error, error)
 }
 
@@ -72,6 +80,7 @@ type VCenterDriver struct {
 	RestClient *RestClient
 	Finder     *find.Finder
 	Datacenter *object.Datacenter
+	pbmClient  *pbm.Client
 }
 
 func NewVCenterDriver(ctx context.Context, client *govmomi.Client, vimClient *vim25.Client, user *url.Userinfo, finder *find.Finder, datacenter *object.Datacenter) *VCenterDriver {
@@ -154,6 +163,22 @@ func NewDriver(config *ConnectConfig) (Driver, error) {
 func (d *VCenterDriver) GetRestClient() *rest.Client {
 	return d.RestClient.client
 }
+
+// FindStoragePolicyID resolves a storage policy name to its profile UUID using
+// the vSphere Policy-Based Management (PBM) API. The PBM client is initialized
+// lazily on first use; it shares the existing VIM25 session.
+func (d *VCenterDriver) FindStoragePolicyID(name string) (string, error) {
+	pc, err := d.ensurePBMClient()
+	if err != nil {
+		return "", err
+	}
+	id, err := pc.ProfileIDByName(d.Ctx, name)
+	if err != nil {
+		return "", fmt.Errorf("storage policy %q not found: %v", name, err)
+	}
+	return id, nil
+}
+
 func (d *VCenterDriver) Cleanup() (error, error) {
 	return d.RestClient.client.Logout(d.Ctx), d.Client.SessionManager.Logout(d.Ctx)
 }

@@ -76,10 +76,13 @@ task testacc-datasource TESTACC_DATASOURCE_RUN=TestAccDatasourceNetwork
 | `VSPHERE_OVA_URL`             | _(unset)_                                                          | HTTPS `.ova` for Remote OVA Clone Source              |
 | `VSPHERE_OVF_USERNAME`        | _(unset)_                                                          | HTTPS Basic Auth for Remote OVF/OVA URLs (Optional)   |
 | `VSPHERE_OVF_PASSWORD`        | _(unset)_                                                          | HTTPS Basic Auth for Remove OVF/OVA URLs (Optional)   |
-| `VSPHERE_OVF_SKIP_TLS_VERIFY` | _(unset)_                                                          | Set `1`/`true` to Remote OVF/OVA URL TLS Verification |
+| `VSPHERE_OVF_SKIP_TLS_VERIFY` | _(unset)_                                                          | Set `1`/`true` to Remote OVF/OVA URL TLS Verification  |
 | `VSPHERE_TAG_CATEGORY`        | `color`                                                            | Tag Category                                          |
 | `VSPHERE_TAG_A`               | `blue`                                                             | Tag Name within Tag Category                          |
 | `VSPHERE_TAG_B`               | `red`                                                              | Tag Name within Tag Category                          |
+| `VSPHERE_STORAGE_POLICY_A`    | `blue`                                                             | Storage Policy for Disk 1                             |
+| `VSPHERE_STORAGE_POLICY_B`    | `green`                                                            | Storage Policy for Disk 2)                            |
+| `VSPHERE_STORAGE_POLICY_C`    | _(unset)_                                                          | Storage Policy for Disk 3 (Optional)                  |
 | `VSPHERE_NOTES`               | `Built by Acceptance Tests`                                        | Notes                                                 |
 
 Defaults are defined in [`testing/env`](../env/env.go). Load them in tests with

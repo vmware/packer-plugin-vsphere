@@ -65,6 +65,22 @@ type DriverMock struct {
 	DeployContentLibraryItemShouldFail bool
 	DeployContentLibraryItemError      error
 	DeployContentLibraryItemVM         VirtualMachine
+
+	FindStoragePolicyIDCalled bool
+	FindStoragePolicyIDName   string
+	FindStoragePolicyIDResult string
+	FindStoragePolicyIDErr    error
+	FindStoragePolicyIDByName map[string]string
+	FindStoragePolicyIDCalls  []string
+
+	FindCompatibleDatastoreCalled   bool
+	FindCompatibleDatastorePolicyID string
+	FindCompatibleDatastoreHost     string
+	FindCompatibleDatastoreCluster  string
+	FindCompatibleDatastoreResult   Datastore
+	FindCompatibleDatastoreErr      error
+	FindCompatibleDatastoreByPolicy map[string]Datastore
+	FindCompatibleDatastoreCalls    []string
 }
 
 // NewDriverMock creates a new instance of DriverMock for testing.
@@ -263,6 +279,43 @@ func (d *DriverMock) DeployContentLibraryItem(ctx context.Context, config *Conte
 		d.DeployContentLibraryItemVM = new(VirtualMachineMock)
 	}
 	return d.DeployContentLibraryItemVM, nil
+}
+
+func (d *DriverMock) FindStoragePolicyID(name string) (string, error) {
+	d.FindStoragePolicyIDCalled = true
+	d.FindStoragePolicyIDName = name
+	d.FindStoragePolicyIDCalls = append(d.FindStoragePolicyIDCalls, name)
+	if d.FindStoragePolicyIDErr != nil {
+		return "", d.FindStoragePolicyIDErr
+	}
+	if d.FindStoragePolicyIDByName != nil {
+		if id, ok := d.FindStoragePolicyIDByName[name]; ok {
+			return id, nil
+		}
+		return "", fmt.Errorf("storage policy %q not found in mock", name)
+	}
+	return d.FindStoragePolicyIDResult, nil
+}
+
+func (d *DriverMock) FindCompatibleDatastore(policyID, host, cluster string) (Datastore, error) {
+	d.FindCompatibleDatastoreCalled = true
+	d.FindCompatibleDatastorePolicyID = policyID
+	d.FindCompatibleDatastoreHost = host
+	d.FindCompatibleDatastoreCluster = cluster
+	d.FindCompatibleDatastoreCalls = append(d.FindCompatibleDatastoreCalls, policyID)
+	if d.FindCompatibleDatastoreErr != nil {
+		return nil, d.FindCompatibleDatastoreErr
+	}
+	if d.FindCompatibleDatastoreByPolicy != nil {
+		if ds, ok := d.FindCompatibleDatastoreByPolicy[policyID]; ok {
+			return ds, nil
+		}
+		return nil, fmt.Errorf("no compatible datastore mock for policy %q", policyID)
+	}
+	if d.FindCompatibleDatastoreResult == nil {
+		d.FindCompatibleDatastoreResult = new(DatastoreMock)
+	}
+	return d.FindCompatibleDatastoreResult, nil
 }
 
 func (d *DriverMock) Cleanup() (error, error) {
