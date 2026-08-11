@@ -234,7 +234,7 @@ func (d *VCenterDriver) CreateVM(config *CreateConfig) (VirtualMachine, error) {
 		}
 		createSpec.Firmware = firmware
 		createSpec.BootOptions = &types.VirtualMachineBootOptions{
-			EfiSecureBootEnabled: types.NewBool(efiSecureBootEnabled),
+			EfiSecureBootEnabled: new(efiSecureBootEnabled),
 		}
 	}
 
@@ -713,8 +713,8 @@ func (vm *VirtualMachineDriver) Configure(config *HardwareConfig) error {
 
 	if config.Firmware != "" || config.ForceBIOSSetup || config.BootDelay > 0 {
 		confSpec.BootOptions = &types.VirtualMachineBootOptions{
-			EnterBIOSSetup:       types.NewBool(config.ForceBIOSSetup),
-			EfiSecureBootEnabled: types.NewBool(efiSecureBootEnabled),
+			EnterBIOSSetup:       new(config.ForceBIOSSetup),
+			EfiSecureBootEnabled: new(efiSecureBootEnabled),
 			BootDelay:            config.BootDelay,
 		}
 	}
