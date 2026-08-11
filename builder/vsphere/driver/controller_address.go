@@ -7,6 +7,7 @@ package driver
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -209,12 +210,7 @@ func staticMaxUnitForAddress(addr ControllerAddress, diskControllerTypes []strin
 }
 
 func containsPVSCSIType(diskControllerTypes []string) bool {
-	for _, controllerType := range diskControllerTypes {
-		if controllerType == controllerTypePVSCSI {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(diskControllerTypes, controllerTypePVSCSI)
 }
 
 func maxUnitForControllerTypeString(controllerType string, kind ControllerKind) int {

@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
@@ -529,12 +530,7 @@ func (tm *tagManager) resolveOrCreateTag(ctx context.Context, tagsManager *tags.
 
 // isAssociableWithVirtualMachine checks if a category can be associated with VirtualMachine objects.
 func isAssociableWithVirtualMachine(associableTypes []string) bool {
-	for _, t := range associableTypes {
-		if t == "VirtualMachine" {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(associableTypes, "VirtualMachine")
 }
 
 // ApplyTags attaches tags to a virtual machine.

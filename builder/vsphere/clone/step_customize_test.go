@@ -5,6 +5,7 @@
 package clone
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/vmware/govmomi/vim25/types"
@@ -59,13 +60,7 @@ func TestWindowsSysprepFilePrintsWarning(t *testing.T) {
 	}
 
 	// Search warnings array for the warning message
-	found := false
-	for _, warning := range warnings {
-		if warning == expectedWarning {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(warnings, expectedWarning)
 
 	// If we didn't find the expect warning message fail.
 	if found == false {
