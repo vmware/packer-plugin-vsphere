@@ -86,10 +86,8 @@ func TestStepPublishSource_Run(t *testing.T) {
 
 	ctx := context.TODO()
 	var wg sync.WaitGroup
-	wg.Add(1)
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		action := step.Run(ctx, state)
 		if action == multistep.ActionHalt {
 			if rawErr, ok := state.GetOk("error"); ok {
@@ -128,7 +126,7 @@ func TestStepPublishSource_Run(t *testing.T) {
 			"Finished publishing the source VM",
 		}
 		checkOutputLines(t, testWriter, expectedOutput)
-	}()
+	})
 
 	// Wait for the watch to be established from Builder before updating the fake VirtualMachinePublishRequest resource below.
 	for i := 0; i < step.Config.WatchPublishTimeoutSec; i++ {
