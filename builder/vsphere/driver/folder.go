@@ -39,8 +39,8 @@ func (d *VCenterDriver) FindFolder(name string) (*Folder, error) {
 		if err != nil {
 			return nil, err
 		}
-		folders := strings.Split(name, "/")
-		for _, folder := range folders {
+		folders := strings.SplitSeq(name, "/")
+		for folder := range folders {
 			parent = path.Join(parent, folder)
 			f, err := d.Finder.Folder(d.Ctx, path.Join(d.Datacenter.InventoryPath, "vm", parent))
 			var notFoundError *find.NotFoundError
