@@ -7,6 +7,7 @@ package clone
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/hashicorp/packer-plugin-sdk/communicator"
@@ -225,9 +226,7 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		"generated_data": state.Get("generated_data"),
 		"metadata":       state.Get("metadata"),
 	}
-	for key, value := range sourceArtifactStateData(&b.config) {
-		stateData[key] = value
-	}
+	maps.Copy(stateData, sourceArtifactStateData(&b.config))
 	artifact := &common.Artifact{
 		Name:                 b.config.VMName,
 		Datacenter:           vm.Datacenter(),

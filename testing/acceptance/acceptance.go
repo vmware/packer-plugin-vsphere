@@ -7,6 +7,7 @@ package acceptance
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -24,9 +25,7 @@ func RenderConfig(builderType string, config map[string]interface{}) string {
 			{"type": builderType},
 		},
 	}
-	for k, v := range config {
-		t["builders"][0][k] = v
-	}
+	maps.Copy(t["builders"][0], config)
 
 	j, _ := json.Marshal(t)
 	return string(j)
