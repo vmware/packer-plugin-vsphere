@@ -256,7 +256,7 @@ func allResolved(resolved []bool) bool {
 
 func duplicateDatastore(datastore Datastore, count int) []Datastore {
 	result := make([]Datastore, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		result[i] = datastore
 	}
 	return result

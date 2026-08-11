@@ -1351,7 +1351,7 @@ func TestOvfManagerWrapper_ConcurrentAccess(t *testing.T) {
 		const numGoroutines = 10
 		results := make(chan error, numGoroutines)
 
-		for i := 0; i < numGoroutines; i++ {
+		for i := range numGoroutines {
 			go func(id int) {
 				url := fmt.Sprintf("https://packages%d.example.com/artifacts/example.ovf", id)
 				_, err := driver.GetOvfOptions(ctx, &OvfDeployConfig{URL: url, Locale: "US"})
@@ -1360,7 +1360,7 @@ func TestOvfManagerWrapper_ConcurrentAccess(t *testing.T) {
 		}
 
 		// Collect results.
-		for i := 0; i < numGoroutines; i++ {
+		for range numGoroutines {
 			err := <-results
 			// Expected error due to simulator limitations for OVF parsing,
 			// but the error should not be a configuration validation error.
@@ -1375,7 +1375,7 @@ func TestOvfManagerWrapper_ConcurrentAccess(t *testing.T) {
 		const numGoroutines = 10
 		results := make(chan error, numGoroutines)
 
-		for i := 0; i < numGoroutines; i++ {
+		for i := range numGoroutines {
 			go func(id int) {
 				auth := &OvfAuthConfig{
 					Username: fmt.Sprintf("user%d", id),
@@ -1395,7 +1395,7 @@ func TestOvfManagerWrapper_ConcurrentAccess(t *testing.T) {
 		}
 
 		// Collect results.
-		for i := 0; i < numGoroutines; i++ {
+		for range numGoroutines {
 			err := <-results
 			if err != nil {
 				t.Errorf("unexpected error in goroutine: %s", err)
