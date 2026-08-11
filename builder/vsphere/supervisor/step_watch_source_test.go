@@ -67,9 +67,7 @@ func TestWatchSource_RunOVF(t *testing.T) {
 
 	// Run this step in a new goroutine as it contains a blocking 'watch' process.
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		action := step.Run(context.TODO(), state)
 		if action == multistep.ActionHalt {
 			if rawErr, ok := state.GetOk("error"); ok {
@@ -98,7 +96,7 @@ func TestWatchSource_RunOVF(t *testing.T) {
 			"Source VM is now ready in Supervisor cluster",
 		}
 		checkOutputLines(t, testWriter, expectedOutput)
-	}()
+	})
 
 	// Wait for the watch to be established from Builder before updating the fake VM resource below.
 	for i := 0; i < step.Config.WatchSourceTimeoutSec; i++ {
@@ -170,9 +168,7 @@ func TestWatchSource_RunISO(t *testing.T) {
 
 	// Run this step in a new goroutine as it contains a blocking 'watch' process.
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		action := step.Run(context.TODO(), state)
 		if action == multistep.ActionHalt {
 			if rawErr, ok := state.GetOk("error"); ok {
@@ -207,7 +203,7 @@ func TestWatchSource_RunISO(t *testing.T) {
 		expectedOutput = append(expectedOutput, "Successfully obtained the source VM IP: 1.2.3.4")
 		expectedOutput = append(expectedOutput, "Source VM is now ready in Supervisor cluster")
 		checkOutputLines(t, testWriter, expectedOutput)
-	}()
+	})
 
 	// Wait for the watch to be established from Builder before updating the fake VM resource below.
 	for i := 0; i < step.Config.WatchSourceTimeoutSec; i++ {

@@ -272,10 +272,8 @@ func TestStepImportImage_Run(t *testing.T) {
 
 	ctx := context.TODO()
 	var wg sync.WaitGroup
-	wg.Add(1)
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		action := step.Run(ctx, state)
 		if action == multistep.ActionHalt {
 			if rawErr, ok := state.GetOk("error"); ok {
@@ -309,7 +307,7 @@ func TestStepImportImage_Run(t *testing.T) {
 			fmt.Sprintf("Finished importing the image from %s to %s.", testSourceURL, testTargetLibrary),
 		}
 		checkOutputLines(t, testWriter, expectedOutput)
-	}()
+	})
 
 	// Wait for the watch to be established from Builder before updating the fake ContentLibraryItemImportRequest resource below.
 	for i := 0; i < step.ImportImageConfig.WatchImportTimeoutSec; i++ {
