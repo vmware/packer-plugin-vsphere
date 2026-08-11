@@ -95,7 +95,7 @@ func TestBuildVAppConfigSpecAddsMissingPropertyWhenEnabled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(spec.Property) != 2 {
-		t.Fatalf("expected edit and add operations, got %d specs", len(spec.Property))
+	if spec == nil || len(spec.Property) != 2 {
+		t.Fatalf("expected edit and add operations, got %#v", spec)
 	}
 }
