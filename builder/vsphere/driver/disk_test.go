@@ -306,3 +306,45 @@ func TestAddStorageDevices_WithStoragePolicy(t *testing.T) {
 		t.Fatalf("expected no profile on disk 1, got %d", len(disk1spec.Profile))
 	}
 }
+
+// TestAddStorageDevices_WithDiskDatastores verifies FileName is set from
+// DiskDatastores so vSphere places each disk on the intended datastore.
+func TestAddStorageDevices_WithDiskDatastores(t *testing.T) {
+	blueRef := types.ManagedObjectReference{Type: "Datastore", Value: "ds-blue"}
+	greenRef := types.ManagedObjectReference{Type: "Datastore", Value: "ds-green"}
+
+	config := &StorageConfig{
+		DiskControllerType: []string{"pvscsi"},
+		Storage: []Disk{
+			{DiskSize: 10240, DiskThinProvisioned: true, ControllerIndex: 0},
+			{DiskSize: 20480, DiskThinProvisioned: true, ControllerIndex: 0},
+		},
+		DiskDatastores: []DiskDatastore{
+			{Name: "blue-ds", Ref: &blueRef},
+			{Name: "green-ds", Ref: &greenRef},
+		},
+	}
+
+	specs, err := config.AddStorageDevices(object.VirtualDeviceList{})
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	if len(specs) != 3 {
+		t.Fatalf("expected 3 specs, got %d", len(specs))
+	}
+
+	disk0 := specs[1].(*types.VirtualDeviceConfigSpec).Device.(*types.VirtualDisk)
+	backing0 := disk0.Backing.(*types.VirtualDiskFlatVer2BackingInfo)
+	if backing0.FileName != "[blue-ds]" {
+		t.Fatalf("expected FileName [blue-ds], got %q", backing0.FileName)
+	}
+	if backing0.Datastore == nil || backing0.Datastore.Value != "ds-blue" {
+		t.Fatalf("unexpected Datastore on disk 0: %+v", backing0.Datastore)
+	}
+
+	disk1 := specs[2].(*types.VirtualDeviceConfigSpec).Device.(*types.VirtualDisk)
+	backing1 := disk1.Backing.(*types.VirtualDiskFlatVer2BackingInfo)
+	if backing1.FileName != "[green-ds]" {
+		t.Fatalf("expected FileName [green-ds], got %q", backing1.FileName)
+	}
+}

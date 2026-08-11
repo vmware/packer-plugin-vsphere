@@ -60,6 +60,9 @@ type Driver interface {
 	// FindStoragePolicyID resolves a storage policy name to its profile UUID.
 	// Returns an error if the policy does not exist on vCenter.
 	FindStoragePolicyID(name string) (string, error)
+	// FindCompatibleDatastore selects a datastore compatible with the given
+	// storage policy profile UUID via PBM. Host or cluster scopes candidates.
+	FindCompatibleDatastore(policyID, host, cluster string) (Datastore, error)
 	Cleanup() (error, error)
 }
 
@@ -165,14 +168,11 @@ func (d *VCenterDriver) GetRestClient() *rest.Client {
 // the vSphere Policy-Based Management (PBM) API. The PBM client is initialized
 // lazily on first use; it shares the existing VIM25 session.
 func (d *VCenterDriver) FindStoragePolicyID(name string) (string, error) {
-	if d.pbmClient == nil {
-		c, err := pbm.NewClient(d.Ctx, d.VimClient)
-		if err != nil {
-			return "", fmt.Errorf("error initializing PBM client: %v", err)
-		}
-		d.pbmClient = c
+	pc, err := d.ensurePBMClient()
+	if err != nil {
+		return "", err
 	}
-	id, err := d.pbmClient.ProfileIDByName(d.Ctx, name)
+	id, err := pc.ProfileIDByName(d.Ctx, name)
 	if err != nil {
 		return "", fmt.Errorf("storage policy %q not found: %v", name, err)
 	}

@@ -23,10 +23,25 @@ type Disk struct {
 	StoragePolicyID string
 }
 
+// DiskDatastore is per-disk placement for create/clone. Name is required so
+// FileName can be set to "[datastore]" — vSphere ignores Datastore alone on
+// create and would otherwise place the disk on the VM home datastore.
+type DiskDatastore struct {
+	Name string
+	Ref  *types.ManagedObjectReference
+}
+
+// DiskDatastoreFrom builds placement from a resolved datastore.
+func DiskDatastoreFrom(ds Datastore) DiskDatastore {
+	ref := ds.Reference()
+	return DiskDatastore{Name: ds.Name(), Ref: &ref}
+}
+
 type StorageConfig struct {
 	DiskControllerType []string
 	Storage            []Disk
-	DatastoreRefs      []*types.ManagedObjectReference
+	// DiskDatastores is optional per-disk placement (index-aligned with Storage).
+	DiskDatastores []DiskDatastore
 }
 
 // AddStorageDevices adds virtual storage devices to an existing device list.
@@ -208,8 +223,14 @@ func (c *StorageConfig) buildDisk(devices object.VirtualDeviceList, dc Disk, ind
 		EagerlyScrub:    types.NewBool(dc.DiskEagerlyScrub),
 	}
 
-	if index < len(c.DatastoreRefs) && c.DatastoreRefs[index] != nil {
-		backing.Datastore = c.DatastoreRefs[index]
+	if index < len(c.DiskDatastores) {
+		placement := c.DiskDatastores[index]
+		if placement.Name != "" {
+			backing.FileName = fmt.Sprintf("[%s]", placement.Name)
+		}
+		if placement.Ref != nil {
+			backing.Datastore = placement.Ref
+		}
 	}
 
 	return &types.VirtualDisk{

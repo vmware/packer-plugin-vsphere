@@ -18,6 +18,11 @@
 
 - `storage_policy` (string) - The name of the storage policy to apply to the disk. The storage policy
   must already exist on the vCenter instance. If not specified, the default
-  storage policy of the target datastore is used.
+  storage policy of the target `datastore` or `datastore_cluster` is used.
+  
+  -> **Note:** When `datastore` and `datastore_cluster` are omitted, each
+  configured `storage_policy` is used to select a compliant datastore for
+  that disk and the first policy is used to place the virtual machine's home
+  files.
 
 <!-- End of code generated from the comments of the DiskConfig struct in builder/vsphere/common/storage_config.go; -->

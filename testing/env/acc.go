@@ -28,6 +28,9 @@ type AccConfig struct {
 	TagCategory        string
 	TagA               string
 	TagB               string
+	StoragePolicyA     string
+	StoragePolicyB     string
+	StoragePolicyC     string
 	Notes              string
 	OVFURL             string
 	OVAURL             string
@@ -61,6 +64,9 @@ func AccFromEnv() AccConfig {
 		TagCategory:        GetenvOrDefault(EnvTagCategory, DefaultTagCategory),
 		TagA:               GetenvOrDefault(EnvTagA, DefaultTagA),
 		TagB:               GetenvOrDefault(EnvTagB, DefaultTagB),
+		StoragePolicyA:     GetenvOrDefault(EnvStoragePolicyA, DefaultStoragePolicyA),
+		StoragePolicyB:     GetenvOrDefault(EnvStoragePolicyB, DefaultStoragePolicyB),
+		StoragePolicyC:     GetenvOrDefault(EnvStoragePolicyC, DefaultStoragePolicyC),
 		Notes:              GetenvOrDefault(EnvNotes, DefaultNotes),
 		OVFURL:             GetenvOrDefault(EnvOVFURL, DefaultOVFURL),
 		OVAURL:             GetenvOrDefault(EnvOVAURL, DefaultOVAURL),
@@ -68,4 +74,14 @@ func AccFromEnv() AccConfig {
 		OVFPassword:        GetenvOrDefault(EnvOVFPassword, DefaultOVFPassword),
 		OVFSkipTLSVerify:   EnvTruthy(EnvOVFSkipTLSVerify),
 	}
+}
+
+// StoragePolicies returns the storage policy names used by the acceptance
+// tests.
+func (c AccConfig) StoragePolicies() []string {
+	policies := []string{c.StoragePolicyA, c.StoragePolicyB}
+	if c.StoragePolicyC != "" {
+		policies = append(policies, c.StoragePolicyC)
+	}
+	return policies
 }

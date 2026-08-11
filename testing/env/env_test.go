@@ -47,6 +47,9 @@ func TestAccFromEnv_defaults(t *testing.T) {
 		"TagCategory":        DefaultTagCategory,
 		"TagA":               DefaultTagA,
 		"TagB":               DefaultTagB,
+		"StoragePolicyA":     DefaultStoragePolicyA,
+		"StoragePolicyB":     DefaultStoragePolicyB,
+		"StoragePolicyC":     DefaultStoragePolicyC,
 		"Notes":              DefaultNotes,
 		"OVFURL":             DefaultOVFURL,
 		"OVAURL":             DefaultOVAURL,
@@ -76,6 +79,9 @@ func TestAccFromEnv_defaults(t *testing.T) {
 		"TagCategory":        acc.TagCategory,
 		"TagA":               acc.TagA,
 		"TagB":               acc.TagB,
+		"StoragePolicyA":     acc.StoragePolicyA,
+		"StoragePolicyB":     acc.StoragePolicyB,
+		"StoragePolicyC":     acc.StoragePolicyC,
 		"Notes":              acc.Notes,
 		"OVFURL":             acc.OVFURL,
 		"OVAURL":             acc.OVAURL,
@@ -90,6 +96,9 @@ func TestAccFromEnv_defaults(t *testing.T) {
 	}
 	if acc.OVFSkipTLSVerify {
 		t.Errorf("OVFSkipTLSVerify: got true, want false by default")
+	}
+	if got := acc.StoragePolicies(); len(got) != 2 || got[0] != DefaultStoragePolicyA || got[1] != DefaultStoragePolicyB {
+		t.Errorf("StoragePolicies defaults: got %#v", got)
 	}
 }
 
@@ -110,6 +119,9 @@ func TestAccFromEnv_overrides(t *testing.T) {
 	t.Setenv(EnvTagCategory, "cat-override")
 	t.Setenv(EnvTagA, "tag-blue-override")
 	t.Setenv(EnvTagB, "tag-red-override")
+	t.Setenv(EnvStoragePolicyA, "policy-a-override")
+	t.Setenv(EnvStoragePolicyB, "policy-b-override")
+	t.Setenv(EnvStoragePolicyC, "policy-c-override")
 	t.Setenv(EnvNotes, "notes-override")
 	t.Setenv(EnvOVFURL, "https://artifacts.example.com/alpine.ovf")
 	t.Setenv(EnvOVAURL, "https://artifacts.example.com/alpine.ova")
@@ -163,6 +175,18 @@ func TestAccFromEnv_overrides(t *testing.T) {
 	if acc.TagB != "tag-red-override" {
 		t.Fatalf("TagB: got %q", acc.TagB)
 	}
+	if acc.StoragePolicyA != "policy-a-override" {
+		t.Fatalf("StoragePolicyA: got %q", acc.StoragePolicyA)
+	}
+	if acc.StoragePolicyB != "policy-b-override" {
+		t.Fatalf("StoragePolicyB: got %q", acc.StoragePolicyB)
+	}
+	if acc.StoragePolicyC != "policy-c-override" {
+		t.Fatalf("StoragePolicyC: got %q", acc.StoragePolicyC)
+	}
+	if got := acc.StoragePolicies(); len(got) != 3 || got[2] != "policy-c-override" {
+		t.Fatalf("StoragePolicies with C: got %#v", got)
+	}
 	if acc.Notes != "notes-override" {
 		t.Fatalf("Notes: got %q", acc.Notes)
 	}
@@ -207,6 +231,9 @@ func clearAccEnv(t *testing.T) {
 		EnvTagCategory,
 		EnvTagA,
 		EnvTagB,
+		EnvStoragePolicyA,
+		EnvStoragePolicyB,
+		EnvStoragePolicyC,
 		EnvNotes,
 		EnvOVFURL,
 		EnvOVAURL,

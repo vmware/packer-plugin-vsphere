@@ -269,10 +269,8 @@ func (d *VCenterDriver) CreateVM(config *CreateConfig) (VirtualMachine, error) {
 	}
 	createSpec.DeviceChange = append(createSpec.DeviceChange, storageConfigSpec...)
 
-	// vSphere requires VmProfile on the top-level config spec (which governs
-	// the VM home files: .vmx, .nvram, etc.) whenever any disk carries a
-	// per-disk storage policy profile. Use the first disk's policy for the
-	// VM home so the entire VM lives on compatible storage.
+	// Use the first disk's policy for the VM home so the entire VM lives on
+	// compatible storage.
 	for _, disk := range config.StorageConfig.Storage {
 		if disk.StoragePolicyID != "" {
 			createSpec.VmProfile = []types.BaseVirtualMachineProfileSpec{

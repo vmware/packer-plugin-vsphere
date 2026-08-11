@@ -21,7 +21,6 @@ import (
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/packerbuilderdata"
 	"github.com/vmware/govmomi/vapi/library"
-	"github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
@@ -397,19 +396,27 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 // disksFromStorageConfig converts the configured storage blocks into driver.Disk
 // values, preserving both the legacy disk_controller_index and explicit
 // disk_controller_unit addressing so callers don't have to duplicate (and risk
-// diverging on) this mapping.
-func disksFromStorageConfig(storage []common.DiskConfig) []driver.Disk {
+// diverging on) this mapping. Storage policy names are resolved to profile UUIDs.
+func disksFromStorageConfig(d driver.Driver, storage []common.DiskConfig) ([]driver.Disk, error) {
 	var disks []driver.Disk
 	for _, disk := range storage {
-		disks = append(disks, driver.Disk{
+		dd := driver.Disk{
 			DiskSize:            disk.DiskSize,
 			DiskEagerlyScrub:    disk.DiskEagerlyScrub,
 			DiskThinProvisioned: disk.DiskThinProvisioned,
 			ControllerIndex:     disk.DiskControllerIndex,
 			ControllerUnit:      disk.DiskControllerUnit,
-		})
+		}
+		if disk.StoragePolicyName != "" {
+			id, err := d.FindStoragePolicyID(disk.StoragePolicyName)
+			if err != nil {
+				return nil, fmt.Errorf("error resolving storage policy %q: %v", disk.StoragePolicyName, err)
+			}
+			dd.StoragePolicyID = id
+		}
+		disks = append(disks, dd)
 	}
-	return disks
+	return disks, nil
 }
 
 // cloneFromTemplate handles traditional template-based cloning for backward compatibility.
@@ -432,7 +439,11 @@ func (s *StepCloneVM) cloneFromTemplate(ctx context.Context, state multistep.Sta
 	}
 
 	ui.Say("Cloning virtual machine...")
-	disks := disksFromStorageConfig(s.Config.StorageConfig.Storage)
+	disks, err := disksFromStorageConfig(d, s.Config.StorageConfig.Storage)
+	if err != nil {
+		state.Put("error", err)
+		return multistep.ActionHalt
+	}
 
 	templateDevices, err := template.Devices()
 	if err != nil {
@@ -441,12 +452,6 @@ func (s *StepCloneVM) cloneFromTemplate(ctx context.Context, state multistep.Sta
 	}
 
 	datastoreName, primaryDatastore := s.resolveDatastore(state)
-
-	// If no datastore was resolved and no datastore was specified, return an error.
-	if datastoreName == "" && s.Location.DatastoreCluster == "" {
-		state.Put("error", fmt.Errorf("no datastore specified and no datastore resolved from cluster"))
-		return multistep.ActionHalt
-	}
 
 	// Handle multi-disk placement when using a datastore cluster.
 	placementInput := driver.StoragePlacementInput{
@@ -457,9 +462,25 @@ func (s *StepCloneVM) cloneFromTemplate(ctx context.Context, state multistep.Sta
 		ExistingDevices: driver.StorageExistingDevices(templateDevices),
 		PrimaryDiskSize: s.Config.DiskSize,
 	}
-	datastoreName, datastoreRefs := common.ResolveMultiDiskDatastoreRefs(
+	datastoreName, diskDatastores := common.ResolveMultiDiskDatastorePlacement(
 		ui, d, s.Location.DatastoreCluster, placementInput, primaryDatastore, datastoreName,
 	)
+
+	if len(diskDatastores) == 0 {
+		var resolveErr error
+		datastoreName, diskDatastores, resolveErr = common.ResolveStoragePolicyDatastorePlacement(
+			d, s.Location.Host, s.Location.Cluster, disks, primaryDatastore, datastoreName, s.Location.Datastore, s.Location.DatastoreCluster, common.StoragePolicyIDFromState(state),
+		)
+		if resolveErr != nil {
+			state.Put("error", resolveErr)
+			return multistep.ActionHalt
+		}
+	}
+
+	if datastoreName == "" && s.Location.DatastoreCluster == "" {
+		state.Put("error", fmt.Errorf("no datastore specified and no datastore resolved from cluster or storage policy"))
+		return multistep.ActionHalt
+	}
 
 	vm, err := template.Clone(ctx, &driver.CloneConfig{
 		Name:            s.Location.VMName,
@@ -477,7 +498,7 @@ func (s *StepCloneVM) cloneFromTemplate(ctx context.Context, state multistep.Sta
 		StorageConfig: driver.StorageConfig{
 			DiskControllerType: s.Config.StorageConfig.DiskControllerType,
 			Storage:            disks,
-			DatastoreRefs:      datastoreRefs,
+			DiskDatastores:     diskDatastores,
 		},
 	})
 	if err != nil {
@@ -510,10 +531,6 @@ func (s *StepCloneVM) deployFromContentLibrary(ctx context.Context, state multis
 	}
 
 	datastoreName, primaryDatastore := s.resolveDatastore(state)
-	if datastoreName == "" && s.Location.DatastoreCluster == "" {
-		state.Put("error", fmt.Errorf("no datastore specified and no datastore resolved from cluster"))
-		return multistep.ActionHalt
-	}
 
 	item, err := d.ResolveContentLibraryItem(source.Library, source.Name)
 	if err != nil {
@@ -526,45 +543,40 @@ func (s *StepCloneVM) deployFromContentLibrary(ctx context.Context, state multis
 		return multistep.ActionHalt
 	}
 
-	disks := disksFromStorageConfig(s.Config.StorageConfig.Storage)
+	disks, err := disksFromStorageConfig(d, s.Config.StorageConfig.Storage)
+	if err != nil {
+		state.Put("error", err)
+		return multistep.ActionHalt
+	}
 
-	var datastoreRefs []*types.ManagedObjectReference
-	if item.Type == library.ItemTypeVMTX && s.Location.DatastoreCluster != "" && len(disks) > 1 {
-		if vcDriver, ok := d.(*driver.VCenterDriver); ok {
-			ui.Sayf("Requesting Storage DRS recommendations for %d disks...", len(disks))
-
-			placementInput := driver.StoragePlacementInput{
-				StorageConfig: driver.StorageConfig{
-					DiskControllerType: s.Config.StorageConfig.DiskControllerType,
-					Storage:            disks,
-				},
-				PrimaryDiskSize: s.Config.DiskSize,
-			}
-			diskDatastores, method, err := vcDriver.SelectDatastoresForDisks(s.Location.DatastoreCluster, placementInput)
-			if err != nil {
-				ui.Errorf("Warning: Failed to get Storage DRS recommendations: %s. Using primary datastore.", err)
-				if primaryDatastore != nil {
-					ref := primaryDatastore.Reference()
-					for i := 0; i < len(disks); i++ {
-						datastoreRefs = append(datastoreRefs, &ref)
-					}
-				}
-			} else {
-				if len(diskDatastores) > 0 {
-					datastoreName = diskDatastores[0].Name()
-				}
-
-				for i, ds := range diskDatastores {
-					ref := ds.Reference()
-					if method == driver.SelectionMethodDRS {
-						log.Printf("[INFO] Disk %d: Storage DRS selected datastore '%s'", i+1, ds.Name())
-					} else {
-						log.Printf("[INFO] Disk %d: Using first available datastore '%s'", i+1, ds.Name())
-					}
-					datastoreRefs = append(datastoreRefs, &ref)
-				}
-			}
+	var diskDatastores []driver.DiskDatastore
+	if item.Type == library.ItemTypeVMTX {
+		placementInput := driver.StoragePlacementInput{
+			StorageConfig: driver.StorageConfig{
+				DiskControllerType: s.Config.StorageConfig.DiskControllerType,
+				Storage:            disks,
+			},
+			PrimaryDiskSize: s.Config.DiskSize,
 		}
+		datastoreName, diskDatastores = common.ResolveMultiDiskDatastorePlacement(
+			ui, d, s.Location.DatastoreCluster, placementInput, primaryDatastore, datastoreName,
+		)
+	}
+
+	if len(diskDatastores) == 0 {
+		var resolveErr error
+		datastoreName, diskDatastores, resolveErr = common.ResolveStoragePolicyDatastorePlacement(
+			d, s.Location.Host, s.Location.Cluster, disks, primaryDatastore, datastoreName, s.Location.Datastore, s.Location.DatastoreCluster, common.StoragePolicyIDFromState(state),
+		)
+		if resolveErr != nil {
+			state.Put("error", resolveErr)
+			return multistep.ActionHalt
+		}
+	}
+
+	if datastoreName == "" && s.Location.DatastoreCluster == "" {
+		state.Put("error", fmt.Errorf("no datastore specified and no datastore resolved from cluster or storage policy"))
+		return multistep.ActionHalt
 	}
 
 	deployConfig := &driver.ContentLibraryDeployConfig{
@@ -584,7 +596,7 @@ func (s *StepCloneVM) deployFromContentLibrary(ctx context.Context, state multis
 		StorageConfig: driver.StorageConfig{
 			DiskControllerType: s.Config.StorageConfig.DiskControllerType,
 			Storage:            disks,
-			DatastoreRefs:      datastoreRefs,
+			DiskDatastores:     diskDatastores,
 		},
 	}
 

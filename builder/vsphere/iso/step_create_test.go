@@ -460,12 +460,17 @@ func TestStepCreateVM_Run_WithStoragePolicy(t *testing.T) {
 	state := basicStateBag()
 	driverMock := driver.NewDriverMock()
 	driverMock.FindStoragePolicyIDResult = policyUUID
+	compatibleDS := &driver.DatastoreMock{NameReturn: "gold-ds"}
+	driverMock.FindCompatibleDatastoreResult = compatibleDS
 	state.Put("driver", driverMock)
+	state.Put("datastore", compatibleDS)
 
 	config := createConfig()
 	config.StorageConfig.Storage[0].StoragePolicyName = policyName
 
-	step := &StepCreateVM{Config: config, Location: basicLocationConfig()}
+	location := basicLocationConfig()
+	location.Datastore = ""
+	step := &StepCreateVM{Config: config, Location: location}
 
 	if action := step.Run(context.TODO(), state); action == multistep.ActionHalt {
 		t.Fatalf("unexpected halt: %v", state.Get("error"))
@@ -477,8 +482,70 @@ func TestStepCreateVM_Run_WithStoragePolicy(t *testing.T) {
 	if driverMock.FindStoragePolicyIDName != policyName {
 		t.Fatalf("expected policy name %q, got %q", policyName, driverMock.FindStoragePolicyIDName)
 	}
-	if diff := cmp.Diff(driverMock.CreateConfig, driverCreateConfig(config, basicLocationConfig(), policyUUID)); diff != "" {
-		t.Fatalf("unexpected CreateConfig: %s", diff)
+	if got := driverMock.CreateConfig.StorageConfig.Storage[0].StoragePolicyID; got != policyUUID {
+		t.Fatalf("expected StoragePolicyID %q, got %q", policyUUID, got)
+	}
+	if !driverMock.FindCompatibleDatastoreCalled {
+		t.Fatal("expected FindCompatibleDatastore for per-disk PBM placement")
+	}
+	placements := driverMock.CreateConfig.StorageConfig.DiskDatastores
+	if len(placements) != 1 || placements[0].Name != "gold-ds" {
+		t.Fatalf("unexpected DiskDatastores: %+v", placements)
+	}
+}
+
+// TestStepCreateVM_Run_MultiStoragePolicyPlacement verifies that each disk with
+// a distinct storage_policy gets a PBM-selected DatastoreRef.
+func TestStepCreateVM_Run_MultiStoragePolicyPlacement(t *testing.T) {
+	state := basicStateBag()
+	driverMock := driver.NewDriverMock()
+	driverMock.FindStoragePolicyIDByName = map[string]string{
+		"blue":  "uuid-blue",
+		"green": "uuid-green",
+		"red":   "uuid-red",
+	}
+	driverMock.FindCompatibleDatastoreByPolicy = map[string]driver.Datastore{
+		"uuid-blue":  &driver.DatastoreMock{NameReturn: "blue-ds"},
+		"uuid-green": &driver.DatastoreMock{NameReturn: "green-ds"},
+		"uuid-red":   &driver.DatastoreMock{NameReturn: "red-ds"},
+	}
+	state.Put("driver", driverMock)
+	state.Put("datastore", &driver.DatastoreMock{NameReturn: "blue-ds"})
+	// Mimic StepResolveDatastore seeding the first policy so it is not looked up again.
+	state.Put("storage_policy_id", "uuid-blue")
+
+	config := createConfig()
+	config.StorageConfig.Storage = []common.DiskConfig{
+		{DiskSize: 4096, DiskThinProvisioned: true, StoragePolicyName: "blue"},
+		{DiskSize: 4096, DiskThinProvisioned: true, StoragePolicyName: "green"},
+		{DiskSize: 4096, DiskThinProvisioned: true, StoragePolicyName: "red"},
+	}
+
+	location := basicLocationConfig()
+	location.Datastore = "" // force PBM per-disk placement path
+	step := &StepCreateVM{Config: config, Location: location}
+
+	if action := step.Run(context.TODO(), state); action == multistep.ActionHalt {
+		t.Fatalf("unexpected halt: %v", state.Get("error"))
+	}
+
+	placements := driverMock.CreateConfig.StorageConfig.DiskDatastores
+	if len(placements) != 3 {
+		t.Fatalf("expected 3 DiskDatastores, got %d", len(placements))
+	}
+	want := []string{"blue-ds", "green-ds", "red-ds"}
+	for i, w := range want {
+		if placements[i].Name != w {
+			t.Fatalf("disk %d: expected datastore %q, got %q", i, w, placements[i].Name)
+		}
+	}
+	for i, uuid := range []string{"uuid-blue", "uuid-green", "uuid-red"} {
+		if got := driverMock.CreateConfig.StorageConfig.Storage[i].StoragePolicyID; got != uuid {
+			t.Fatalf("disk %d: expected StoragePolicyID %q, got %q", i, uuid, got)
+		}
+	}
+	if len(driverMock.FindCompatibleDatastoreCalls) != 2 {
+		t.Fatalf("expected 2 PBM lookups (blue seeded), got %d: %v", len(driverMock.FindCompatibleDatastoreCalls), driverMock.FindCompatibleDatastoreCalls)
 	}
 }
 

@@ -156,7 +156,8 @@ wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/foo/bar/preseed.cfg
 
 - `datastore` (string) - The datastore where the virtual machine is created.
   Required if `host` is a cluster or if `host` has multiple datastores,
-  unless `datastore_cluster` is specified.
+  unless `datastore_cluster` is specified or a `storage_policy` is set on
+  a `storage` block.
   
   ~> **Note:** Cannot be used with `datastore_cluster`.
 
@@ -867,7 +868,12 @@ JSON Example:
 
 - `storage_policy` (string) - The name of the storage policy to apply to the disk. The storage policy
   must already exist on the vCenter instance. If not specified, the default
-  storage policy of the target datastore is used.
+  storage policy of the target `datastore` or `datastore_cluster` is used.
+  
+  -> **Note:** When `datastore` and `datastore_cluster` are omitted, each
+  configured `storage_policy` is used to select a compliant datastore for
+  that disk and the first policy is used to place the virtual machine's home
+  files.
 
 <!-- End of code generated from the comments of the DiskConfig struct in builder/vsphere/common/storage_config.go; -->
 

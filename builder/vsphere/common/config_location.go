@@ -37,7 +37,8 @@ type LocationConfig struct {
 	ResourcePool string `mapstructure:"resource_pool"`
 	// The datastore where the virtual machine is created.
 	// Required if `host` is a cluster or if `host` has multiple datastores,
-	// unless `datastore_cluster` is specified.
+	// unless `datastore_cluster` is specified or a `storage_policy` is set on
+	// a `storage` block.
 	//
 	// ~> **Note:** Cannot be used with `datastore_cluster`.
 	Datastore string `mapstructure:"datastore"`

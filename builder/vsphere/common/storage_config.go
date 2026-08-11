@@ -32,7 +32,12 @@ type DiskConfig struct {
 	DiskControllerUnit string `mapstructure:"disk_controller_unit"`
 	// The name of the storage policy to apply to the disk. The storage policy
 	// must already exist on the vCenter instance. If not specified, the default
-	// storage policy of the target datastore is used.
+	// storage policy of the target `datastore` or `datastore_cluster` is used.
+	//
+	// -> **Note:** When `datastore` and `datastore_cluster` are omitted, each
+	// configured `storage_policy` is used to select a compliant datastore for
+	// that disk and the first policy is used to place the virtual machine's home
+	// files.
 	StoragePolicyName string `mapstructure:"storage_policy"`
 }
 
@@ -58,6 +63,17 @@ type StorageConfig struct {
 	// defines one disk. Does not resize the primary disk; use `disk_size` for
 	// that.
 	Storage []DiskConfig `mapstructure:"storage"`
+}
+
+// FirstStoragePolicyName returns the first non-empty storage_policy across
+// storage blocks. Used for VM-home / primary placement when no datastore is set.
+func (c *StorageConfig) FirstStoragePolicyName() string {
+	for _, storage := range c.Storage {
+		if storage.StoragePolicyName != "" {
+			return storage.StoragePolicyName
+		}
+	}
+	return ""
 }
 
 func (c *StorageConfig) Prepare() []error {

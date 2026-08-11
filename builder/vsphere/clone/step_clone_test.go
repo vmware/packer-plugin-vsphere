@@ -668,8 +668,8 @@ func TestStepCloneVM_DatastoreClusterUsesTemplatePlacementInput(t *testing.T) {
 	if !vmMock.CloneCalled {
 		t.Fatal("expected clone to be called")
 	}
-	if len(vmMock.CloneConfig.StorageConfig.DatastoreRefs) != 2 {
-		t.Fatalf("expected 2 per-disk datastore refs, got %d", len(vmMock.CloneConfig.StorageConfig.DatastoreRefs))
+	if len(vmMock.CloneConfig.StorageConfig.DiskDatastores) != 2 {
+		t.Fatalf("expected 2 per-disk datastore placements, got %d", len(vmMock.CloneConfig.StorageConfig.DiskDatastores))
 	}
 }
 
@@ -722,16 +722,20 @@ func createConfig() *CloneConfig {
 	}
 }
 
-func driverCreateConfig(config *CloneConfig, location *common.LocationConfig) *driver.CloneConfig {
+func driverCreateConfig(config *CloneConfig, location *common.LocationConfig, resolvedPolicyIDs ...string) *driver.CloneConfig {
 	var disks []driver.Disk
-	for _, disk := range config.StorageConfig.Storage {
-		disks = append(disks, driver.Disk{
+	for i, disk := range config.StorageConfig.Storage {
+		d := driver.Disk{
 			DiskSize:            disk.DiskSize,
 			DiskEagerlyScrub:    disk.DiskEagerlyScrub,
 			DiskThinProvisioned: disk.DiskThinProvisioned,
 			ControllerIndex:     disk.DiskControllerIndex,
 			ControllerUnit:      disk.DiskControllerUnit,
-		})
+		}
+		if i < len(resolvedPolicyIDs) {
+			d.StoragePolicyID = resolvedPolicyIDs[i]
+		}
+		disks = append(disks, d)
 	}
 
 	return &driver.CloneConfig{
@@ -1012,6 +1016,138 @@ func TestStepCloneVM_ContentLibraryDiskControllerUnitPassthrough(t *testing.T) {
 	}
 	if got := cfg.StorageConfig.Storage[0].ControllerUnit; got != "scsi0:1" {
 		t.Fatalf("expected ControllerUnit %q to reach DeployContentLibraryItemConfig, got %q", "scsi0:1", got)
+	}
+}
+
+// TestStepCloneVM_StoragePolicyPassthrough verifies that storage_policy names
+// are resolved to UUIDs and forwarded on clone disks.
+func TestStepCloneVM_StoragePolicyPassthrough(t *testing.T) {
+	const policyName = "gold-policy"
+	const policyUUID = "aaaabbbb-cccc-dddd-eeee-ffffffffffff"
+
+	state := new(multistep.BasicStateBag)
+	state.Put("ui", &packersdk.BasicUi{
+		Reader: new(bytes.Buffer),
+		Writer: new(bytes.Buffer),
+	})
+	driverMock := driver.NewDriverMock()
+	driverMock.FindStoragePolicyIDResult = policyUUID
+	vmMock := new(driver.VirtualMachineMock)
+	driverMock.VM = vmMock
+	state.Put("driver", driverMock)
+
+	config := createConfig()
+	config.StorageConfig.Storage[0].StoragePolicyName = policyName
+
+	step := &StepCloneVM{
+		Config:   config,
+		Location: basicLocationConfig(),
+		Force:    true,
+	}
+
+	if action := step.Run(context.Background(), state); action != multistep.ActionContinue {
+		t.Fatalf("expected ActionContinue, got %v; error: %v", action, state.Get("error"))
+	}
+
+	if !driverMock.FindStoragePolicyIDCalled {
+		t.Fatal("expected FindStoragePolicyID to be called")
+	}
+	if driverMock.FindStoragePolicyIDName != policyName {
+		t.Fatalf("expected policy name %q, got %q", policyName, driverMock.FindStoragePolicyIDName)
+	}
+	if !vmMock.CloneCalled {
+		t.Fatal("expected Clone to be called")
+	}
+	if got := vmMock.CloneConfig.StorageConfig.Storage[0].StoragePolicyID; got != policyUUID {
+		t.Fatalf("expected StoragePolicyID %q, got %q", policyUUID, got)
+	}
+}
+
+// TestStepCloneVM_MultiStoragePolicyPlacement verifies per-disk PBM placement
+// when additional disks specify distinct storage policies.
+func TestStepCloneVM_MultiStoragePolicyPlacement(t *testing.T) {
+	state := new(multistep.BasicStateBag)
+	state.Put("ui", &packersdk.BasicUi{
+		Reader: new(bytes.Buffer),
+		Writer: new(bytes.Buffer),
+	})
+	driverMock := driver.NewDriverMock()
+	driverMock.FindStoragePolicyIDByName = map[string]string{
+		"blue":  "uuid-blue",
+		"green": "uuid-green",
+	}
+	driverMock.FindCompatibleDatastoreByPolicy = map[string]driver.Datastore{
+		"uuid-blue":  &driver.DatastoreMock{NameReturn: "blue-ds"},
+		"uuid-green": &driver.DatastoreMock{NameReturn: "green-ds"},
+	}
+	vmMock := new(driver.VirtualMachineMock)
+	driverMock.VM = vmMock
+	state.Put("driver", driverMock)
+	state.Put("datastore", &driver.DatastoreMock{NameReturn: "blue-ds"})
+	// Mimic StepResolveDatastore seeding the first policy so it is not looked up again.
+	state.Put("storage_policy_id", "uuid-blue")
+
+	config := createConfig()
+	config.StorageConfig.Storage = []common.DiskConfig{
+		{DiskSize: 4096, DiskThinProvisioned: true, StoragePolicyName: "blue"},
+		{DiskSize: 4096, DiskThinProvisioned: true, StoragePolicyName: "green"},
+	}
+
+	location := basicLocationConfig()
+	location.Datastore = ""
+	step := &StepCloneVM{
+		Config:   config,
+		Location: location,
+		Force:    true,
+	}
+
+	if action := step.Run(context.Background(), state); action != multistep.ActionContinue {
+		t.Fatalf("expected ActionContinue, got %v; error: %v", action, state.Get("error"))
+	}
+
+	placements := vmMock.CloneConfig.StorageConfig.DiskDatastores
+	if len(placements) != 2 {
+		t.Fatalf("expected 2 DiskDatastores, got %d", len(placements))
+	}
+	if placements[0].Name != "blue-ds" || placements[1].Name != "green-ds" {
+		t.Fatalf("unexpected placements: %+v", placements)
+	}
+	if len(driverMock.FindCompatibleDatastoreCalls) != 1 || driverMock.FindCompatibleDatastoreCalls[0] != "uuid-green" {
+		t.Fatalf("expected only green PBM lookup, got %v", driverMock.FindCompatibleDatastoreCalls)
+	}
+}
+
+// TestStepCloneVM_StoragePolicyNotFound verifies that a missing storage policy
+// halts the clone step with a descriptive error.
+func TestStepCloneVM_StoragePolicyNotFound(t *testing.T) {
+	state := new(multistep.BasicStateBag)
+	state.Put("ui", &packersdk.BasicUi{
+		Reader: new(bytes.Buffer),
+		Writer: new(bytes.Buffer),
+	})
+	driverMock := driver.NewDriverMock()
+	driverMock.FindStoragePolicyIDErr = fmt.Errorf("no pbm profile found")
+	driverMock.VM = new(driver.VirtualMachineMock)
+	state.Put("driver", driverMock)
+
+	config := createConfig()
+	config.StorageConfig.Storage[0].StoragePolicyName = "nonexistent"
+
+	step := &StepCloneVM{
+		Config:   config,
+		Location: basicLocationConfig(),
+		Force:    true,
+	}
+
+	if action := step.Run(context.Background(), state); action != multistep.ActionHalt {
+		t.Fatalf("expected ActionHalt, got %v", action)
+	}
+	err, ok := state.Get("error").(error)
+	if !ok || err == nil {
+		t.Fatal("expected an error in state")
+	}
+	if !strings.Contains(err.Error(), "storage policy") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

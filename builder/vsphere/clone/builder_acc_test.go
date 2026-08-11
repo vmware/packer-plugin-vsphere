@@ -638,3 +638,54 @@ func TestAccCloneBuilder_MatrixH(t *testing.T) {
 	}
 	acctest.TestPlugin(t, testCase)
 }
+
+// ---------------------------------------------------------------------------
+// Matrix I — Storage Policy PBM Placement
+// ---------------------------------------------------------------------------
+
+func TestAccCloneBuilder_MatrixI(t *testing.T) {
+	acceptance.RequireAcceptance(t)
+	acc := env.AccFromEnv()
+	policies := acc.StoragePolicies()
+
+	config := cloneExampleConfig()
+	delete(config, "datastore")
+	config["disk_controller_type"] = []string{"pvscsi"}
+
+	disks := make([]map[string]interface{}, 0, len(policies))
+	for _, policy := range policies {
+		disks = append(disks, map[string]interface{}{
+			"disk_size":             accExtraMiB,
+			"disk_thin_provisioned": true,
+			"storage_policy":        policy,
+		})
+	}
+	config["storage"] = disks
+
+	vmName := config["vm_name"].(string)
+	testCase := &acctest.PluginTestCase{
+		Name:     "vsphere-clone-matrix-i",
+		Template: acceptance.RenderConfig("vsphere-clone", config),
+		Teardown: func() error {
+			return teardownVM(vmName)
+		},
+		Check: func(buildCommand *exec.Cmd, logfile string) error {
+			if err := checkBuildSucceeded(buildCommand, logfile); err != nil {
+				return err
+			}
+			return checkMatrixI(vmName, acc, policies)
+		},
+	}
+	acctest.TestPlugin(t, testCase)
+}
+
+func checkMatrixI(name string, acc env.AccConfig, policies []string) error {
+	d, vm, parent, rp, err := findVM(name)
+	if err != nil {
+		return err
+	}
+	if err := checkFolderAndResourcePool(d, parent, rp, acc); err != nil {
+		return err
+	}
+	return acceptance.CheckStoragePolicyDiskPlacements(d, vm, policies)
+}
