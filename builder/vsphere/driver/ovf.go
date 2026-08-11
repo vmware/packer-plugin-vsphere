@@ -744,14 +744,6 @@ func (d *VCenterDriver) handleOvfValidationErrors(errors []types.LocalizedMethod
 		sanitizedSource, len(errors), strings.Join(errorMessages, "\n"))
 }
 
-// min returns the minimum of two integers.
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // reportOvfWarnings reports OVF warnings to the user interface.
 func (d *VCenterDriver) reportOvfWarnings(warnings []types.LocalizedMethodFault, ui packersdk.Ui) {
 	if len(warnings) == 0 {

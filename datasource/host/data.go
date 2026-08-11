@@ -195,10 +195,7 @@ func hostMemorySummary(d *driver.VCenterDriver, host *object.HostSystem) (*hostM
 
 	capacity := obj.Summary.Hardware.MemorySize
 	used := int64(obj.Summary.QuickStats.OverallMemoryUsage) * 1024 * 1024
-	free := capacity - used
-	if free < 0 {
-		free = 0
-	}
+	free := max(capacity-used, 0)
 
 	return &hostMemorySummaryInfo{
 		MemoryCapacity: capacity,

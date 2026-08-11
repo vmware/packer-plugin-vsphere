@@ -80,10 +80,7 @@ func withRetry(ctx context.Context, config *RetryConfig, operation retryableOper
 		}
 
 		// Calculate next delay with exponential backoff
-		delay = time.Duration(float64(delay) * config.BackoffFactor)
-		if delay > config.MaxDelay {
-			delay = config.MaxDelay
-		}
+		delay = min(time.Duration(float64(delay)*config.BackoffFactor), config.MaxDelay)
 	}
 
 	return fmt.Errorf("operation failed after %d attempts: %w", config.MaxAttempts, lastErr)
