@@ -34,7 +34,7 @@ func defaultVAppPropertyInfo(key int32, id, value string) *types.VAppPropertyInf
 		Id:               id,
 		Label:            label,
 		Type:             "string",
-		UserConfigurable: types.NewBool(true),
+		UserConfigurable: new(true),
 		Value:            value,
 		Description:      description,
 	}

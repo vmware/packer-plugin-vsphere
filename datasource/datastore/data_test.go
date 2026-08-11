@@ -13,7 +13,8 @@ import (
 	"github.com/vmware/packer-plugin-vsphere/testing/vcsim"
 )
 
-func int64Ptr(v int64) *int64 { return &v }
+//go:fix inline
+func int64Ptr(v int64) *int64 { return new(v) }
 
 func TestDatasource_Execute(t *testing.T) {
 	datastoresToPrepare := []vcsim.SimulatedDatastoreConfig{

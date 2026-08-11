@@ -219,8 +219,8 @@ func (c *StorageConfig) addStorageDevices(existingDevices object.VirtualDeviceLi
 func (c *StorageConfig) buildDisk(devices object.VirtualDeviceList, dc Disk, index int) *types.VirtualDisk {
 	backing := &types.VirtualDiskFlatVer2BackingInfo{
 		DiskMode:        string(types.VirtualDiskModePersistent),
-		ThinProvisioned: types.NewBool(dc.DiskThinProvisioned),
-		EagerlyScrub:    types.NewBool(dc.DiskEagerlyScrub),
+		ThinProvisioned: new(dc.DiskThinProvisioned),
+		EagerlyScrub:    new(dc.DiskEagerlyScrub),
 	}
 
 	if index < len(c.DiskDatastores) {
