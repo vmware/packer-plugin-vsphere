@@ -13,14 +13,11 @@ import (
 	"github.com/vmware/packer-plugin-vsphere/testing/vcsim"
 )
 
-//go:fix inline
-func int64Ptr(v int64) *int64 { return new(v) }
-
 func TestDatasource_Execute(t *testing.T) {
 	hostsToPrepare := []vcsim.SimulatedHostConfig{
 		{
 			Name:           "w01-cl01-esx01",
-			MemoryCapacity: int64Ptr(int64(64 * units.GB)),
+			MemoryCapacity: new(int64(64 * units.GB)),
 			MemoryUsageMB:  new(int32(32 * 1024)), // 32 GiB used → 32 GiB free
 			Tags: []vcsim.Tag{
 				{Category: "env", Name: "Packer"},
@@ -28,7 +25,7 @@ func TestDatasource_Execute(t *testing.T) {
 		},
 		{
 			Name:           "w01-cl01-esx02",
-			MemoryCapacity: int64Ptr(int64(128 * units.GB)),
+			MemoryCapacity: new(int64(128 * units.GB)),
 			MemoryUsageMB:  new(int32(16 * 1024)), // 16 GiB used → 112 GiB free
 			Tags: []vcsim.Tag{
 				{Category: "env", Name: "Packer"},
@@ -37,7 +34,7 @@ func TestDatasource_Execute(t *testing.T) {
 		},
 		{
 			Name:           "w01-cl01-esx03",
-			MemoryCapacity: int64Ptr(int64(64 * units.GB)),
+			MemoryCapacity: new(int64(64 * units.GB)),
 			MemoryUsageMB:  new(int32(60 * 1024)), // 60 GiB used → 4 GiB free
 			Tags: []vcsim.Tag{
 				{Category: "tier", Name: "bronze"},
