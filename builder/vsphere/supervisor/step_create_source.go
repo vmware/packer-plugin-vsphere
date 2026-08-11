@@ -37,7 +37,6 @@ const (
 	StateKeyISOBootDiskPVCCreated     = "iso_boot_disk_pvc_created"
 	StateKeyOVFBootstrapSecretCreated = "ovf_bootstrap_secret_created"
 	StateKeyVMImageType               = "vm_image_type"
-	StateKeyVMImageKind               = "vm_image_kind"
 
 	ProviderCloudInit  = "CloudInit"
 	ProviderSysprep    = "Sysprep"
