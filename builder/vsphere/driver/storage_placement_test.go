@@ -176,7 +176,7 @@ func TestValidateAggregateStorageCapacity(t *testing.T) {
 		t.Fatalf("unexpected error: %s", err)
 	}
 
-	for i := 0; i < maxLSISCSIDisksPerVM; i++ {
+	for range maxLSISCSIDisksPerVM {
 		disk := &types.VirtualDisk{
 			VirtualDevice: types.VirtualDevice{
 				Key:           devices.NewKey(),

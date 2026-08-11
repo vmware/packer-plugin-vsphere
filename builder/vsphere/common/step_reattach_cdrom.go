@@ -95,7 +95,7 @@ func (s *StepReattachCDRom) Run(_ context.Context, state multistep.StateBag) mul
 		}
 
 		ui.Say("Adding CD-ROM devices...")
-		for i := 0; i < nAttachableCdroms; i++ {
+		for range nAttachableCdroms {
 			err := vm.AddCdrom(s.CDRomConfig.CdromType, "")
 			if err != nil {
 				state.Put("error", err)

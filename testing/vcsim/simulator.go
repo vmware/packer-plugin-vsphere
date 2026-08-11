@@ -223,7 +223,7 @@ func (sim *Simulator) ApplyVmConfiguration(vmsConfig []SimulatedVmConfig) error 
 		return fmt.Errorf("failed to list virtual machines in cluster: %w", err)
 	}
 
-	for i := 0; i < len(vmsConfig); i++ {
+	for i := range vmsConfig {
 		vmConfig := types.VirtualMachineConfigSpec{
 			Name: vmsConfig[i].Name,
 		}
