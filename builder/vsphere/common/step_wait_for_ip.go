@@ -168,20 +168,20 @@ loop:
 		prevIp = ip
 		stopTime = time.Now().Add(c.SettleTimeout)
 		goto loop
-	} else {
-		log.Printf("VM IP is still the same: %s", prevIp)
-		if time.Now().After(stopTime) {
-			// NOTE: IPv6 addresses are returned without brackets.
-			// The SSH communicator wraps them when needed.
-			log.Printf("VM IP seems stable enough: %s", ip)
-			return ip, nil
-		}
-		select {
-		case <-ctx.Done():
-			return "", fmt.Errorf("IP wait cancelled")
-		case <-time.After(interval):
-			goto loop
-		}
+	}
+
+	log.Printf("VM IP is still the same: %s", prevIp)
+	if time.Now().After(stopTime) {
+		// NOTE: IPv6 addresses are returned without brackets.
+		// The SSH communicator wraps them when needed.
+		log.Printf("VM IP seems stable enough: %s", ip)
+		return ip, nil
+	}
+	select {
+	case <-ctx.Done():
+		return "", fmt.Errorf("IP wait cancelled")
+	case <-time.After(interval):
+		goto loop
 	}
 
 }

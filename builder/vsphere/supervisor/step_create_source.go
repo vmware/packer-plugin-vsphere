@@ -262,9 +262,9 @@ func (s *StepCreateSource) initStep(state multistep.StateBag, logger *PackerLogg
 	if s.Config.ImageName == "" {
 		if importedImageName == "" {
 			return fmt.Errorf("the image name should be specified in config 'image_name' or generated from image import")
-		} else {
-			s.Config.ImageName = importedImageName
 		}
+
+		s.Config.ImageName = importedImageName
 	} else if importedImageName != "" {
 		// If both are set, the image name specified in the config will be used for the source image.
 		logger.Info("The configured image with name %s will be used to create the source VirtualMachine object instead of the imported image %s",

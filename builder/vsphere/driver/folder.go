@@ -99,8 +99,8 @@ func (f *Folder) Path() (string, error) {
 		}
 		if path == "" {
 			return info.Name, nil
-		} else {
-			return fmt.Sprintf("%v/%v", path, info.Name), nil
 		}
+
+		return fmt.Sprintf("%v/%v", path, info.Name), nil
 	}
 }
