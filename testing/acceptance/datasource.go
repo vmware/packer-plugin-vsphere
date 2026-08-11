@@ -5,6 +5,7 @@
 package acceptance
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/vmware/packer-plugin-vsphere/testing/env"
@@ -28,9 +29,7 @@ func DatasourceConfig(acc env.AccConfig, filters map[string]interface{}) map[str
 		"datacenter":          acc.Datacenter,
 		"insecure_connection": true,
 	}
-	for key, value := range filters {
-		config[key] = value
-	}
+	maps.Copy(config, filters)
 	return config
 }
 
