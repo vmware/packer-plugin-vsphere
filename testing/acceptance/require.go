@@ -15,7 +15,7 @@ import (
 // of live acceptance tests that need a real vSphere environment.
 func RequireAcceptance(t *testing.T) {
 	t.Helper()
-	if os.Getenv(env.EnvPackerAcc) == "" {
-		t.Skipf("Acceptance tests skipped: set %s=1 to run against a live environment (see testing/acceptance/acc_config.md)", env.EnvPackerAcc)
+	if os.Getenv(env.PackerAcc) == "" {
+		t.Skipf("Acceptance tests skipped: set %s=1 to run against a live environment (see testing/acceptance/acc_config.md)", env.PackerAcc)
 	}
 }

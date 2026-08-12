@@ -971,10 +971,10 @@ func TestOvfManagerWrapper_VAppPropertiesHandling(t *testing.T) {
 	}
 }
 
-// TestDriverMock_DeployOvf tests the mock driver's OVF deployment functionality.
-func TestDriverMock_DeployOvf(t *testing.T) {
+// TestMock_DeployOvf tests the mock driver's OVF deployment functionality.
+func TestMock_DeployOvf(t *testing.T) {
 	ctx := context.Background()
-	mock := NewDriverMock()
+	mock := NewMock()
 
 	config := &OvfDeployConfig{
 		URL:          "https://packages.example.com/artifacts/example.ovf",
@@ -1036,11 +1036,11 @@ func TestDriverMock_DeployOvf(t *testing.T) {
 	})
 }
 
-// TestDriverMock_GetOvfOptions tests the mock driver's OVF options retrieval
+// TestMock_GetOvfOptions tests the mock driver's OVF options retrieval
 // functionality.
-func TestDriverMock_GetOvfOptions(t *testing.T) {
+func TestMock_GetOvfOptions(t *testing.T) {
 	ctx := context.Background()
-	mock := NewDriverMock()
+	mock := NewMock()
 
 	url := "https://packages.example.com/artifacts/example.ovf"
 	auth := &OvfAuthConfig{

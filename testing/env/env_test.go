@@ -104,30 +104,30 @@ func TestAccFromEnv_defaults(t *testing.T) {
 
 func TestAccFromEnv_overrides(t *testing.T) {
 	clearAccEnv(t)
-	t.Setenv(EnvVcenterServer, "vc-override.example.com")
-	t.Setenv(EnvDatacenter, "dc-override")
-	t.Setenv(EnvDatastore, "ds-override")
-	t.Setenv(EnvDatastoreCluster, "dsc-override")
-	t.Setenv(EnvFolder, "fd-override")
-	t.Setenv(EnvResourcePool, "rp-override")
-	t.Setenv(EnvNetwork, "net-override")
-	t.Setenv(EnvTemplate, "tmpl-override")
-	t.Setenv(EnvContentLibrary, "lib-override")
-	t.Setenv(EnvContentLibraryVMTX, "vmtx-override")
-	t.Setenv(EnvContentLibraryOVF, "ovf-override")
-	t.Setenv(EnvISOPath, "[ds-override] ISO/custom.iso")
-	t.Setenv(EnvTagCategory, "cat-override")
-	t.Setenv(EnvTagA, "tag-blue-override")
-	t.Setenv(EnvTagB, "tag-red-override")
-	t.Setenv(EnvStoragePolicyA, "policy-a-override")
-	t.Setenv(EnvStoragePolicyB, "policy-b-override")
-	t.Setenv(EnvStoragePolicyC, "policy-c-override")
-	t.Setenv(EnvNotes, "notes-override")
-	t.Setenv(EnvOVFURL, "https://artifacts.example.com/alpine.ovf")
-	t.Setenv(EnvOVAURL, "https://artifacts.example.com/alpine.ova")
-	t.Setenv(EnvOVFUsername, "ovf-user")
-	t.Setenv(EnvOVFPassword, "ovf-pass")
-	t.Setenv(EnvOVFSkipTLSVerify, "true")
+	t.Setenv(VcenterServer, "vc-override.example.com")
+	t.Setenv(Datacenter, "dc-override")
+	t.Setenv(Datastore, "ds-override")
+	t.Setenv(DatastoreCluster, "dsc-override")
+	t.Setenv(Folder, "fd-override")
+	t.Setenv(ResourcePool, "rp-override")
+	t.Setenv(Network, "net-override")
+	t.Setenv(Template, "tmpl-override")
+	t.Setenv(ContentLibrary, "lib-override")
+	t.Setenv(ContentLibraryVMTX, "vmtx-override")
+	t.Setenv(ContentLibraryOVF, "ovf-override")
+	t.Setenv(ISOPath, "[ds-override] ISO/custom.iso")
+	t.Setenv(TagCategory, "cat-override")
+	t.Setenv(TagA, "tag-blue-override")
+	t.Setenv(TagB, "tag-red-override")
+	t.Setenv(StoragePolicyA, "policy-a-override")
+	t.Setenv(StoragePolicyB, "policy-b-override")
+	t.Setenv(StoragePolicyC, "policy-c-override")
+	t.Setenv(Notes, "notes-override")
+	t.Setenv(OVFURL, "https://artifacts.example.com/alpine.ovf")
+	t.Setenv(OVAURL, "https://artifacts.example.com/alpine.ova")
+	t.Setenv(OVFUsername, "ovf-user")
+	t.Setenv(OVFPassword, "ovf-pass")
+	t.Setenv(OVFSkipTLSVerify, "true")
 
 	acc := AccFromEnv()
 	if acc.VCenterServer != "vc-override.example.com" {
@@ -210,36 +210,36 @@ func TestAccFromEnv_overrides(t *testing.T) {
 func clearAccEnv(t *testing.T) {
 	t.Helper()
 	for _, key := range []string{
-		EnvVcenterServer,
-		EnvVsphereUsername,
-		EnvVspherePassword,
-		EnvDatacenter,
-		EnvVsphereHost,
-		EnvVsphereHostSecondary,
-		EnvDatastore,
-		EnvDatastoreCluster,
-		EnvCluster,
-		EnvClusterDRS,
-		EnvFolder,
-		EnvResourcePool,
-		EnvNetwork,
-		EnvTemplate,
-		EnvISOPath,
-		EnvContentLibrary,
-		EnvContentLibraryVMTX,
-		EnvContentLibraryOVF,
-		EnvTagCategory,
-		EnvTagA,
-		EnvTagB,
-		EnvStoragePolicyA,
-		EnvStoragePolicyB,
-		EnvStoragePolicyC,
-		EnvNotes,
-		EnvOVFURL,
-		EnvOVAURL,
-		EnvOVFUsername,
-		EnvOVFPassword,
-		EnvOVFSkipTLSVerify,
+		VcenterServer,
+		VsphereUsername,
+		VspherePassword,
+		Datacenter,
+		VsphereHost,
+		VsphereHostSecondary,
+		Datastore,
+		DatastoreCluster,
+		Cluster,
+		ClusterDRS,
+		Folder,
+		ResourcePool,
+		Network,
+		Template,
+		ISOPath,
+		ContentLibrary,
+		ContentLibraryVMTX,
+		ContentLibraryOVF,
+		TagCategory,
+		TagA,
+		TagB,
+		StoragePolicyA,
+		StoragePolicyB,
+		StoragePolicyC,
+		Notes,
+		OVFURL,
+		OVAURL,
+		OVFUsername,
+		OVFPassword,
+		OVFSkipTLSVerify,
 	} {
 		t.Setenv(key, "")
 	}

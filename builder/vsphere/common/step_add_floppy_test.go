@@ -25,8 +25,8 @@ func TestStepAddFloppy_Run(t *testing.T) {
 		expectedAction     multistep.StepAction
 		vmMock             *driver.VirtualMachineMock
 		expectedVmMock     *driver.VirtualMachineMock
-		driverMock         *driver.DriverMock
-		expectedDriverMock *driver.DriverMock
+		driverMock         *driver.Mock
+		expectedDriverMock *driver.Mock
 		dsMock             *driver.DatastoreMock
 		expectedDsMock     *driver.DatastoreMock
 		fail               bool
@@ -52,8 +52,8 @@ func TestStepAddFloppy_Run(t *testing.T) {
 				AddFloppyCalled:    true,
 				AddFloppyImagePath: "resolved/path",
 			},
-			driverMock: new(driver.DriverMock),
-			expectedDriverMock: &driver.DriverMock{
+			driverMock: new(driver.Mock),
+			expectedDriverMock: &driver.Mock{
 				FindDatastoreCalled: true,
 				FindDatastoreName:   "datastore",
 				FindDatastoreHost:   "host",
@@ -84,10 +84,10 @@ func TestStepAddFloppy_Run(t *testing.T) {
 			expectedAction: multistep.ActionHalt,
 			vmMock:         new(driver.VirtualMachineMock),
 			expectedVmMock: new(driver.VirtualMachineMock),
-			driverMock: &driver.DriverMock{
+			driverMock: &driver.Mock{
 				FindDatastoreErr: fmt.Errorf("error finding datastore"),
 			},
-			expectedDriverMock: &driver.DriverMock{
+			expectedDriverMock: &driver.Mock{
 				FindDatastoreCalled: true,
 				FindDatastoreName:   "datastore",
 				FindDatastoreHost:   "host",
@@ -113,8 +113,8 @@ func TestStepAddFloppy_Run(t *testing.T) {
 			expectedVmMock: &driver.VirtualMachineMock{
 				GetDirCalled: true,
 			},
-			driverMock: new(driver.DriverMock),
-			expectedDriverMock: &driver.DriverMock{
+			driverMock: new(driver.Mock),
+			expectedDriverMock: &driver.Mock{
 				FindDatastoreCalled: true,
 				FindDatastoreName:   "datastore",
 				FindDatastoreHost:   "host",
@@ -141,8 +141,8 @@ func TestStepAddFloppy_Run(t *testing.T) {
 				GetDirResponse: "vm/dir",
 				GetDirCalled:   true,
 			},
-			driverMock: new(driver.DriverMock),
-			expectedDriverMock: &driver.DriverMock{
+			driverMock: new(driver.Mock),
+			expectedDriverMock: &driver.Mock{
 				FindDatastoreCalled: true,
 				FindDatastoreName:   "datastore",
 				FindDatastoreHost:   "host",
@@ -181,8 +181,8 @@ func TestStepAddFloppy_Run(t *testing.T) {
 				AddFloppyCalled:    true,
 				AddFloppyImagePath: "resolved/path",
 			},
-			driverMock: new(driver.DriverMock),
-			expectedDriverMock: &driver.DriverMock{
+			driverMock: new(driver.Mock),
+			expectedDriverMock: &driver.Mock{
 				FindDatastoreCalled: true,
 				FindDatastoreName:   "datastore",
 				FindDatastoreHost:   "host",
@@ -215,8 +215,8 @@ func TestStepAddFloppy_Run(t *testing.T) {
 				AddFloppyCalled:    true,
 				AddFloppyImagePath: "floppy/image/path",
 			},
-			driverMock:         new(driver.DriverMock),
-			expectedDriverMock: new(driver.DriverMock),
+			driverMock:         new(driver.Mock),
+			expectedDriverMock: new(driver.Mock),
 			dsMock:             new(driver.DatastoreMock),
 			expectedDsMock:     new(driver.DatastoreMock),
 			fail:               false,
@@ -236,8 +236,8 @@ func TestStepAddFloppy_Run(t *testing.T) {
 				AddFloppyCalled:    true,
 				AddFloppyImagePath: "floppy/image/path",
 			},
-			driverMock:         new(driver.DriverMock),
-			expectedDriverMock: new(driver.DriverMock),
+			driverMock:         new(driver.Mock),
+			expectedDriverMock: new(driver.Mock),
 			dsMock:             new(driver.DatastoreMock),
 			expectedDsMock:     new(driver.DatastoreMock),
 			fail:               true,
@@ -301,8 +301,8 @@ func TestStepAddFloppy_Cleanup(t *testing.T) {
 		uploadedPath       string
 		multistepState     string
 		step               *StepAddFloppy
-		driverMock         *driver.DriverMock
-		expectedDriverMock *driver.DriverMock
+		driverMock         *driver.Mock
+		expectedDriverMock *driver.Mock
 		dsMock             *driver.DatastoreMock
 		expectedDsMock     *driver.DatastoreMock
 		fail               bool
@@ -316,8 +316,8 @@ func TestStepAddFloppy_Cleanup(t *testing.T) {
 				Datastore: "datastore",
 				Host:      "host",
 			},
-			driverMock: new(driver.DriverMock),
-			expectedDriverMock: &driver.DriverMock{
+			driverMock: new(driver.Mock),
+			expectedDriverMock: &driver.Mock{
 				FindDatastoreCalled: true,
 				FindDatastoreName:   "datastore",
 				FindDatastoreHost:   "host",
@@ -339,8 +339,8 @@ func TestStepAddFloppy_Cleanup(t *testing.T) {
 				Datastore: "datastore",
 				Host:      "host",
 			},
-			driverMock: new(driver.DriverMock),
-			expectedDriverMock: &driver.DriverMock{
+			driverMock: new(driver.Mock),
+			expectedDriverMock: &driver.Mock{
 				FindDatastoreCalled: true,
 				FindDatastoreName:   "datastore",
 				FindDatastoreHost:   "host",
@@ -358,8 +358,8 @@ func TestStepAddFloppy_Cleanup(t *testing.T) {
 			name:               "Don't clean up without uploaded path",
 			multistepState:     multistep.StateHalted,
 			step:               new(StepAddFloppy),
-			driverMock:         new(driver.DriverMock),
-			expectedDriverMock: new(driver.DriverMock),
+			driverMock:         new(driver.Mock),
+			expectedDriverMock: new(driver.Mock),
 			dsMock:             new(driver.DatastoreMock),
 			expectedDsMock:     new(driver.DatastoreMock),
 			fail:               false,
@@ -368,8 +368,8 @@ func TestStepAddFloppy_Cleanup(t *testing.T) {
 			name:               "Don't clean up if state is not halted or canceled",
 			multistepState:     "",
 			step:               new(StepAddFloppy),
-			driverMock:         new(driver.DriverMock),
-			expectedDriverMock: new(driver.DriverMock),
+			driverMock:         new(driver.Mock),
+			expectedDriverMock: new(driver.Mock),
 			dsMock:             new(driver.DatastoreMock),
 			expectedDsMock:     new(driver.DatastoreMock),
 			fail:               false,
@@ -382,10 +382,10 @@ func TestStepAddFloppy_Cleanup(t *testing.T) {
 				Datastore: "datastore",
 				Host:      "host",
 			},
-			driverMock: &driver.DriverMock{
+			driverMock: &driver.Mock{
 				FindDatastoreErr: fmt.Errorf("fail to find datastore"),
 			},
-			expectedDriverMock: &driver.DriverMock{
+			expectedDriverMock: &driver.Mock{
 				FindDatastoreCalled: true,
 				FindDatastoreName:   "datastore",
 				FindDatastoreHost:   "host",
@@ -403,8 +403,8 @@ func TestStepAddFloppy_Cleanup(t *testing.T) {
 				Datastore: "datastore",
 				Host:      "host",
 			},
-			driverMock: new(driver.DriverMock),
-			expectedDriverMock: &driver.DriverMock{
+			driverMock: new(driver.Mock),
+			expectedDriverMock: &driver.Mock{
 				FindDatastoreCalled: true,
 				FindDatastoreName:   "datastore",
 				FindDatastoreHost:   "host",

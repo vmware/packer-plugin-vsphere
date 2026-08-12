@@ -23,8 +23,8 @@ func TestStepRemoveFloppy_Run(t *testing.T) {
 		expectedAction     multistep.StepAction
 		vmMock             *driver.VirtualMachineMock
 		expectedVmMock     *driver.VirtualMachineMock
-		driverMock         *driver.DriverMock
-		expectedDriverMock *driver.DriverMock
+		driverMock         *driver.Mock
+		expectedDriverMock *driver.Mock
 		dsMock             *driver.DatastoreMock
 		expectedDsMock     *driver.DatastoreMock
 		fail               bool
@@ -44,8 +44,8 @@ func TestStepRemoveFloppy_Run(t *testing.T) {
 				RemoveDeviceCalled:    true,
 				RemoveDeviceKeepFiles: true,
 			},
-			driverMock: new(driver.DriverMock),
-			expectedDriverMock: &driver.DriverMock{
+			driverMock: new(driver.Mock),
+			expectedDriverMock: &driver.Mock{
 				FindDatastoreCalled: true,
 				FindDatastoreName:   "datastore",
 				FindDatastoreHost:   "host",
@@ -67,8 +67,8 @@ func TestStepRemoveFloppy_Run(t *testing.T) {
 				RemoveDeviceCalled:    true,
 				RemoveDeviceKeepFiles: true,
 			},
-			driverMock:         new(driver.DriverMock),
-			expectedDriverMock: new(driver.DriverMock),
+			driverMock:         new(driver.Mock),
+			expectedDriverMock: new(driver.Mock),
 			dsMock:             new(driver.DatastoreMock),
 			expectedDsMock:     new(driver.DatastoreMock),
 			fail:               false,
@@ -83,8 +83,8 @@ func TestStepRemoveFloppy_Run(t *testing.T) {
 			expectedVmMock: &driver.VirtualMachineMock{
 				FloppyDevicesCalled: true,
 			},
-			driverMock:         new(driver.DriverMock),
-			expectedDriverMock: new(driver.DriverMock),
+			driverMock:         new(driver.Mock),
+			expectedDriverMock: new(driver.Mock),
 			dsMock:             new(driver.DatastoreMock),
 			expectedDsMock:     new(driver.DatastoreMock),
 			fail:               true,
@@ -102,8 +102,8 @@ func TestStepRemoveFloppy_Run(t *testing.T) {
 				RemoveDeviceCalled:    true,
 				RemoveDeviceKeepFiles: true,
 			},
-			driverMock:         new(driver.DriverMock),
-			expectedDriverMock: new(driver.DriverMock),
+			driverMock:         new(driver.Mock),
+			expectedDriverMock: new(driver.Mock),
 			dsMock:             new(driver.DatastoreMock),
 			expectedDsMock:     new(driver.DatastoreMock),
 			fail:               true,
@@ -123,10 +123,10 @@ func TestStepRemoveFloppy_Run(t *testing.T) {
 				RemoveDeviceCalled:    true,
 				RemoveDeviceKeepFiles: true,
 			},
-			driverMock: &driver.DriverMock{
+			driverMock: &driver.Mock{
 				FindDatastoreErr: fmt.Errorf("failed to find datastore"),
 			},
-			expectedDriverMock: &driver.DriverMock{
+			expectedDriverMock: &driver.Mock{
 				FindDatastoreCalled: true,
 				FindDatastoreName:   "datastore",
 				FindDatastoreHost:   "host",
@@ -150,8 +150,8 @@ func TestStepRemoveFloppy_Run(t *testing.T) {
 				RemoveDeviceCalled:    true,
 				RemoveDeviceKeepFiles: true,
 			},
-			driverMock: new(driver.DriverMock),
-			expectedDriverMock: &driver.DriverMock{
+			driverMock: new(driver.Mock),
+			expectedDriverMock: &driver.Mock{
 				FindDatastoreCalled: true,
 				FindDatastoreName:   "datastore",
 				FindDatastoreHost:   "host",

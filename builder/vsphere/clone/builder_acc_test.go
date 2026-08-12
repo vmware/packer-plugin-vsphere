@@ -91,14 +91,14 @@ func ovfSourceRemote(acc env.AccConfig, rawURL string) map[string]any {
 func requireOVAURL(t *testing.T, acc env.AccConfig) {
 	t.Helper()
 	if acc.OVAURL == "" {
-		t.Skipf("set %s to an HTTPS .ova URL to run this ACC row", env.EnvOVAURL)
+		t.Skipf("set %s to an HTTPS .ova URL to run this ACC row", env.OVAURL)
 	}
 }
 
 func requireOVFURL(t *testing.T, acc env.AccConfig) {
 	t.Helper()
 	if acc.OVFURL == "" {
-		t.Skipf("set %s to an HTTPS .ovf URL to run this ACC row", env.EnvOVFURL)
+		t.Skipf("set %s to an HTTPS .ovf URL to run this ACC row", env.OVFURL)
 	}
 }
 

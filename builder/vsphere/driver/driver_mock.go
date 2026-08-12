@@ -14,8 +14,8 @@ import (
 	"github.com/vmware/govmomi/vim25/types"
 )
 
-// DriverMock provides a mock implementation of the Driver interface for testing.
-type DriverMock struct {
+// Mock provides a mock implementation of the Driver interface for testing.
+type Mock struct {
 	FindDatastoreErr                    error
 	VM                                  VirtualMachine
 	DeployOvfError                      error
@@ -72,12 +72,12 @@ type DriverMock struct {
 	FindCompatibleDatastoreCalled       bool
 }
 
-// NewDriverMock creates a new instance of DriverMock for testing.
-func NewDriverMock() *DriverMock {
-	return new(DriverMock)
+// NewMock creates a new instance of Mock for testing.
+func NewMock() *Mock {
+	return new(Mock)
 }
 
-func (d *DriverMock) FindDatastore(name string, host string) (Datastore, error) {
+func (d *Mock) FindDatastore(name string, host string) (Datastore, error) {
 	d.FindDatastoreCalled = true
 	if d.DatastoreMock == nil {
 		d.DatastoreMock = new(DatastoreMock)
@@ -87,11 +87,11 @@ func (d *DriverMock) FindDatastore(name string, host string) (Datastore, error) 
 	return d.DatastoreMock, d.FindDatastoreErr
 }
 
-func (d *DriverMock) NewVM(ref *types.ManagedObjectReference) VirtualMachine {
+func (d *Mock) NewVM(ref *types.ManagedObjectReference) VirtualMachine {
 	return nil
 }
 
-func (d *DriverMock) FindVM(name string) (VirtualMachine, error) {
+func (d *Mock) FindVM(name string) (VirtualMachine, error) {
 	d.FindVMCalled = true
 	if d.VM == nil {
 		d.VM = new(VirtualMachineMock)
@@ -100,11 +100,11 @@ func (d *DriverMock) FindVM(name string) (VirtualMachine, error) {
 	return d.VM, d.FindDatastoreErr
 }
 
-func (d *DriverMock) FindCluster(name string) (*Cluster, error) {
+func (d *Mock) FindCluster(name string) (*Cluster, error) {
 	return nil, nil
 }
 
-func (d *DriverMock) PreCleanVM(ui packersdk.Ui, vmPath string, force bool, vsphereCluster string, vsphereHost string, vsphereResourcePool string) error {
+func (d *Mock) PreCleanVM(ui packersdk.Ui, vmPath string, force bool, vsphereCluster string, vsphereHost string, vsphereResourcePool string) error {
 	d.PreCleanVMCalled = true
 	if d.PreCleanShouldFail {
 		return fmt.Errorf("pre clean failed")
@@ -114,7 +114,7 @@ func (d *DriverMock) PreCleanVM(ui packersdk.Ui, vmPath string, force bool, vsph
 	return nil
 }
 
-func (d *DriverMock) CreateVM(config *CreateConfig) (VirtualMachine, error) {
+func (d *Mock) CreateVM(config *CreateConfig) (VirtualMachine, error) {
 	d.CreateVMCalled = true
 	if d.CreateVMShouldFail {
 		return nil, fmt.Errorf("create vm failed")
@@ -124,58 +124,58 @@ func (d *DriverMock) CreateVM(config *CreateConfig) (VirtualMachine, error) {
 	return d.VM, nil
 }
 
-func (d *DriverMock) NewDatastore(ref *types.ManagedObjectReference) Datastore { return nil }
+func (d *Mock) NewDatastore(ref *types.ManagedObjectReference) Datastore { return nil }
 
-func (d *DriverMock) GetDatastoreName(id string) (string, error) { return "", nil }
+func (d *Mock) GetDatastoreName(id string) (string, error) { return "", nil }
 
-func (d *DriverMock) GetDatastoreFilePath(datastoreID, dir, filename string) (string, error) {
+func (d *Mock) GetDatastoreFilePath(datastoreID, dir, filename string) (string, error) {
 	return "", nil
 }
 
-func (d *DriverMock) NewFolder(ref *types.ManagedObjectReference) *Folder { return nil }
+func (d *Mock) NewFolder(ref *types.ManagedObjectReference) *Folder { return nil }
 
-func (d *DriverMock) FindFolder(name string) (*Folder, error) { return nil, nil }
+func (d *Mock) FindFolder(name string) (*Folder, error) { return nil, nil }
 
-func (d *DriverMock) NewHost(ref *types.ManagedObjectReference) *Host { return nil }
+func (d *Mock) NewHost(ref *types.ManagedObjectReference) *Host { return nil }
 
-func (d *DriverMock) FindHost(name string) (*Host, error) { return nil, nil }
+func (d *Mock) FindHost(name string) (*Host, error) { return nil, nil }
 
-func (d *DriverMock) NewNetwork(ref *types.ManagedObjectReference) *Network { return nil }
+func (d *Mock) NewNetwork(ref *types.ManagedObjectReference) *Network { return nil }
 
-func (d *DriverMock) FindNetwork(name string) (*Network, error) { return nil, nil }
+func (d *Mock) FindNetwork(name string) (*Network, error) { return nil, nil }
 
-func (d *DriverMock) FindNetworks(name string) ([]*Network, error) { return nil, nil }
+func (d *Mock) FindNetworks(name string) ([]*Network, error) { return nil, nil }
 
-func (d *DriverMock) NewResourcePool(ref *types.ManagedObjectReference) *ResourcePool { return nil }
+func (d *Mock) NewResourcePool(ref *types.ManagedObjectReference) *ResourcePool { return nil }
 
-func (d *DriverMock) FindResourcePool(cluster string, host string, name string) (*ResourcePool, error) {
+func (d *Mock) FindResourcePool(cluster string, host string, name string) (*ResourcePool, error) {
 	return nil, nil
 }
 
-func (d *DriverMock) FindContentLibraryByName(name string) (*Library, error) { return nil, nil }
+func (d *Mock) FindContentLibraryByName(name string) (*Library, error) { return nil, nil }
 
-func (d *DriverMock) FindContentLibraryItem(libraryId string, name string) (*library.Item, error) {
+func (d *Mock) FindContentLibraryItem(libraryId string, name string) (*library.Item, error) {
 	return nil, nil
 }
 
-func (d *DriverMock) FindContentLibraryFileDatastorePath(isoPath string) (string, error) {
+func (d *Mock) FindContentLibraryFileDatastorePath(isoPath string) (string, error) {
 	return "", nil
 }
 
-func (d *DriverMock) UpdateContentLibraryItem(item *library.Item, name string, description string) error {
+func (d *Mock) UpdateContentLibraryItem(item *library.Item, name string, description string) error {
 	return nil
 }
 
-func (d *DriverMock) DeleteContentLibraryItem(itemID string) error {
+func (d *Mock) DeleteContentLibraryItem(itemID string) error {
 	return nil
 }
 
-func (d *DriverMock) GetRestClient() *rest.Client {
+func (d *Mock) GetRestClient() *rest.Client {
 	return nil
 }
 
 // DeployOvf mocks OVF deployment functionality for testing.
-func (d *DriverMock) DeployOvf(ctx context.Context, config *OvfDeployConfig, ui packersdk.Ui) (VirtualMachine, error) {
+func (d *Mock) DeployOvf(ctx context.Context, config *OvfDeployConfig, ui packersdk.Ui) (VirtualMachine, error) {
 	d.DeployOvfCalled = true
 	d.DeployOvfConfig = config
 
@@ -193,7 +193,7 @@ func (d *DriverMock) DeployOvf(ctx context.Context, config *OvfDeployConfig, ui 
 }
 
 // GetOvfOptions mocks OVF options retrieval functionality for testing.
-func (d *DriverMock) GetOvfOptions(ctx context.Context, config *OvfDeployConfig) ([]types.OvfOptionInfo, error) {
+func (d *Mock) GetOvfOptions(ctx context.Context, config *OvfDeployConfig) ([]types.OvfOptionInfo, error) {
 	d.GetOvfOptionsCalled = true
 	d.GetOvfOptionsConfig = config
 	if config != nil {
@@ -231,7 +231,7 @@ func (d *DriverMock) GetOvfOptions(ctx context.Context, config *OvfDeployConfig)
 	return d.GetOvfOptionsResult, nil
 }
 
-func (d *DriverMock) ResolveContentLibraryItem(libraryName, itemName string) (*library.Item, error) {
+func (d *Mock) ResolveContentLibraryItem(libraryName, itemName string) (*library.Item, error) {
 	d.ResolveContentLibraryItemCalled = true
 	d.ResolveContentLibraryItemLibrary = libraryName
 	d.ResolveContentLibraryItemName = itemName
@@ -253,7 +253,7 @@ func (d *DriverMock) ResolveContentLibraryItem(libraryName, itemName string) (*l
 	return d.ResolveContentLibraryItemResult, nil
 }
 
-func (d *DriverMock) DeployContentLibraryItem(ctx context.Context, config *ContentLibraryDeployConfig, ui packersdk.Ui) (VirtualMachine, error) {
+func (d *Mock) DeployContentLibraryItem(ctx context.Context, config *ContentLibraryDeployConfig, ui packersdk.Ui) (VirtualMachine, error) {
 	d.DeployContentLibraryItemCalled = true
 	d.DeployContentLibraryItemConfig = config
 
@@ -270,7 +270,7 @@ func (d *DriverMock) DeployContentLibraryItem(ctx context.Context, config *Conte
 	return d.DeployContentLibraryItemVM, nil
 }
 
-func (d *DriverMock) FindStoragePolicyID(name string) (string, error) {
+func (d *Mock) FindStoragePolicyID(name string) (string, error) {
 	d.FindStoragePolicyIDCalled = true
 	d.FindStoragePolicyIDName = name
 	d.FindStoragePolicyIDCalls = append(d.FindStoragePolicyIDCalls, name)
@@ -286,7 +286,7 @@ func (d *DriverMock) FindStoragePolicyID(name string) (string, error) {
 	return d.FindStoragePolicyIDResult, nil
 }
 
-func (d *DriverMock) FindCompatibleDatastore(policyID, host, cluster string) (Datastore, error) {
+func (d *Mock) FindCompatibleDatastore(policyID, host, cluster string) (Datastore, error) {
 	d.FindCompatibleDatastoreCalled = true
 	d.FindCompatibleDatastorePolicyID = policyID
 	d.FindCompatibleDatastoreHost = host
@@ -307,11 +307,11 @@ func (d *DriverMock) FindCompatibleDatastore(policyID, host, cluster string) (Da
 	return d.FindCompatibleDatastoreResult, nil
 }
 
-func (d *DriverMock) Cleanup() (error, error) {
+func (d *Mock) Cleanup() (error, error) {
 	return nil, nil
 }
 
 // SelectDatastoresForDisks mocks multi-disk Storage DRS placement for testing.
-func (d *DriverMock) SelectDatastoresForDisks(clusterName string, input StoragePlacementInput) ([]Datastore, string, error) {
-	return nil, "", fmt.Errorf("SelectDatastoresForDisks not implemented in DriverMock")
+func (d *Mock) SelectDatastoresForDisks(clusterName string, input StoragePlacementInput) ([]Datastore, string, error) {
+	return nil, "", fmt.Errorf("SelectDatastoresForDisks not implemented in Mock")
 }
