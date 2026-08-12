@@ -147,9 +147,9 @@ func TestStepReattachCDRom_Run(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Logf("Running test case: %s", tt.name)
 
-			driver := tt.vmMock
+			vmMock := tt.vmMock
 			state := new(multistep.BasicStateBag)
-			state.Put("vm", driver)
+			state.Put("vm", vmMock)
 
 			// Add a packer.Ui to the state
 			state.Put("ui", &packer.BasicUi{

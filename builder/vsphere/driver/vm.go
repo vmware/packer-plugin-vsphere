@@ -463,11 +463,11 @@ func (vm *VirtualMachineDriver) Clone(ctx context.Context, config *CloneConfig) 
 	configSpec.DeviceChange = append(configSpec.DeviceChange, storageConfigSpec...)
 
 	if config.Network != "" {
-		net, err := vm.driver.FindNetwork(config.Network)
+		network, err := vm.driver.FindNetwork(config.Network)
 		if err != nil {
 			return nil, fmt.Errorf("error finding network: %s", err)
 		}
-		backing, err := net.network.EthernetCardBackingInfo(ctx)
+		backing, err := network.network.EthernetCardBackingInfo(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("error finding ethernet card backing info: %s", err)
 		}

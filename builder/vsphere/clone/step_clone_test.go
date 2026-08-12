@@ -523,11 +523,11 @@ func TestCloneConfig_Prepare_OvfPathWithUsernameOnly(t *testing.T) {
 
 func createTempOvfFile(t *testing.T) string {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "example.ovf")
-	if err := os.WriteFile(path, []byte("<Envelope/>"), 0o644); err != nil {
+	ovfPath := filepath.Join(t.TempDir(), "example.ovf")
+	if err := os.WriteFile(ovfPath, []byte("<Envelope/>"), 0o644); err != nil {
 		t.Fatalf("write temp ovf: %s", err)
 	}
-	return path
+	return ovfPath
 }
 
 func TestStepCreateVM_Run(t *testing.T) {
