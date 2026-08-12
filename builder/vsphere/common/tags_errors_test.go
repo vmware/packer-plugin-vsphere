@@ -5,6 +5,7 @@ package common
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -396,18 +397,7 @@ func TestWrapTagOperationError(t *testing.T) {
 			got := wrapTagOperationError(tt.operation, tt.err, tt.context)
 			gotType := "<nil>"
 			if got != nil {
-				gotType = strings.Replace(strings.Split(got.Error(), ":")[0], "failed to ", "", 1)
-				// Get the actual type
-				switch got.(type) {
-				case *PermissionError:
-					gotType = "*common.PermissionError"
-				case *NotFoundError:
-					gotType = "*common.NotFoundError"
-				case *TagError:
-					gotType = "*common.TagError"
-				case *ValidationError:
-					gotType = "*common.ValidationError"
-				}
+				gotType = fmt.Sprintf("%T", got)
 			}
 
 			if gotType != tt.wantType {
