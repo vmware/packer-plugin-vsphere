@@ -3,7 +3,8 @@ Artifact BuilderId: `vsphere.content-library-item`
 
 This data source retrieves information about an existing item in a content
 library from vSphere and returns the name, unique identifier, library, type,
-and content library path for an item that matches all specified filters.
+content library path, and attached tags for an item that matches all specified
+filters.
 
 The `path` output is returned in the `<library>/<item>/<file>` form used by the
 `iso_paths` option of the `vsphere-iso` builder, so an ISO stored in a content
@@ -133,6 +134,8 @@ HCL Example:
   - For `ovf` and `vm-template` items, the path is returned in the
   `<library>/<item>` form.
 
+- `tags` ([]Tag) - Tags attached to the found content library item.
+
 <!-- End of code generated from the comments of the DatasourceOutput struct in datasource/contentlibraryitem/data.go; -->
 
 
@@ -178,6 +181,45 @@ data "vsphere-content-library-item" "iso" {
 
 locals {
   content_library_item = data.vsphere-content-library-item.iso.name
+}
+```
+
+### Propagate Tags to a Builder
+
+Use the `tags` output with a builder `dynamic "tag"` block to inherit tags
+from the selected content library item.
+
+```hcl
+data "vsphere-content-library-item" "iso" {
+  vcenter_server  = "vc01.example.com"
+  username        = "administrator@vsphere.local"
+  password        = "VMware1!"
+  datacenter      = "dc-01"
+  content_library = "lib01"
+  name            = "linux-debian-13*-amd64"
+  type            = "iso"
+  latest          = true
+}
+
+source "vsphere-iso" "example" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  host           = "esx01.example.com"
+  iso_paths      = [data.vsphere-content-library-item.iso.path]
+
+  dynamic "tag" {
+    for_each = data.vsphere-content-library-item.iso.tags
+    content {
+      category = tag.value.category
+      name     = tag.value.name
+    }
+  }
+
+  tag {
+    category = "pipeline"
+    name     = "downstream"
+  }
 }
 ```
 

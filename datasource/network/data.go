@@ -77,6 +77,8 @@ type DatasourceOutput struct {
 	// API managed-object type of the found network (`Network`,
 	// `DistributedVirtualPortgroup`, or `OpaqueNetwork`).
 	Type string `mapstructure:"type"`
+	// Tags attached to the found network.
+	Tags []Tag `mapstructure:"tags"`
 }
 
 func (d *Datasource) ConfigSpec() hcldec.ObjectSpec {
@@ -155,10 +157,18 @@ func (d *Datasource) Execute() (cty.Value, error) {
 	}
 
 	ref := selected.Reference()
+	attached, err := dscommon.ListAttachedTags(vcDriver, ref)
+	if err != nil {
+		return cty.NullVal(cty.EmptyObject), err
+	}
+
 	output := DatasourceOutput{
 		Name: networkLeafName(selected),
 		ID:   ref.Value,
 		Type: ref.Type,
+		Tags: dscommon.MapFromTags(attached, func(name, category string) Tag {
+			return Tag{Name: name, Category: category}
+		}),
 	}
 
 	return hcl2helper.HCL2ValueFromConfig(output, d.OutputSpec()), nil

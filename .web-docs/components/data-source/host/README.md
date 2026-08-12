@@ -108,6 +108,8 @@ HCL Example:
 
 - `summary` (Summary) - Memory capacity fields from the host summary.
 
+- `tags` ([]Tag) - Tags attached to the found host.
+
 <!-- End of code generated from the comments of the DatasourceOutput struct in datasource/host/data.go; -->
 
 

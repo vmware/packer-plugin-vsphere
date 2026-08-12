@@ -10,6 +10,7 @@ import (
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
 	"github.com/vmware/packer-plugin-vsphere/testing/vcsim"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func TestDatasource_Execute(t *testing.T) {
@@ -69,6 +70,7 @@ func TestDatasource_Execute(t *testing.T) {
 		expectName    string
 		expectType    string
 		expectPath    string
+		expectTags    []Tag
 		config        Config
 	}{
 		{
@@ -76,6 +78,7 @@ func TestDatasource_Execute(t *testing.T) {
 			expectName: "linux-debian-13",
 			expectType: "ovf",
 			expectPath: "lib01/linux-debian-13",
+			expectTags: []Tag{},
 			config: Config{
 				ContentLibrary: "lib01",
 				Name:           "linux-debian-13",
@@ -86,6 +89,9 @@ func TestDatasource_Execute(t *testing.T) {
 			expectName: "linux-debian-13.5.0-amd64",
 			expectType: "iso",
 			expectPath: "lib01/linux-debian-13.5.0-amd64/debian-13.5.0-amd64-netinst.iso",
+			expectTags: []Tag{
+				{Category: "env", Name: "Packer"},
+			},
 			config: Config{
 				ContentLibrary: "lib01",
 				Name:           "linux-debian-13.5.0-amd64",
@@ -96,6 +102,7 @@ func TestDatasource_Execute(t *testing.T) {
 			name:       "regex unique match",
 			expectName: "linux-debian-13",
 			expectType: "ovf",
+			expectTags: []Tag{},
 			config: Config{
 				ContentLibrary: "lib01",
 				NameRegex:      "^linux-debian-13$",
@@ -104,6 +111,7 @@ func TestDatasource_Execute(t *testing.T) {
 		{
 			name:       "type filter narrows to unique",
 			expectName: "linux-debian-13",
+			expectTags: []Tag{},
 			config: Config{
 				ContentLibrary: "lib01",
 				Type:           "ovf",
@@ -114,6 +122,10 @@ func TestDatasource_Execute(t *testing.T) {
 			expectName: "linux-debian-13.6.0-amd64",
 			expectType: "iso",
 			expectPath: "lib01/linux-debian-13.6.0-amd64/debian-13.6.0-amd64-netinst.iso",
+			expectTags: []Tag{
+				{Category: "env", Name: "Packer"},
+				{Category: "kind", Name: "iso"},
+			},
 			config: Config{
 				ContentLibrary: "lib01",
 				Name:           "linux-debian-13.*-amd64",
@@ -180,6 +192,7 @@ func TestDatasource_Execute(t *testing.T) {
 			expectName: "linux-debian-13",
 			expectType: "iso",
 			expectPath: "lib02/linux-debian-13/debian-13.6.0-amd64-netinst.iso",
+			expectTags: []Tag{},
 			config: Config{
 				ContentLibrary: "lib02",
 			},
@@ -188,6 +201,10 @@ func TestDatasource_Execute(t *testing.T) {
 			name:       "tag filter unique match",
 			expectName: "linux-debian-13.6.0-amd64",
 			expectType: "iso",
+			expectTags: []Tag{
+				{Category: "env", Name: "Packer"},
+				{Category: "kind", Name: "iso"},
+			},
 			config: Config{
 				ContentLibrary: "lib01",
 				Tags: []Tag{
@@ -210,6 +227,9 @@ func TestDatasource_Execute(t *testing.T) {
 			name:       "name and tag combined",
 			expectName: "linux-debian-13.5.0-amd64",
 			expectType: "iso",
+			expectTags: []Tag{
+				{Category: "env", Name: "Packer"},
+			},
 			config: Config{
 				ContentLibrary: "lib01",
 				Name:           "linux-debian-13.5.0-amd64",
@@ -264,6 +284,36 @@ func TestDatasource_Execute(t *testing.T) {
 					t.Fatalf("expected path %q, got %q", tt.expectPath, got)
 				}
 			}
+			assertTags(t, output.GetAttr("tags"), tt.expectTags)
 		})
+	}
+}
+
+func assertTags(t *testing.T, tagsAttr cty.Value, want []Tag) {
+	t.Helper()
+	if tagsAttr.IsNull() {
+		if len(want) == 0 {
+			return
+		}
+		t.Fatalf("expected %d tags, got null", len(want))
+	}
+	gotSlice := tagsAttr.AsValueSlice()
+	if len(gotSlice) != len(want) {
+		t.Fatalf("expected %d tags, got %d", len(want), len(gotSlice))
+	}
+	got := make(map[string]string, len(gotSlice))
+	for _, tagVal := range gotSlice {
+		name := tagVal.GetAttr("name").AsString()
+		category := tagVal.GetAttr("category").AsString()
+		got[name] = category
+	}
+	for _, tag := range want {
+		category, ok := got[tag.Name]
+		if !ok {
+			t.Fatalf("missing expected tag %q", tag.Name)
+		}
+		if category != tag.Category {
+			t.Fatalf("tag %q: expected category %q, got %q", tag.Name, tag.Category, category)
+		}
 	}
 }

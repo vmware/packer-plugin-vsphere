@@ -106,6 +106,8 @@ HCL Example:
   `resource_pool` as this root; an absolute path (starting with `/`) can be
   passed through when an explicit pool is required.
 
+- `tags` ([]Tag) - Tags attached to the found compute cluster.
+
 <!-- End of code generated from the comments of the DatasourceOutput struct in datasource/computecluster/data.go; -->
 
 

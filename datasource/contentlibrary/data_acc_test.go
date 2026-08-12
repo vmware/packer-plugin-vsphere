@@ -24,4 +24,5 @@ func TestAccDatasourceContentLibrary(t *testing.T) {
 	if got := output.GetAttr("id").AsString(); got == "" {
 		t.Fatal("expected a non-empty content library ID")
 	}
+	acceptance.AssertTagsShape(t, output)
 }

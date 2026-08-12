@@ -30,4 +30,5 @@ func TestAccDatasourceNetwork(t *testing.T) {
 	default:
 		t.Fatalf("unexpected network type %q", got)
 	}
+	acceptance.AssertTagsShape(t, output)
 }

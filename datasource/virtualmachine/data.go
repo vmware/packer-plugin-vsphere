@@ -65,6 +65,8 @@ type Datasource struct {
 type DatasourceOutput struct {
 	// Name of the found virtual machine.
 	VmName string `mapstructure:"vm_name"`
+	// Tags attached to the found virtual machine.
+	Tags []Tag `mapstructure:"tags"`
 }
 
 func (d *Datasource) ConfigSpec() hcldec.ObjectSpec {
@@ -145,8 +147,16 @@ func (d *Datasource) Execute() (cty.Value, error) {
 		return cty.NullVal(cty.EmptyObject), err
 	}
 
+	attached, err := dscommon.ListAttachedTags(vcDriver, selected.Reference())
+	if err != nil {
+		return cty.NullVal(cty.EmptyObject), err
+	}
+
 	output := DatasourceOutput{
 		VmName: selected.Name(),
+		Tags: dscommon.MapFromTags(attached, func(name, category string) Tag {
+			return Tag{Name: name, Category: category}
+		}),
 	}
 
 	return hcl2helper.HCL2ValueFromConfig(output, d.OutputSpec()), nil

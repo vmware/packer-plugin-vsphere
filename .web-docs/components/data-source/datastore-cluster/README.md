@@ -113,6 +113,8 @@ HCL Example:
 
 - `summary` (Summary) - Aggregate capacity fields across member datastores.
 
+- `tags` ([]Tag) - Tags attached to the found datastore cluster.
+
 <!-- End of code generated from the comments of the DatasourceOutput struct in datasource/datastorecluster/data.go; -->
 
 
