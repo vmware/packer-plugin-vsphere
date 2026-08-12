@@ -2368,13 +2368,13 @@ func TestStepCloneVM_ErrorMessageFormatting(t *testing.T) {
 func TestOvfSourceConfig_MapstructureDecode(t *testing.T) {
 	tests := []struct {
 		name string
-		raw  map[string]interface{}
+		raw  map[string]any
 		want OvfSourceConfig
 	}{
 		{
 			name: "url with credentials",
-			raw: map[string]interface{}{
-				"ovf_source": map[string]interface{}{
+			raw: map[string]any{
+				"ovf_source": map[string]any{
 					"url":      "https://packages.example.com/artifacts/example.ovf",
 					"username": "testuser",
 					"password": "testpass",
@@ -2388,8 +2388,8 @@ func TestOvfSourceConfig_MapstructureDecode(t *testing.T) {
 		},
 		{
 			name: "url with skip tls verify",
-			raw: map[string]interface{}{
-				"ovf_source": map[string]interface{}{
+			raw: map[string]any{
+				"ovf_source": map[string]any{
 					"url":             "https://packages.example.com/artifacts/example.ova",
 					"skip_tls_verify": true,
 				},

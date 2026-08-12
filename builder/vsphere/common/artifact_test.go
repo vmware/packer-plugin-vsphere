@@ -49,7 +49,7 @@ func TestArtifactHCPPackerMetadata(t *testing.T) {
 			Name:    "Item-Name",
 		},
 		VM: vm.(*driver.VirtualMachineDriver),
-		StateData: map[string]interface{}{
+		StateData: map[string]any{
 			"metadata": expectedLabels,
 		},
 	}
@@ -80,7 +80,7 @@ func TestArtifactHCPPackerRegistrySourceRemoteURL(t *testing.T) {
 	artifact := &Artifact{
 		Name:       "test-vm",
 		Datacenter: vm.Datacenter(),
-		StateData: map[string]interface{}{
+		StateData: map[string]any{
 			"source_ovf_url": "https://user:***@packages.example.com/artifacts/example.ovf",
 		},
 	}
@@ -105,7 +105,7 @@ func TestArtifactState_OvfLocalPathMetadata(t *testing.T) {
 	artifact := &Artifact{
 		Name:       "test-vm",
 		Datacenter: vm.Datacenter(),
-		StateData: map[string]interface{}{
+		StateData: map[string]any{
 			"source_ovf_path": "./artifacts/example.ova",
 		},
 	}

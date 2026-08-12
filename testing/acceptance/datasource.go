@@ -15,14 +15,14 @@ import (
 // Datasource is the common execution interface implemented by plugin data
 // sources.
 type Datasource interface {
-	Configure(...interface{}) error
+	Configure(...any) error
 	Execute() (cty.Value, error)
 }
 
 // DatasourceConfig returns a live vCenter connection configuration combined
 // with datasource-specific filters.
-func DatasourceConfig(acc env.AccConfig, filters map[string]interface{}) map[string]interface{} {
-	config := map[string]interface{}{
+func DatasourceConfig(acc env.AccConfig, filters map[string]any) map[string]any {
+	config := map[string]any{
 		"vcenter_server":      acc.VCenterServer,
 		"username":            acc.Username,
 		"password":            acc.Password,
@@ -35,7 +35,7 @@ func DatasourceConfig(acc env.AccConfig, filters map[string]interface{}) map[str
 
 // ExecuteDatasource configures and executes a datasource against the live
 // acceptance-test environment.
-func ExecuteDatasource(t *testing.T, datasource Datasource, config map[string]interface{}) cty.Value {
+func ExecuteDatasource(t *testing.T, datasource Datasource, config map[string]any) cty.Value {
 	t.Helper()
 	if err := datasource.Configure(config); err != nil {
 		t.Fatalf("configure datasource: %v", err)

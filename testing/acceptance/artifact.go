@@ -25,12 +25,12 @@ type FileArtifact struct {
 	BuilderID string
 }
 
-func (a *FileArtifact) BuilderId() string        { return a.BuilderID }
-func (a *FileArtifact) Files() []string          { return []string{a.Path} }
-func (a *FileArtifact) Id() string               { return a.Path }
-func (a *FileArtifact) String() string           { return a.Path }
-func (a *FileArtifact) State(string) interface{} { return nil }
-func (a *FileArtifact) Destroy() error           { return nil }
+func (a *FileArtifact) BuilderId() string { return a.BuilderID }
+func (a *FileArtifact) Files() []string   { return []string{a.Path} }
+func (a *FileArtifact) Id() string        { return a.Path }
+func (a *FileArtifact) String() string    { return a.Path }
+func (a *FileArtifact) State(string) any  { return nil }
+func (a *FileArtifact) Destroy() error    { return nil }
 
 // RequireOVAURL skips the test unless VSPHERE_OVA_URL is set.
 func RequireOVAURL(t *testing.T, acc env.AccConfig) {

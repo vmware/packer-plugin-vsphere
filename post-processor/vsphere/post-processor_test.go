@@ -142,7 +142,7 @@ func TestConfigure_WithTags(t *testing.T) {
 
 	var p PostProcessor
 
-	config := map[string]interface{}{
+	config := map[string]any{
 		"username":   "me",
 		"password":   "notpassword",
 		"host":       "myhost",
@@ -171,7 +171,7 @@ func TestConfigure_WithTagBlocks(t *testing.T) {
 
 	var p PostProcessor
 
-	config := map[string]interface{}{
+	config := map[string]any{
 		"username":   "me",
 		"password":   "notpassword",
 		"host":       "myhost",
@@ -179,7 +179,7 @@ func TestConfigure_WithTagBlocks(t *testing.T) {
 		"cluster":    "mycluster",
 		"vm_name":    "my vm",
 		"datastore":  "my datastore",
-		"tag": []map[string]interface{}{
+		"tag": []map[string]any{
 			{
 				"category": "environment",
 				"name":     "production",

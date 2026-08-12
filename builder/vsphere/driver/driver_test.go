@@ -18,13 +18,13 @@ import (
 type testUI struct{}
 
 func (ui *testUI) Ask(string) (string, error)                                      { return "", nil }
-func (ui *testUI) Askf(format string, args ...interface{}) (string, error)         { return "", nil }
+func (ui *testUI) Askf(format string, args ...any) (string, error)                 { return "", nil }
 func (ui *testUI) Say(message string)                                              {}
-func (ui *testUI) Sayf(format string, args ...interface{})                         {}
+func (ui *testUI) Sayf(format string, args ...any)                                 {}
 func (ui *testUI) Message(message string)                                          {}
-func (ui *testUI) Messagef(format string, args ...interface{})                     {}
+func (ui *testUI) Messagef(format string, args ...any)                             {}
 func (ui *testUI) Error(message string)                                            {}
-func (ui *testUI) Errorf(format string, args ...interface{})                       {}
+func (ui *testUI) Errorf(format string, args ...any)                               {}
 func (ui *testUI) Machine(string, ...string)                                       {}
 func (ui *testUI) TrackProgress(string, int64, int64, io.ReadCloser) io.ReadCloser { return nil }
 

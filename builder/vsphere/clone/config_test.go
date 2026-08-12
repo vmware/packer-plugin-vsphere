@@ -47,8 +47,8 @@ func TestCloneConfig_RAMReservation(t *testing.T) {
 	testConfigErr(t, "RAM_reservation", warns, err)
 }
 
-func minimalConfig() map[string]interface{} {
-	return map[string]interface{}{
+func minimalConfig() map[string]any {
+	return map[string]any{
 		"vcenter_server": "vc01.example.com",
 		"username":       "administrator@vsphere.local",
 		"password":       "VMw@re1!",
@@ -82,13 +82,13 @@ func testConfigErr(t *testing.T, context string, warns []string, err error) {
 func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 	testCases := []struct {
 		name           string
-		config         map[string]interface{}
+		config         map[string]any
 		expectError    bool
 		expectedErrMsg string
 	}{
 		{
 			name: "Valid remote source with HTTP URL",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -96,7 +96,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"ovf_source": map[string]interface{}{
+				"ovf_source": map[string]any{
 					"url": "http://packages.example.com/artifacts/example.ovf",
 				},
 			},
@@ -104,7 +104,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 		},
 		{
 			name: "Valid remote source with HTTPS URL",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -112,7 +112,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"ovf_source": map[string]interface{}{
+				"ovf_source": map[string]any{
 					"url": "https://packages.example.com/artifacts/example.ovf",
 				},
 			},
@@ -120,7 +120,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 		},
 		{
 			name: "Valid remote source with basic authentication",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -128,7 +128,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"ovf_source": map[string]interface{}{
+				"ovf_source": map[string]any{
 					"url":      "https://packages.example.com/artifacts/example.ovf",
 					"username": "testuser",
 					"password": "testpass",
@@ -138,7 +138,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 		},
 		{
 			name: "Valid remote source with SkipTlsVerify",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -146,7 +146,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"ovf_source": map[string]interface{}{
+				"ovf_source": map[string]any{
 					"url":             "https://packages.example.com/artifacts/example.ovf",
 					"skip_tls_verify": true,
 				},
@@ -155,7 +155,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid: both template and ovf_source specified",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -164,7 +164,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"ovf_source": map[string]interface{}{
+				"ovf_source": map[string]any{
 					"url": "https://packages.example.com/artifacts/example.ovf",
 				},
 			},
@@ -173,7 +173,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid: neither template nor ovf_source specified",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -187,7 +187,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid: ovf_source URL is empty",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -195,7 +195,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"ovf_source": map[string]interface{}{
+				"ovf_source": map[string]any{
 					"url": "",
 				},
 			},
@@ -204,7 +204,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid: ovf_source URL missing",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -212,7 +212,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"ovf_source": map[string]interface{}{
+				"ovf_source": map[string]any{
 					"username": "testuser",
 					"password": "testpass",
 				},
@@ -222,7 +222,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid: ovf_source URL with unsupported protocol",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -230,7 +230,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"ovf_source": map[string]interface{}{
+				"ovf_source": map[string]any{
 					"url": "ftp://packages.example.com/artifacts/example.ovf",
 				},
 			},
@@ -239,7 +239,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid: ovf_source URL with invalid format",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -247,7 +247,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"ovf_source": map[string]interface{}{
+				"ovf_source": map[string]any{
 					"url": "://invalid-url-format",
 				},
 			},
@@ -256,7 +256,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid: ovf_source URL with unsupported file extension",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -264,7 +264,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"ovf_source": map[string]interface{}{
+				"ovf_source": map[string]any{
 					"url": "https://packages.example.com/artifacts/example.ovx",
 				},
 			},
@@ -273,7 +273,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid: ovf_source username without password",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -281,7 +281,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"ovf_source": map[string]interface{}{
+				"ovf_source": map[string]any{
 					"url":      "https://packages.example.com/artifacts/example.ovf",
 					"username": "testuser",
 				},
@@ -291,7 +291,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid: ovf_source password without username",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -299,7 +299,7 @@ func TestCloneConfig_OvfSourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"ovf_source": map[string]interface{}{
+				"ovf_source": map[string]any{
 					"url":      "https://packages.example.com/artifacts/example.ovf",
 					"password": "testpass",
 				},
@@ -370,7 +370,7 @@ func TestCloneConfig_OvfSourceMutualExclusivity(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			config := map[string]interface{}{
+			config := map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -385,7 +385,7 @@ func TestCloneConfig_OvfSourceMutualExclusivity(t *testing.T) {
 			}
 
 			if tc.remoteURL != "" {
-				config["ovf_source"] = map[string]interface{}{
+				config["ovf_source"] = map[string]any{
 					"url": tc.remoteURL,
 				}
 			}
@@ -413,13 +413,13 @@ func TestCloneConfig_OvfSourceMutualExclusivity(t *testing.T) {
 func TestCloneConfig_ContentLibrarySourceValidation(t *testing.T) {
 	testCases := []struct {
 		name           string
-		config         map[string]interface{}
+		config         map[string]any
 		expectError    bool
 		expectedErrMsg string
 	}{
 		{
 			name: "Valid content library source",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -427,7 +427,7 @@ func TestCloneConfig_ContentLibrarySourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"content_library_source": map[string]interface{}{
+				"content_library_source": map[string]any{
 					"library": "Example Content Library",
 					"name":    "example-template",
 				},
@@ -436,7 +436,7 @@ func TestCloneConfig_ContentLibrarySourceValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid: linked_clone with content library source",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -445,7 +445,7 @@ func TestCloneConfig_ContentLibrarySourceValidation(t *testing.T) {
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
 				"linked_clone":   true,
-				"content_library_source": map[string]interface{}{
+				"content_library_source": map[string]any{
 					"library": "Example Content Library",
 					"name":    "example-template",
 				},
@@ -455,7 +455,7 @@ func TestCloneConfig_ContentLibrarySourceValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid: ovf_source and content_library_source mutual exclusivity",
-			config: map[string]interface{}{
+			config: map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -463,10 +463,10 @@ func TestCloneConfig_ContentLibrarySourceValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"ovf_source": map[string]interface{}{
+				"ovf_source": map[string]any{
 					"url": "https://packages.example.com/artifacts/example.ovf",
 				},
-				"content_library_source": map[string]interface{}{
+				"content_library_source": map[string]any{
 					"library": "Example Content Library",
 					"name":    "example-template",
 				},
@@ -538,7 +538,7 @@ func TestCloneConfig_OvfSourceAuthenticationValidation(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			config := map[string]interface{}{
+			config := map[string]any{
 				"vcenter_server": "vcenter.example.com",
 				"username":       "administrator@vsphere.local",
 				"password":       "VMw@re1!",
@@ -546,16 +546,16 @@ func TestCloneConfig_OvfSourceAuthenticationValidation(t *testing.T) {
 				"host":           "esxi-01.example.com",
 				"ssh_username":   "root",
 				"ssh_password":   "VMw@re1!",
-				"ovf_source": map[string]interface{}{
+				"ovf_source": map[string]any{
 					"url": "https://packages.example.com/artifacts/example.ovf",
 				},
 			}
 
 			if tc.username != "" {
-				config["ovf_source"].(map[string]interface{})["username"] = tc.username
+				config["ovf_source"].(map[string]any)["username"] = tc.username
 			}
 			if tc.password != "" {
-				config["ovf_source"].(map[string]interface{})["password"] = tc.password
+				config["ovf_source"].(map[string]any)["password"] = tc.password
 			}
 
 			c := new(Config)

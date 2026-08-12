@@ -26,7 +26,7 @@ type Builder struct {
 func (b *Builder) ConfigSpec() hcldec.ObjectSpec { return b.config.FlatMapstructure().HCL2Spec() }
 
 // Prepare processes the given raw inputs, validates the configuration, and returns warnings or errors if any occur.
-func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
+func (b *Builder) Prepare(raws ...any) ([]string, []string, error) {
 	warnings, errs := b.config.Prepare(raws...)
 	if errs != nil {
 		return nil, warnings, errs
@@ -254,7 +254,7 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		Location:             b.config.LocationConfig,
 		ContentLibraryConfig: b.config.ContentLibraryDestinationConfig,
 		VM:                   vm,
-		StateData: map[string]interface{}{
+		StateData: map[string]any{
 			"generated_data": state.Get("generated_data"),
 			"metadata":       state.Get("metadata"),
 			"SourceImageURL": state.Get("SourceImageURL"),

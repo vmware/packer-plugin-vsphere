@@ -14,7 +14,7 @@ import (
 func TestAccDatasourceNetwork(t *testing.T) {
 	acceptance.RequireAcceptance(t)
 	acc := env.AccFromEnv()
-	output := acceptance.ExecuteDatasource(t, &Datasource{}, acceptance.DatasourceConfig(acc, map[string]interface{}{
+	output := acceptance.ExecuteDatasource(t, &Datasource{}, acceptance.DatasourceConfig(acc, map[string]any{
 		"name":    acc.Network,
 		"cluster": acc.Cluster,
 	}))

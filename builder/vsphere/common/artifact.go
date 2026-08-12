@@ -25,7 +25,7 @@ type Artifact struct {
 	ContentLibraryConfig *ContentLibraryDestinationConfig
 	// StateData should store data such as GeneratedData
 	// to be shared with post-processors
-	StateData map[string]interface{}
+	StateData map[string]any
 }
 
 func (a *Artifact) BuilderId() string {
@@ -48,7 +48,7 @@ func (a *Artifact) String() string {
 	return a.Name
 }
 
-func (a *Artifact) State(name string) interface{} {
+func (a *Artifact) State(name string) any {
 	if name == registryimage.ArtifactStateURI {
 		return a.stateHCPPackerRegistryMetadata()
 	}
@@ -56,8 +56,8 @@ func (a *Artifact) State(name string) interface{} {
 }
 
 // stateHCPPackerRegistryMetadata will write the metadata as an hcpRegistryImage
-func (a *Artifact) stateHCPPackerRegistryMetadata() interface{} {
-	labels := make(map[string]interface{})
+func (a *Artifact) stateHCPPackerRegistryMetadata() any {
+	labels := make(map[string]any)
 
 	floppyPath, ok := a.StateData["uploaded_floppy_path"].(string)
 	if ok && floppyPath != "" {

@@ -100,7 +100,7 @@ func TestStepMarkAsTemplate_TemplateName(t *testing.T) {
 type mockArtifact struct {
 	builderId string
 	id        string
-	state     map[string]interface{}
+	state     map[string]any
 }
 
 func (m *mockArtifact) BuilderId() string {
@@ -119,7 +119,7 @@ func (m *mockArtifact) String() string {
 	return m.id
 }
 
-func (m *mockArtifact) State(name string) interface{} {
+func (m *mockArtifact) State(name string) any {
 	if m.state == nil {
 		return nil
 	}

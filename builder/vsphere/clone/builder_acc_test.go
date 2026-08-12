@@ -38,9 +38,9 @@ const (
 // Shared Helpers
 // ---------------------------------------------------------------------------
 
-func cloneExampleConfig() map[string]interface{} {
+func cloneExampleConfig() map[string]any {
 	acc := env.AccFromEnv()
-	return map[string]interface{}{
+	return map[string]any{
 		"vcenter_server":      acc.VCenterServer,
 		"username":            acc.Username,
 		"password":            acc.Password,
@@ -58,7 +58,7 @@ func cloneExampleConfig() map[string]interface{} {
 	}
 }
 
-func ovfSourceConfig(acc env.AccConfig, mac string) map[string]interface{} {
+func ovfSourceConfig(acc env.AccConfig, mac string) map[string]any {
 	config := cloneExampleConfig()
 	delete(config, "template")
 	config["network"] = acc.Network
@@ -66,14 +66,14 @@ func ovfSourceConfig(acc env.AccConfig, mac string) map[string]interface{} {
 	return config
 }
 
-func ovfSourceLocalPath(path string) map[string]interface{} {
-	return map[string]interface{}{
+func ovfSourceLocalPath(path string) map[string]any {
+	return map[string]any{
 		"path": path,
 	}
 }
 
-func ovfSourceRemote(acc env.AccConfig, rawURL string) map[string]interface{} {
-	src := map[string]interface{}{
+func ovfSourceRemote(acc env.AccConfig, rawURL string) map[string]any {
+	src := map[string]any{
 		"url": rawURL,
 	}
 	if acc.OVFUsername != "" {
@@ -389,11 +389,11 @@ func TestAccCloneBuilder_MatrixB(t *testing.T) {
 	config["mac_address"] = accVMTXMac
 	config["disk_size"] = accDiskMiB
 	config["disk_controller_type"] = []string{"pvscsi"}
-	config["storage"] = map[string]interface{}{
+	config["storage"] = map[string]any{
 		"disk_size":             accExtraMiB,
 		"disk_thin_provisioned": true,
 	}
-	config["content_library_source"] = map[string]interface{}{
+	config["content_library_source"] = map[string]any{
 		"library": acc.ContentLibrary,
 		"name":    acc.ContentLibraryVMTX,
 	}
@@ -441,7 +441,7 @@ func TestAccCloneBuilder_MatrixC(t *testing.T) {
 	delete(config, "template")
 	config["network"] = acc.Network
 	config["mac_address"] = accOVFMac
-	config["content_library_source"] = map[string]interface{}{
+	config["content_library_source"] = map[string]any{
 		"library": acc.ContentLibrary,
 		"name":    acc.ContentLibraryOVF,
 	}
@@ -488,7 +488,7 @@ func TestAccCloneBuilder_MatrixD(t *testing.T) {
 	config := cloneExampleConfig()
 	vmName := config["vm_name"].(string)
 
-	config["storage"] = map[string]interface{}{
+	config["storage"] = map[string]any{
 		"disk_size":            accExtraMiB,
 		"disk_controller_unit": accDiskControllerUnit,
 	}
@@ -652,9 +652,9 @@ func TestAccCloneBuilder_MatrixI(t *testing.T) {
 	delete(config, "datastore")
 	config["disk_controller_type"] = []string{"pvscsi"}
 
-	disks := make([]map[string]interface{}, 0, len(policies))
+	disks := make([]map[string]any, 0, len(policies))
 	for _, policy := range policies {
-		disks = append(disks, map[string]interface{}{
+		disks = append(disks, map[string]any{
 			"disk_size":             accExtraMiB,
 			"disk_thin_provisioned": true,
 			"storage_policy":        policy,

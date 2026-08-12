@@ -90,7 +90,7 @@ type Config struct {
 
 // Prepare processes and validates the configuration for building and exporting.
 // It returns a list of warnings and an error if validation fails.
-func (c *Config) Prepare(raws ...interface{}) ([]string, error) {
+func (c *Config) Prepare(raws ...any) ([]string, error) {
 	err := config.Decode(c, &config.DecodeOpts{
 		PluginType:         common.BuilderId,
 		Interpolate:        true,

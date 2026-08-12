@@ -15,11 +15,11 @@ type PackerLogger struct {
 	UI packersdk.Ui
 }
 
-func (pl *PackerLogger) Info(msg string, args ...interface{}) {
+func (pl *PackerLogger) Info(msg string, args ...any) {
 	pl.UI.Message(fmt.Sprintf(msg, args...))
 }
 
-func (pl *PackerLogger) Error(msg string, args ...interface{}) {
+func (pl *PackerLogger) Error(msg string, args ...any) {
 	pl.UI.Errorf(msg, args...)
 }
 
