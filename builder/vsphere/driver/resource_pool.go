@@ -118,8 +118,8 @@ func (p *ResourcePool) Path() (string, error) {
 		}
 		if parentPath == "" {
 			return poolInfo.Name, nil
-		} else {
-			return fmt.Sprintf("%v/%v", parentPath, poolInfo.Name), nil
 		}
+
+		return fmt.Sprintf("%v/%v", parentPath, poolInfo.Name), nil
 	}
 }

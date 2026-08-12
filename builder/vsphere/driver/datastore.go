@@ -221,9 +221,9 @@ func RemoveDatastorePrefix(path string) string {
 	res := object.DatastorePath{}
 	if hadPrefix := res.FromString(path); hadPrefix {
 		return res.Path
-	} else {
-		return path
 	}
+
+	return path
 }
 
 type DatastoreIsoPath struct {

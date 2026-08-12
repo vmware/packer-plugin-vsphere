@@ -81,9 +81,9 @@ func TestStepDownload_Run(t *testing.T) {
 		if tc.expectInternalStepCalled != internalStep.RunCalled {
 			if tc.expectInternalStepCalled {
 				t.Fatalf("unexpected result: expected '%s' to be called", tc.name)
-			} else {
-				t.Fatalf("unexpected result: expected '%s' not to be called", tc.name)
 			}
+
+			t.Fatalf("unexpected result: expected '%s' not to be called", tc.name)
 		}
 	}
 }

@@ -241,9 +241,9 @@ func (s *StepImportToContentLibrary) Run(_ context.Context, state multistep.Stat
 		ui.Errorf("Failed to get content library item uuid: %s", err)
 		state.Put("error", err)
 		return multistep.ActionHalt
-	} else {
-		state.Put("content_library_item_uuid", itemUuid)
 	}
+
+	state.Put("content_library_item_uuid", itemUuid)
 
 	// For HCP Packer metadata, save the content library datastore name in state.
 	datastores, err := vm.FindContentLibraryTemplateDatastoreName(s.ContentLibConfig.Library)
@@ -251,9 +251,9 @@ func (s *StepImportToContentLibrary) Run(_ context.Context, state multistep.Stat
 		ui.Errorf("Failed to get content library datastore name: %s", err)
 		state.Put("error", err)
 		return multistep.ActionHalt
-	} else {
-		state.Put("content_library_datastore", datastores)
 	}
+
+	state.Put("content_library_datastore", datastores)
 
 	return multistep.ActionContinue
 }

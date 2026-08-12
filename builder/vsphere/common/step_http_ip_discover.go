@@ -37,9 +37,9 @@ func getHostIP(s string, network *net.IPNet) (string, error) {
 	if s != "" {
 		if net.ParseIP(s) != nil {
 			return s, nil
-		} else {
-			return "", fmt.Errorf("invalid IP address")
 		}
+
+		return "", fmt.Errorf("invalid IP address")
 	}
 
 	addrs, err := net.InterfaceAddrs()
