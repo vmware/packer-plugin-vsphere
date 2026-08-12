@@ -68,7 +68,7 @@ func TestWatchSource_RunOVF(t *testing.T) {
 	// Run this step in a new goroutine as it contains a blocking 'watch' process.
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		action := step.Run(context.TODO(), state)
+		action := step.Run(context.Background(), state)
 		if action == multistep.ActionHalt {
 			if rawErr, ok := state.GetOk("error"); ok {
 				t.Errorf("unexpected error: %s", rawErr.(error))
@@ -108,7 +108,7 @@ func TestWatchSource_RunOVF(t *testing.T) {
 
 	// Update the VM resource in the order of poweredOff => poweredOn => IP assigned.
 	// In this way, we can test out the VM watch functionality and all output messages.
-	ctx := context.TODO()
+	ctx := context.Background()
 	opt := &client.UpdateOptions{}
 
 	vmObj.Status.PowerState = vmopv1.VirtualMachinePowerStateOff
@@ -169,7 +169,7 @@ func TestWatchSource_RunISO(t *testing.T) {
 	// Run this step in a new goroutine as it contains a blocking 'watch' process.
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		action := step.Run(context.TODO(), state)
+		action := step.Run(context.Background(), state)
 		if action == multistep.ActionHalt {
 			if rawErr, ok := state.GetOk("error"); ok {
 				t.Errorf("unexpected error: %s", rawErr.(error))
@@ -215,7 +215,7 @@ func TestWatchSource_RunISO(t *testing.T) {
 
 	// Update the VM resource in the order of poweredOff => poweredOn => IP assigned.
 	// In this way, we can test out the VM watch functionality and all output messages.
-	ctx := context.TODO()
+	ctx := context.Background()
 	opt := &client.UpdateOptions{}
 
 	vmObj.Status.PowerState = vmopv1.VirtualMachinePowerStateOff

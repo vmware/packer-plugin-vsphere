@@ -209,7 +209,7 @@ func TestStepAddCDRom_Run(t *testing.T) {
 	for _, c := range tc {
 		t.Run(c.name, func(t *testing.T) {
 			c.state.Put("vm", c.vmMock)
-			if action := c.step.Run(context.TODO(), c.state); action != c.expectedAction {
+			if action := c.step.Run(context.Background(), c.state); action != c.expectedAction {
 				t.Fatalf("unexpected action: expected '%#v', but returned '%#v'", c.expectedAction, action)
 			}
 			err, ok := c.state.Get("error").(error)

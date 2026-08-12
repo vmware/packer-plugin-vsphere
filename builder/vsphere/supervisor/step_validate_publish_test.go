@@ -33,7 +33,7 @@ func TestValidatePublish_Run(t *testing.T) {
 		},
 	}
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	testWriter := new(bytes.Buffer)
 	state := newBasicTestState(testWriter)
 

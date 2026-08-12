@@ -184,7 +184,7 @@ func TestStepResolveDatastore_Run(t *testing.T) {
 			state := basicStateBag(nil)
 			state.Put("driver", c.driverMock)
 
-			action := c.step.Run(context.TODO(), state)
+			action := c.step.Run(context.Background(), state)
 			if action != c.expectedAction {
 				t.Fatalf("unexpected action: expected '%#v', but returned '%#v'", c.expectedAction, action)
 			}
@@ -254,7 +254,7 @@ func TestStepResolveDatastore_NoDatastoreOrPolicyContinues(t *testing.T) {
 	state.Put("driver", NewVCenterDriverMock())
 
 	step := &StepResolveDatastore{}
-	if action := step.Run(context.TODO(), state); action != multistep.ActionContinue {
+	if action := step.Run(context.Background(), state); action != multistep.ActionContinue {
 		t.Fatalf("unexpected action: %#v", action)
 	}
 	if _, ok := state.GetOk("datastore"); ok {

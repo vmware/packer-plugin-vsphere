@@ -29,7 +29,7 @@ func TestStepRemoteUpload_Run(t *testing.T) {
 		SetHostForDatastoreUploads: false,
 	}
 
-	if action := step.Run(context.TODO(), state); action == multistep.ActionHalt {
+	if action := step.Run(context.Background(), state); action == multistep.ActionHalt {
 		t.Fatalf("unexpected action: expected '%#v', but returned '%#v'", multistep.ActionContinue, action)
 	}
 
@@ -62,7 +62,7 @@ func TestStepRemoteUpload_SkipRun(t *testing.T) {
 
 	step := &StepRemoteUpload{}
 
-	if action := step.Run(context.TODO(), state); action == multistep.ActionHalt {
+	if action := step.Run(context.Background(), state); action == multistep.ActionHalt {
 		t.Fatalf("unexpected action: expected '%#v', but returned '%#v'", multistep.ActionContinue, action)
 	}
 

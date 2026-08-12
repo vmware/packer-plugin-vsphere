@@ -47,7 +47,7 @@ func TestVMAcc_clone(t *testing.T) {
 			}
 
 			log.Printf("[DEBUG] Cloning VM")
-			vm, err := template.Clone(context.TODO(), tc.config)
+			vm, err := template.Clone(context.Background(), tc.config)
 			if err != nil {
 				t.Fatalf("Cannot clone vm '%v': %v", templateName, err)
 			}
@@ -242,7 +242,7 @@ func startAndStopCheck(t *testing.T, vm VirtualMachine, config *CloneConfig) {
 	stopper := startVM(t, vm, config.Name)
 	defer stopper()
 
-	switch ip, err := vm.WaitForIP(context.TODO(), nil); {
+	switch ip, err := vm.WaitForIP(context.Background(), nil); {
 	case err != nil:
 		t.Errorf("Cannot obtain IP address from created vm '%v': %v", config.Name, err)
 	case net.ParseIP(ip) == nil:
@@ -254,7 +254,7 @@ func startAndStopCheck(t *testing.T, vm VirtualMachine, config *CloneConfig) {
 		t.Fatalf("Failed to initiate guest shutdown: %v", err)
 	}
 	log.Printf("[DEBUG] Waiting max 1m0s for shutdown to complete")
-	err = vm.WaitForShutdown(context.TODO(), 1*time.Minute)
+	err = vm.WaitForShutdown(context.Background(), 1*time.Minute)
 	if err != nil {
 		t.Fatalf("Failed to wait for guest shutdown: %v", err)
 	}

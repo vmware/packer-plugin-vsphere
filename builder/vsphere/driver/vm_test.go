@@ -225,7 +225,7 @@ func TestVirtualMachineDriver_CloneWithPrimaryDiskResize(t *testing.T) {
 		},
 	}
 
-	clonedVM, err := vm.Clone(context.TODO(), config)
+	clonedVM, err := vm.Clone(context.Background(), config)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -278,7 +278,7 @@ func TestVirtualMachineDriver_CloneWithExplicitControllerUnit(t *testing.T) {
 		},
 	}
 
-	clonedVM, err := vm.Clone(context.TODO(), config)
+	clonedVM, err := vm.Clone(context.Background(), config)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -340,7 +340,7 @@ func TestVirtualMachineDriver_CloneWithExplicitUnitNewController(t *testing.T) {
 		},
 	}
 
-	clonedVM, err := vm.Clone(context.TODO(), config)
+	clonedVM, err := vm.Clone(context.Background(), config)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -406,7 +406,7 @@ func TestVirtualMachineDriver_CloneWithMixedLegacyAndExplicit(t *testing.T) {
 		},
 	}
 
-	clonedVM, err := vm.Clone(context.TODO(), config)
+	clonedVM, err := vm.Clone(context.Background(), config)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -460,7 +460,7 @@ func TestVirtualMachineDriver_CloneWithMacAddress(t *testing.T) {
 		MacAddress: newMacAddress,
 	}
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	clonedVM, err := vm.Clone(ctx, config)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)

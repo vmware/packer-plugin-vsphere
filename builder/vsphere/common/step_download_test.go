@@ -74,7 +74,7 @@ func TestStepDownload_Run(t *testing.T) {
 			Datastore:    "datastore-mock",
 			Host:         "fake-host",
 		}
-		stepAction := step.Run(context.TODO(), state)
+		stepAction := step.Run(context.Background(), state)
 		if stepAction != tc.expectedAction {
 			t.Fatalf("unexpected action: expected '%#v', but returned '%#v'", tc.expectedAction, stepAction)
 		}

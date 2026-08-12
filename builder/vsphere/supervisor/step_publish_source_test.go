@@ -49,7 +49,7 @@ func TestStepPublishSource_Run_Skip(t *testing.T) {
 	state.Put(supervisor.StateKeyKubeClient, newFakeKubeClient())
 	state.Put(supervisor.StateKeyKeepInputArtifact, true)
 
-	action := step.Run(context.TODO(), state)
+	action := step.Run(context.Background(), state)
 	if action != multistep.ActionContinue {
 		if rawErr, ok := state.GetOk("error"); ok {
 			t.Errorf("unexpected error: %s", rawErr.(error))
@@ -84,7 +84,7 @@ func TestStepPublishSource_Run(t *testing.T) {
 	state.Put(supervisor.StateKeyKubeClient, testKubeClient)
 	state.Put(supervisor.StateKeyKeepInputArtifact, true)
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	var wg sync.WaitGroup
 
 	wg.Go(func() {
@@ -179,7 +179,7 @@ func TestStepPublishSource_Cleanup(t *testing.T) {
 	step.Cleanup(state)
 
 	// Check if the source objects are deleted from the cluster.
-	ctx := context.TODO()
+	ctx := context.Background()
 	objKey := client.ObjectKey{
 		Name:      "test-source",
 		Namespace: "test-namespace",

@@ -177,7 +177,7 @@ func TestStepReattachCDRom_Run(t *testing.T) {
 			state := basicStateBag(nil)
 			state.Put("vm", c.vmMock)
 
-			if action := c.step.Run(context.TODO(), state); action != c.expectedAction {
+			if action := c.step.Run(context.Background(), state); action != c.expectedAction {
 				t.Fatalf("unexpected action expected '%s', but returned '%s'", c.expectedAction, action)
 			}
 			err, ok := state.Get("error").(error)

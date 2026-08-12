@@ -179,7 +179,7 @@ func TestStepRemoveFloppy_Run(t *testing.T) {
 				state.Put("uploaded_floppy_path", c.uploadedPath)
 			}
 
-			if action := c.step.Run(context.TODO(), state); action != c.expectedAction {
+			if action := c.step.Run(context.Background(), state); action != c.expectedAction {
 				t.Fatalf("unexpected action: expected '%#v', but returned '%#v'", c.expectedAction, action)
 			}
 			err, ok := state.Get("error").(error)
