@@ -376,6 +376,7 @@ func (s *StepExport) Run(ctx context.Context, state multistep.StateBag) multiste
 	ui.Sayf("Writing OVF descriptor %s...", s.Name+".ovf")
 	_, err = io.WriteString(w, desc.OvfDescriptor)
 	if err != nil {
+		_ = file.Close()
 		state.Put("error", errors.Wrap(err, "unable to write ovf descriptor"))
 		return multistep.ActionHalt
 	}
@@ -402,6 +403,7 @@ func (s *StepExport) Run(ctx context.Context, state multistep.StateBag) multiste
 
 	_, err = io.Copy(file, &s.mf)
 	if err != nil {
+		_ = file.Close()
 		state.Put("error", errors.Wrap(err, "unable to write to manifest"))
 		return multistep.ActionHalt
 	}
