@@ -191,7 +191,7 @@ func (d *VCenterDriver) uploadOvfFile(ctx context.Context, lease *nfc.Lease, arc
 	if err != nil {
 		return fmt.Errorf("failed to open '%s' from OVF/OVA source: %s", item.Path, err)
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 
 	opts := soap.Upload{
 		ContentLength: size,
@@ -539,7 +539,7 @@ func (w *OvfManagerWrapper) fetchOvfXML(config *OvfDeployConfig) ([]byte, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read OVF descriptor from '%s': %s", config.ovfSourceLabel(), err)
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 
 	return io.ReadAll(rc)
 }
