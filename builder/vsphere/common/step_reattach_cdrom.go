@@ -9,6 +9,7 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -85,7 +86,7 @@ func (s *StepReattachCDRom) Run(_ context.Context, state multistep.StateBag) mul
 	if nAttachableCdroms > 0 {
 		// If the CD-ROM device type is SATA, make sure SATA controller is present.
 		if s.CDRomConfig.CdromType == "sata" {
-			if _, err := vm.FindSATAController(); err == driver.ErrNoSataController {
+			if _, err := vm.FindSATAController(); errors.Is(err, driver.ErrNoSataController) {
 				ui.Say("Adding SATA controller...")
 				if err := vm.AddSATAController(); err != nil {
 					state.Put("error", fmt.Errorf("error adding sata controller: %v", err))

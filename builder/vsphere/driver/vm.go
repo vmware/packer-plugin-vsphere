@@ -510,7 +510,7 @@ func (vm *VirtualMachineDriver) Clone(ctx context.Context, config *CloneConfig) 
 
 	info, err := task.WaitForResult(ctx, nil)
 	if err != nil {
-		if ctx.Err() == context.Canceled {
+		if errors.Is(ctx.Err(), context.Canceled) {
 			err = task.Cancel(context.TODO())
 			return nil, err
 		}
