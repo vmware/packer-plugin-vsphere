@@ -16,71 +16,60 @@ import (
 
 // DriverMock provides a mock implementation of the Driver interface for testing.
 type DriverMock struct {
-	FindDatastoreCalled bool
-	DatastoreMock       *DatastoreMock
-	FindDatastoreName   string
-	FindDatastoreHost   string
-	FindDatastoreErr    error
-
-	PreCleanShouldFail bool
-	PreCleanVMCalled   bool
-	PreCleanForce      bool
-	PreCleanVMPath     string
-
-	CreateVMShouldFail bool
-	CreateVMCalled     bool
-	CreateConfig       *CreateConfig
-	VM                 VirtualMachine
-
-	FindVMCalled bool
-	FindVMName   string
-
-	// OVF deployment mock fields.
-	DeployOvfCalled     bool
-	DeployOvfConfig     *OvfDeployConfig
-	DeployOvfShouldFail bool
-	DeployOvfError      error
-	DeployOvfVM         VirtualMachine
-
-	GetOvfOptionsCalled     bool
-	GetOvfOptionsConfig     *OvfDeployConfig
-	GetOvfOptionsShouldFail bool
-	GetOvfOptionsError      error
-	GetOvfOptionsResult     []types.OvfOptionInfo
-	// Deprecated fields retained for existing tests that assert URL/auth/locale/tls.
-	GetOvfOptionsURL           string
-	GetOvfOptionsAuth          *OvfAuthConfig
-	GetOvfOptionsLocale        string
-	GetOvfOptionsSkipTlsVerify bool
-
-	ResolveContentLibraryItemCalled     bool
+	FindDatastoreErr                    error
+	VM                                  VirtualMachine
+	DeployOvfError                      error
+	DeployOvfVM                         VirtualMachine
+	GetOvfOptionsError                  error
+	ResolveContentLibraryItemError      error
+	DeployContentLibraryItemError       error
+	DeployContentLibraryItemVM          VirtualMachine
+	FindStoragePolicyIDErr              error
+	FindCompatibleDatastoreResult       Datastore
+	FindCompatibleDatastoreErr          error
+	DatastoreMock                       *DatastoreMock
+	CreateConfig                        *CreateConfig
+	DeployOvfConfig                     *OvfDeployConfig
+	GetOvfOptionsConfig                 *OvfDeployConfig
+	GetOvfOptionsAuth                   *OvfAuthConfig
+	ResolveContentLibraryItemResult     *library.Item
+	DeployContentLibraryItemConfig      *ContentLibraryDeployConfig
+	FindStoragePolicyIDByName           map[string]string
+	FindCompatibleDatastoreByPolicy     map[string]Datastore
+	FindDatastoreName                   string
+	FindDatastoreHost                   string
+	PreCleanVMPath                      string
+	FindVMName                          string
+	GetOvfOptionsURL                    string
+	GetOvfOptionsLocale                 string
 	ResolveContentLibraryItemLibrary    string
 	ResolveContentLibraryItemName       string
+	FindStoragePolicyIDName             string
+	FindStoragePolicyIDResult           string
+	FindCompatibleDatastorePolicyID     string
+	FindCompatibleDatastoreHost         string
+	FindCompatibleDatastoreCluster      string
+	GetOvfOptionsResult                 []types.OvfOptionInfo
+	FindStoragePolicyIDCalls            []string
+	FindCompatibleDatastoreCalls        []string
+	FindDatastoreCalled                 bool
+	PreCleanShouldFail                  bool
+	PreCleanVMCalled                    bool
+	PreCleanForce                       bool
+	CreateVMShouldFail                  bool
+	CreateVMCalled                      bool
+	FindVMCalled                        bool
+	DeployOvfCalled                     bool
+	DeployOvfShouldFail                 bool
+	GetOvfOptionsCalled                 bool
+	GetOvfOptionsShouldFail             bool
+	GetOvfOptionsSkipTlsVerify          bool
+	ResolveContentLibraryItemCalled     bool
 	ResolveContentLibraryItemShouldFail bool
-	ResolveContentLibraryItemError      error
-	ResolveContentLibraryItemResult     *library.Item
-
-	DeployContentLibraryItemCalled     bool
-	DeployContentLibraryItemConfig     *ContentLibraryDeployConfig
-	DeployContentLibraryItemShouldFail bool
-	DeployContentLibraryItemError      error
-	DeployContentLibraryItemVM         VirtualMachine
-
-	FindStoragePolicyIDCalled bool
-	FindStoragePolicyIDName   string
-	FindStoragePolicyIDResult string
-	FindStoragePolicyIDErr    error
-	FindStoragePolicyIDByName map[string]string
-	FindStoragePolicyIDCalls  []string
-
-	FindCompatibleDatastoreCalled   bool
-	FindCompatibleDatastorePolicyID string
-	FindCompatibleDatastoreHost     string
-	FindCompatibleDatastoreCluster  string
-	FindCompatibleDatastoreResult   Datastore
-	FindCompatibleDatastoreErr      error
-	FindCompatibleDatastoreByPolicy map[string]Datastore
-	FindCompatibleDatastoreCalls    []string
+	DeployContentLibraryItemCalled      bool
+	DeployContentLibraryItemShouldFail  bool
+	FindStoragePolicyIDCalled           bool
+	FindCompatibleDatastoreCalled       bool
 }
 
 // NewDriverMock creates a new instance of DriverMock for testing.

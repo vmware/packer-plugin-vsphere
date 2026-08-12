@@ -10,29 +10,23 @@ import (
 )
 
 type DatastoreMock struct {
-	FileExistsCalled bool
-	FileExistsReturn bool
-
-	DirExistsCalled bool
-	DirExistsReturn bool
-
-	NameReturn string
-
+	DeleteErr           error
+	UploadFileErr       error
+	NameReturn          string
+	ResolvePathReturn   string
+	DeletePath          string
+	UploadFileSrc       string
+	UploadFileDst       string
+	UploadFileHost      string
+	FileExistsCalled    bool
+	FileExistsReturn    bool
+	DirExistsCalled     bool
+	DirExistsReturn     bool
 	MakeDirectoryCalled bool
-
-	ResolvePathCalled bool
-	ResolvePathReturn string
-
-	DeleteCalled bool
-	DeletePath   string
-	DeleteErr    error
-
-	UploadFileCalled  bool
-	UploadFileSrc     string
-	UploadFileDst     string
-	UploadFileHost    string
-	UploadFileSetHost bool
-	UploadFileErr     error
+	ResolvePathCalled   bool
+	DeleteCalled        bool
+	UploadFileCalled    bool
+	UploadFileSetHost   bool
 }
 
 func (ds *DatastoreMock) Info(params ...string) (*mo.Datastore, error) {
