@@ -527,8 +527,8 @@ func (sim *Simulator) ApplyResourcePoolConfiguration(poolConfigs []SimulatedReso
 		}
 
 		parent := root
-		segments := strings.Split(cfg.Path, "/")
-		for _, segment := range segments {
+		segments := strings.SplitSeq(cfg.Path, "/")
+		for segment := range segments {
 			if segment == "" || segment == "." {
 				return fmt.Errorf("invalid resource pool path %q", cfg.Path)
 			}
