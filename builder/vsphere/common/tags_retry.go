@@ -71,10 +71,10 @@ func withRetry(ctx context.Context, config *RetryConfig, operation retryableOper
 			break
 		}
 
-		// Check if context is cancelled
+		// Check if context is canceled
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("operation cancelled: %w", ctx.Err())
+			return fmt.Errorf("operation canceled: %w", ctx.Err())
 		case <-time.After(delay):
 			// Continue to next attempt
 		}

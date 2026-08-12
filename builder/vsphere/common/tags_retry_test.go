@@ -147,7 +147,7 @@ func TestWithRetry_MaxAttemptsExceeded(t *testing.T) {
 	}
 }
 
-func TestWithRetry_ContextCancelled(t *testing.T) {
+func TestWithRetry_ContextCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	config := &RetryConfig{
 		MaxAttempts:   5,
@@ -171,8 +171,8 @@ func TestWithRetry_ContextCancelled(t *testing.T) {
 		t.Fatal("Expected error, got nil")
 	}
 
-	if !strings.Contains(err.Error(), "operation cancelled") {
-		t.Errorf("Expected context cancelled error, got %v", err)
+	if !strings.Contains(err.Error(), "operation canceled") {
+		t.Errorf("Expected context canceled error, got %v", err)
 	}
 
 	// Should be called at least twice (once before cancel, once after)

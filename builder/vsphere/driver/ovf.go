@@ -150,7 +150,7 @@ func (d *VCenterDriver) DeployOvf(ctx context.Context, config *OvfDeployConfig, 
 // disk files from the OVF/OVA source through the Packer host, and signals
 // vSphere to complete the import.
 func (d *VCenterDriver) uploadAndCompleteOvfImport(ctx context.Context, lease *nfc.Lease, config *OvfDeployConfig, fileItems []types.OvfFileItem) (*nfc.LeaseInfo, error) {
-	// Wait for the lease to initialise and return the list of upload targets.
+	// Wait for the lease to initialize and return the list of upload targets.
 	info, err := lease.Wait(ctx, fileItems)
 	if err != nil {
 		_ = lease.Abort(ctx, nil)
