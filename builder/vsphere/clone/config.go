@@ -99,6 +99,10 @@ func (c *Config) Prepare(raws ...any) ([]string, error) {
 	errs = packersdk.MultiErrorAppend(errs, c.WaitIpConfig.Prepare()...)
 	errs = packersdk.MultiErrorAppend(errs, c.Comm.Prepare(&c.ctx)...)
 
+	disableWarnings, disableErrs := c.ValidateDisableIpWait(c.Comm.Type, c.Comm.Host())
+	warnings = append(warnings, disableWarnings...)
+	errs = packersdk.MultiErrorAppend(errs, disableErrs...)
+
 	_, shutdownErrs := c.ShutdownConfig.Prepare(c.Comm)
 	// shutdownWarnings, shutdownErrs := c.ShutdownConfig.Prepare(c.Comm)
 	// warnings = append(warnings, shutdownWarnings...)

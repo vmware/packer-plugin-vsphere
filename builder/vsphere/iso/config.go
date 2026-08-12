@@ -127,6 +127,10 @@ func (c *Config) Prepare(raws ...any) ([]string, error) {
 	errs = packersdk.MultiErrorAppend(errs, c.Comm.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.VAppConfig.PrepareSSH(c.Comm)...)
 
+	disableWarnings, disableErrs := c.ValidateDisableIpWait(c.Comm.Type, c.Comm.Host())
+	warnings = append(warnings, disableWarnings...)
+	errs = packersdk.MultiErrorAppend(errs, disableErrs...)
+
 	shutdownWarnings, shutdownErrs := c.ShutdownConfig.Prepare(c.Comm)
 	warnings = append(warnings, shutdownWarnings...)
 	errs = packersdk.MultiErrorAppend(errs, shutdownErrs...)
