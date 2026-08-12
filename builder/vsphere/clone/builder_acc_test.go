@@ -131,7 +131,7 @@ func downloadURLToFile(t *testing.T, acc env.AccConfig, rawURL, destPath string)
 	if err != nil {
 		t.Fatalf("download %s: %v", rawURL, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("download %s: HTTP %d", rawURL, resp.StatusCode)
 	}
@@ -139,9 +139,12 @@ func downloadURLToFile(t *testing.T, acc env.AccConfig, rawURL, destPath string)
 	if err != nil {
 		t.Fatalf("create %s: %v", destPath, err)
 	}
-	defer f.Close()
 	if _, err := io.Copy(f, resp.Body); err != nil {
+		_ = f.Close()
 		t.Fatalf("write %s: %v", destPath, err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("close %s: %v", destPath, err)
 	}
 }
 
@@ -160,7 +163,7 @@ func extractOVFFromOVA(t *testing.T, acc env.AccConfig) (ovfPath string, cleanup
 		cleanupOVA()
 		t.Fatalf("open ova: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	tr := tar.NewReader(f)
 	var foundOVF string

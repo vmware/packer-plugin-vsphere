@@ -37,7 +37,7 @@ func TestLocalOvfArchive_OpenOVF(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open descriptor: %s", err)
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 	data, err := io.ReadAll(rc)
 	if err != nil {
 		t.Fatalf("read descriptor: %s", err)
@@ -53,7 +53,7 @@ func TestLocalOvfArchive_OpenOVF(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open sibling: %s", err)
 	}
-	defer disk.Close()
+	defer func() { _ = disk.Close() }()
 	diskData, err := io.ReadAll(disk)
 	if err != nil {
 		t.Fatalf("read sibling: %s", err)

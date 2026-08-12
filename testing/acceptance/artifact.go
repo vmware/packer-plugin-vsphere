@@ -80,7 +80,7 @@ func DownloadURLToFile(t *testing.T, acc env.AccConfig, rawURL, destPath string)
 	if err != nil {
 		t.Fatalf("download %s: %v", rawURL, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("download %s: HTTP %d", rawURL, resp.StatusCode)
 	}
@@ -88,9 +88,12 @@ func DownloadURLToFile(t *testing.T, acc env.AccConfig, rawURL, destPath string)
 	if err != nil {
 		t.Fatalf("create %s: %v", destPath, err)
 	}
-	defer f.Close()
 	if _, err := io.Copy(f, resp.Body); err != nil {
+		_ = f.Close()
 		t.Fatalf("write %s: %v", destPath, err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("close %s: %v", destPath, err)
 	}
 }
 
