@@ -107,7 +107,7 @@ type ConnectConfig struct {
 }
 
 func NewDriver(config *ConnectConfig) (Driver, error) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	vcenterUrl, err := url.Parse(fmt.Sprintf("https://%v/sdk", config.VCenterServer))
 	if err != nil {

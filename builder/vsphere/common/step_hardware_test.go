@@ -204,7 +204,7 @@ func TestStepConfigureHardware_Run(t *testing.T) {
 			vmMock.ConfigureError = c.configureError
 			state.Put("vm", vmMock)
 
-			action := c.step.Run(context.TODO(), state)
+			action := c.step.Run(context.Background(), state)
 			if action != c.action {
 				t.Fatalf("unexpected action: expected '%#v', but returned '%#v'", c.action, action)
 			}

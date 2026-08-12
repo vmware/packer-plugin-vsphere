@@ -256,7 +256,7 @@ func TestStepAddFloppy_Run(t *testing.T) {
 				state.Put("floppy_path", c.floppyPath)
 			}
 
-			if action := c.step.Run(context.TODO(), state); action != c.expectedAction {
+			if action := c.step.Run(context.Background(), state); action != c.expectedAction {
 				t.Fatalf("unexpected action: expected '%#v', but returned '%#v'", c.expectedAction, action)
 			}
 			err, ok := state.Get("error").(error)

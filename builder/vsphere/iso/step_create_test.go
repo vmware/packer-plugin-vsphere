@@ -226,7 +226,7 @@ func TestStepCreateVM_Run(t *testing.T) {
 	step.Force = true
 	vmPath := path.Join(step.Location.Folder, step.Location.VMName)
 
-	if action := step.Run(context.TODO(), state); action == multistep.ActionHalt {
+	if action := step.Run(context.Background(), state); action == multistep.ActionHalt {
 		t.Fatalf("unexpected action: expected '%#v', but returned '%#v'", multistep.ActionContinue, action)
 	}
 
@@ -265,7 +265,7 @@ func TestStepCreateVM_RunHalt(t *testing.T) {
 	driverMock := driver.NewDriverMock()
 	driverMock.PreCleanShouldFail = true
 	state.Put("driver", driverMock)
-	if action := step.Run(context.TODO(), state); action != multistep.ActionHalt {
+	if action := step.Run(context.Background(), state); action != multistep.ActionHalt {
 		t.Fatalf("unexpected action: expected '%#v', but returned '%#v'", multistep.ActionHalt, action)
 	}
 	if !driverMock.PreCleanVMCalled {
@@ -276,7 +276,7 @@ func TestStepCreateVM_RunHalt(t *testing.T) {
 	driverMock = driver.NewDriverMock()
 	driverMock.CreateVMShouldFail = true
 	state.Put("driver", driverMock)
-	if action := step.Run(context.TODO(), state); action != multistep.ActionHalt {
+	if action := step.Run(context.Background(), state); action != multistep.ActionHalt {
 		t.Fatalf("unexpected action: expected '%#v', but returned '%#v'", multistep.ActionHalt, action)
 	}
 	if !driverMock.PreCleanVMCalled {
@@ -472,7 +472,7 @@ func TestStepCreateVM_Run_WithStoragePolicy(t *testing.T) {
 	location.Datastore = ""
 	step := &StepCreateVM{Config: config, Location: location}
 
-	if action := step.Run(context.TODO(), state); action == multistep.ActionHalt {
+	if action := step.Run(context.Background(), state); action == multistep.ActionHalt {
 		t.Fatalf("unexpected halt: %v", state.Get("error"))
 	}
 
@@ -525,7 +525,7 @@ func TestStepCreateVM_Run_MultiStoragePolicyPlacement(t *testing.T) {
 	location.Datastore = "" // force PBM per-disk placement path
 	step := &StepCreateVM{Config: config, Location: location}
 
-	if action := step.Run(context.TODO(), state); action == multistep.ActionHalt {
+	if action := step.Run(context.Background(), state); action == multistep.ActionHalt {
 		t.Fatalf("unexpected halt: %v", state.Get("error"))
 	}
 
@@ -562,7 +562,7 @@ func TestStepCreateVM_Run_StoragePolicyNotFound(t *testing.T) {
 
 	step := &StepCreateVM{Config: config, Location: basicLocationConfig()}
 
-	if action := step.Run(context.TODO(), state); action != multistep.ActionHalt {
+	if action := step.Run(context.Background(), state); action != multistep.ActionHalt {
 		t.Fatalf("expected ActionHalt, got %v", action)
 	}
 	if state.Get("error") == nil {

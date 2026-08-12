@@ -106,7 +106,7 @@ func TestStepImportImage_Run_Validate(t *testing.T) {
 		ImportImageConfig: config,
 	}
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	testWriter := new(bytes.Buffer)
 	state := newBasicTestState(testWriter)
 
@@ -270,7 +270,7 @@ func TestStepImportImage_Run(t *testing.T) {
 	state.Put(supervisor.StateKeyKubeClient, testKubeClient)
 	state.Put(supervisor.StateKeyKeepInputArtifact, true)
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	var wg sync.WaitGroup
 
 	wg.Go(func() {
@@ -382,7 +382,7 @@ func TestStepImportImage_Cleanup_Request(t *testing.T) {
 	step.Cleanup(state)
 
 	// Check if the ContentLibraryItemImportRequest object is deleted from the cluster.
-	ctx := context.TODO()
+	ctx := context.Background()
 	objKey := client.ObjectKey{
 		Name:      testImportReqName,
 		Namespace: testNamespace,
@@ -416,7 +416,7 @@ func TestStepImportImage_Cleanup_Image(t *testing.T) {
 	fakeClient := newFakeKubeClient(importedImage)
 	step.KubeWatchClient = fakeClient
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	objKey := client.ObjectKey{
 		Name:      testCLItemName,
 		Namespace: testNamespace,

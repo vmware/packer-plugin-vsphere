@@ -87,7 +87,7 @@ func TestConnectSupervisor_Run(t *testing.T) {
 		return client.WithWatch(nil), nil
 	}
 
-	action := step.Run(context.TODO(), state)
+	action := step.Run(context.Background(), state)
 	if action == multistep.ActionHalt {
 		if rawErr, ok := state.GetOk("error"); ok {
 			t.Errorf("unexpected error: %s", rawErr.(error))

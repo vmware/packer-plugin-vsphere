@@ -127,7 +127,7 @@ func TestCreateSource_RunDefaultOVF(t *testing.T) {
 	state.Put(supervisor.StateKeySupervisorNamespace, testNamespace)
 
 	// Check error if image name is not specified.
-	ctx := context.TODO()
+	ctx := context.Background()
 	action := step.Run(ctx, state)
 	if action != multistep.ActionHalt {
 		t.Fatal("Step should halt")
@@ -288,7 +288,7 @@ func TestCreateSource_RunDefaultISO(t *testing.T) {
 	state.Put(supervisor.StateKeyKubeClient, kubeClient)
 	state.Put(supervisor.StateKeySupervisorNamespace, testNamespace)
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	if action := step.Run(ctx, state); action == multistep.ActionHalt {
 		if rawErr, ok := state.GetOk("error"); ok {
 			t.Errorf("unexpected error: %s", rawErr.(error))
@@ -425,7 +425,7 @@ func TestCreateSource_RunCustomBootstrap(t *testing.T) {
 	state.Put(supervisor.StateKeyKubeClient, kubeClient)
 	state.Put(supervisor.StateKeySupervisorNamespace, testNamespace)
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	if action := step.Run(ctx, state); action == multistep.ActionHalt {
 		if rawErr, ok := state.GetOk("error"); ok {
 			t.Errorf("unexpected error: %s", rawErr.(error))
@@ -517,7 +517,7 @@ func TestCreateSource_Cleanup(t *testing.T) {
 	step.Cleanup(state)
 
 	// Check if the source objects are deleted from the cluster.
-	ctx := context.TODO()
+	ctx := context.Background()
 	objKey := client.ObjectKey{
 		Name:      "test-source",
 		Namespace: "test-namespace",
