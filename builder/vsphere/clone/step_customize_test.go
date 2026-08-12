@@ -5,6 +5,7 @@
 package clone
 
 import (
+	"errors"
 	"slices"
 	"testing"
 
@@ -25,17 +26,17 @@ func TestSysprepFieldsMutuallyExclusive(t *testing.T) {
 
 	// Expected error message
 	expectedError := errCustomizeOptionMutualExclusive
-	_, errors := config.Prepare()
+	_, errs := config.Prepare()
 
 	// Make sure we only received on error
 	expectedErrorLength := 1
-	if len(errors) != expectedErrorLength {
-		t.Fatalf("unexpected result: expected '%d', but returned: '%d'", expectedErrorLength, len(errors))
+	if len(errs) != expectedErrorLength {
+		t.Fatalf("unexpected result: expected '%d', but returned: '%d'", expectedErrorLength, len(errs))
 	}
 
 	// Validate the error messages are what we expect.
-	if errors[0] != expectedError {
-		t.Fatalf("unexpected error: expected '%s', but returned: '%s'", expectedError, errors[0])
+	if !errors.Is(errs[0], expectedError) {
+		t.Fatalf("unexpected error: expected '%s', but returned: '%s'", expectedError, errs[0])
 	}
 }
 
