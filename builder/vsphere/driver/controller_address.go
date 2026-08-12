@@ -28,10 +28,8 @@ const (
 	maxPVSCSIDisksPerController  = 64
 
 	// NVMe and SATA unit and disk limits.
-	maxNVMeUnit               = 14
-	maxSATAUnit               = 29
-	maxNVMEDisksPerController = maxNVMeUnit + 1
-	maxSATADisksPerController = maxSATAUnit + 1
+	maxNVMeUnit = 14
+	maxSATAUnit = 29
 
 	maxSCSIDisksPerVM    = 256
 	maxLSISCSIDisksPerVM = 60
