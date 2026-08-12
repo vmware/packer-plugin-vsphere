@@ -91,16 +91,16 @@ func (f *Folder) Path() (string, error) {
 	}
 	if info.Parent.Type == "Datacenter" {
 		return "", nil
-	} else {
-		parent := f.driver.NewFolder(info.Parent)
-		parentPath, err := parent.Path()
-		if err != nil {
-			return "", err
-		}
-		if parentPath == "" {
-			return info.Name, nil
-		}
-
-		return fmt.Sprintf("%v/%v", parentPath, info.Name), nil
 	}
+
+	parent := f.driver.NewFolder(info.Parent)
+	parentPath, err := parent.Path()
+	if err != nil {
+		return "", err
+	}
+	if parentPath == "" {
+		return info.Name, nil
+	}
+
+	return fmt.Sprintf("%v/%v", parentPath, info.Name), nil
 }
