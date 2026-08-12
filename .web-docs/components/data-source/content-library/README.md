@@ -100,6 +100,8 @@ HCL Example:
 
 - `id` (string) - Unique identifier of the found content library.
 
+- `tags` ([]Tag) - Tags attached to the found content library.
+
 <!-- End of code generated from the comments of the DatasourceOutput struct in datasource/contentlibrary/data.go; -->
 
 

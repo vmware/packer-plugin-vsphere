@@ -69,6 +69,8 @@ type DatasourceOutput struct {
 	// (e.g. `rp-production` or `rp-parent/rp-child`). Empty for the
 	// cluster/host root pool.
 	Path string `mapstructure:"path"`
+	// Tags attached to the found resource pool.
+	Tags []Tag `mapstructure:"tags"`
 }
 
 func (d *Datasource) ConfigSpec() hcldec.ObjectSpec {
@@ -155,10 +157,18 @@ func (d *Datasource) Execute() (cty.Value, error) {
 		return cty.NullVal(cty.EmptyObject), fmt.Errorf("error resolving resource pool path: %w", err)
 	}
 
+	attached, err := dscommon.ListAttachedTags(vcDriver, ref)
+	if err != nil {
+		return cty.NullVal(cty.EmptyObject), err
+	}
+
 	output := DatasourceOutput{
 		Name: selectedMo.Name,
 		ID:   selected.Reference().Value,
 		Path: builderPath,
+		Tags: dscommon.MapFromTags(attached, func(name, category string) Tag {
+			return Tag{Name: name, Category: category}
+		}),
 	}
 
 	return hcl2helper.HCL2ValueFromConfig(output, d.OutputSpec()), nil

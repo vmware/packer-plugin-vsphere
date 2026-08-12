@@ -109,6 +109,8 @@ HCL Example:
 
 - `summary` (Summary) - Capacity fields from the datastore summary.
 
+- `tags` ([]Tag) - Tags attached to the found datastore.
+
 <!-- End of code generated from the comments of the DatasourceOutput struct in datasource/datastore/data.go; -->
 
 

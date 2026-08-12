@@ -69,7 +69,8 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 // FlatDatasourceOutput is an auto-generated flat version of DatasourceOutput.
 // Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
 type FlatDatasourceOutput struct {
-	VmName *string `mapstructure:"vm_name" cty:"vm_name" hcl:"vm_name"`
+	VmName *string   `mapstructure:"vm_name" cty:"vm_name" hcl:"vm_name"`
+	Tags   []FlatTag `mapstructure:"tags" cty:"tags" hcl:"tags"`
 }
 
 // FlatMapstructure returns a new FlatDatasourceOutput.
@@ -85,6 +86,7 @@ func (*DatasourceOutput) FlatMapstructure() interface{ HCL2Spec() map[string]hcl
 func (*FlatDatasourceOutput) HCL2Spec() map[string]hcldec.Spec {
 	s := map[string]hcldec.Spec{
 		"vm_name": &hcldec.AttrSpec{Name: "vm_name", Type: cty.String, Required: false},
+		"tags":    &hcldec.BlockListSpec{TypeName: "tags", Nested: hcldec.ObjectSpec((*FlatTag)(nil).HCL2Spec())},
 	}
 	return s
 }

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/packer-plugin-vsphere/testing/acceptance"
 	"github.com/vmware/packer-plugin-vsphere/testing/env"
 )
@@ -48,6 +49,44 @@ func TestAccDatasourceContentLibraryItem(t *testing.T) {
 			if got := output.GetAttr("path").AsString(); got != expectedPath {
 				t.Fatalf("unexpected item path: expected %q, got %q", expectedPath, got)
 			}
+			acceptance.AssertTagsShape(t, output)
 		})
 	}
+
+	t.Run("tags output", func(t *testing.T) {
+		d, err := acceptance.TestConn()
+		if err != nil {
+			t.Fatalf("connect: %v", err)
+		}
+		item, err := d.ResolveContentLibraryItem(acc.ContentLibrary, acc.ContentLibraryOVF)
+		if err != nil {
+			t.Fatalf("resolve content library item %q/%q: %v", acc.ContentLibrary, acc.ContentLibraryOVF, err)
+		}
+
+		ref := types.ManagedObjectReference{
+			Type:  contentLibraryItemMoRefType,
+			Value: item.ID,
+		}
+		acceptance.AttachTagsTemporarily(t, ref, acc.TagCategory, acc.TagA, acc.TagB)
+
+		output := acceptance.ExecuteDatasource(t, &Datasource{}, acceptance.DatasourceConfig(acc, map[string]any{
+			"content_library": acc.ContentLibrary,
+			"name":            acc.ContentLibraryOVF,
+			"type":            "ovf",
+		}))
+		acceptance.AssertTagsShape(t, output)
+		acceptance.AssertContainsTag(t, output, acc.TagCategory, acc.TagA)
+		acceptance.AssertContainsTag(t, output, acc.TagCategory, acc.TagB)
+
+		filtered := acceptance.ExecuteDatasource(t, &Datasource{}, acceptance.DatasourceConfig(acc, map[string]any{
+			"content_library": acc.ContentLibrary,
+			"name":            acc.ContentLibraryOVF,
+			"type":            "ovf",
+			"tag": []map[string]any{
+				{"category": acc.TagCategory, "name": acc.TagA},
+			},
+		}))
+		acceptance.AssertContainsTag(t, filtered, acc.TagCategory, acc.TagA)
+		acceptance.AssertContainsTag(t, filtered, acc.TagCategory, acc.TagB)
+	})
 }

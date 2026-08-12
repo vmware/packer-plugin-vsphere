@@ -127,6 +127,8 @@ HCL Example:
 - `type` (string) - API managed-object type of the found network (`Network`,
   `DistributedVirtualPortgroup`, or `OpaqueNetwork`).
 
+- `tags` ([]Tag) - Tags attached to the found network.
+
 <!-- End of code generated from the comments of the DatasourceOutput struct in datasource/network/data.go; -->
 
 

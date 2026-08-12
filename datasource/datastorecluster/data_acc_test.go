@@ -36,4 +36,5 @@ func TestAccDatasourceDatastoreCluster(t *testing.T) {
 	if free < 0 || free > capacity {
 		t.Fatalf("expected datastore cluster free space between 0 and %d, got %d", capacity, free)
 	}
+	acceptance.AssertTagsShape(t, output)
 }

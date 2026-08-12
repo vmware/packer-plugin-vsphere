@@ -18,6 +18,7 @@ import (
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
 	"github.com/vmware/govmomi/vapi/library"
+	"github.com/vmware/govmomi/vim25/types"
 	vsphere "github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 	dscommon "github.com/vmware/packer-plugin-vsphere/datasource/common"
@@ -55,6 +56,8 @@ type DatasourceOutput struct {
 	Name string `mapstructure:"name"`
 	// Unique identifier of the found content library.
 	ID string `mapstructure:"id"`
+	// Tags attached to the found content library.
+	Tags []Tag `mapstructure:"tags"`
 }
 
 func (d *Datasource) ConfigSpec() hcldec.ObjectSpec {
@@ -127,9 +130,20 @@ func (d *Datasource) Execute() (cty.Value, error) {
 		return cty.NullVal(cty.EmptyObject), err
 	}
 
+	attached, err := dscommon.ListAttachedTags(vcDriver, types.ManagedObjectReference{
+		Type:  contentLibraryMoRefType,
+		Value: selected.ID,
+	})
+	if err != nil {
+		return cty.NullVal(cty.EmptyObject), err
+	}
+
 	output := DatasourceOutput{
 		Name: selected.Name,
 		ID:   selected.ID,
+		Tags: dscommon.MapFromTags(attached, func(name, category string) Tag {
+			return Tag{Name: name, Category: category}
+		}),
 	}
 
 	return hcl2helper.HCL2ValueFromConfig(output, d.OutputSpec()), nil

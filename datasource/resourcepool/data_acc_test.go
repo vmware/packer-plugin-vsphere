@@ -28,4 +28,5 @@ func TestAccDatasourceResourcePool(t *testing.T) {
 	if got := output.GetAttr("path").AsString(); got == "" {
 		t.Fatal("expected a non-empty builder-ready resource pool path")
 	}
+	acceptance.AssertTagsShape(t, output)
 }

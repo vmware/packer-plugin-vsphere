@@ -19,10 +19,3 @@ func RequireAcceptance(t *testing.T) {
 		t.Skipf("Acceptance tests skipped: set %s=1 to run against a live environment (see testing/acceptance/acc_config.md)", env.EnvPackerAcc)
 	}
 }
-
-// AccFromEnv returns the shared acceptance inventory configuration. It is a
-// thin wrapper around env.AccFromEnv for callers that already import this
-// package.
-func AccFromEnv() env.AccConfig {
-	return env.AccFromEnv()
-}

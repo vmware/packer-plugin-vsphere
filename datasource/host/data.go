@@ -75,6 +75,8 @@ type DatasourceOutput struct {
 	Cluster string `mapstructure:"cluster"`
 	// Memory capacity fields from the host summary.
 	Summary Summary `mapstructure:"summary"`
+	// Tags attached to the found host.
+	Tags []Tag `mapstructure:"tags"`
 }
 
 func (d *Datasource) ConfigSpec() hcldec.ObjectSpec {
@@ -165,6 +167,11 @@ func (d *Datasource) Execute() (cty.Value, error) {
 		return cty.NullVal(cty.EmptyObject), err
 	}
 
+	attached, err := dscommon.ListAttachedTags(vcDriver, selected.Reference())
+	if err != nil {
+		return cty.NullVal(cty.EmptyObject), err
+	}
+
 	output := DatasourceOutput{
 		Name:    selected.Name(),
 		ID:      selected.Reference().Value,
@@ -173,6 +180,9 @@ func (d *Datasource) Execute() (cty.Value, error) {
 			MemoryCapacity: summary.MemoryCapacity,
 			MemoryFree:     summary.MemoryFree,
 		},
+		Tags: dscommon.MapFromTags(attached, func(name, category string) Tag {
+			return Tag{Name: name, Category: category}
+		}),
 	}
 
 	return hcl2helper.HCL2ValueFromConfig(output, d.OutputSpec()), nil

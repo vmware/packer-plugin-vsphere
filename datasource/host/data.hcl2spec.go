@@ -71,6 +71,7 @@ type FlatDatasourceOutput struct {
 	ID      *string      `mapstructure:"id" cty:"id" hcl:"id"`
 	Cluster *string      `mapstructure:"cluster" cty:"cluster" hcl:"cluster"`
 	Summary *FlatSummary `mapstructure:"summary" cty:"summary" hcl:"summary"`
+	Tags    []FlatTag    `mapstructure:"tags" cty:"tags" hcl:"tags"`
 }
 
 // FlatMapstructure returns a new FlatDatasourceOutput.
@@ -89,6 +90,7 @@ func (*FlatDatasourceOutput) HCL2Spec() map[string]hcldec.Spec {
 		"id":      &hcldec.AttrSpec{Name: "id", Type: cty.String, Required: false},
 		"cluster": &hcldec.AttrSpec{Name: "cluster", Type: cty.String, Required: false},
 		"summary": &hcldec.BlockSpec{TypeName: "summary", Nested: hcldec.ObjectSpec((*FlatSummary)(nil).HCL2Spec())},
+		"tags":    &hcldec.BlockListSpec{TypeName: "tags", Nested: hcldec.ObjectSpec((*FlatTag)(nil).HCL2Spec())},
 	}
 	return s
 }

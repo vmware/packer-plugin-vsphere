@@ -1,9 +1,10 @@
 Type: `vsphere-virtualmachine`
 Artifact BuilderId: `vsphere.virtualmachine`
 
-This data source retrieves information about existing virtual machines from vSphere
-and returns the name of a virtual machine that matches all specified filters. This
-virtual machine can be used in the vSphere Clone builder to select a template.
+This data source retrieves information about existing virtual machines from
+vSphere and returns the name and attached tags of a virtual machine that matches
+all specified filters. This virtual machine can be used in the vSphere Clone
+builder to select a template.
 
 ## Configuration Reference
 
@@ -107,6 +108,8 @@ HCL Example:
 
 - `vm_name` (string) - Name of the found virtual machine.
 
+- `tags` ([]Tag) - Tags attached to the found virtual machine.
+
 <!-- End of code generated from the comments of the DatasourceOutput struct in datasource/virtualmachine/data.go; -->
 
 
@@ -148,6 +151,39 @@ build {
     inline = [
       "echo vm_name: ${local.vm_name}",
     ]
+  }
+}
+```
+
+### Propagate Tags to a Builder
+
+Use the `tags` output with a builder `dynamic "tag"` block to inherit tags from
+the selected virtual machine or template.
+
+```hcl
+data "vsphere-virtualmachine" "template" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  datacenter     = "dc-01"
+  name           = "linux-debian-*"
+  template       = true
+  latest         = true
+}
+
+source "vsphere-clone" "example" {
+  vcenter_server = "vc01.example.com"
+  username       = "administrator@vsphere.local"
+  password       = "VMware1!"
+  host           = "esx01.example.com"
+  template       = data.vsphere-virtualmachine.template.vm_name
+
+  dynamic "tag" {
+    for_each = data.vsphere-virtualmachine.template.tags
+    content {
+      category = tag.value.category
+      name     = tag.value.name
+    }
   }
 }
 ```

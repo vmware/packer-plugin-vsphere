@@ -27,4 +27,5 @@ func TestAccDatasourceComputeCluster(t *testing.T) {
 	if got := output.GetAttr("resource_pool").AsString(); got == "" {
 		t.Fatal("expected a non-empty root resource pool path")
 	}
+	acceptance.AssertTagsShape(t, output)
 }

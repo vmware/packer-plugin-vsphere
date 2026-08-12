@@ -11,6 +11,7 @@ import (
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
 	"github.com/vmware/packer-plugin-vsphere/testing/vcsim"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func TestDatasource_Execute(t *testing.T) {
@@ -84,12 +85,16 @@ func TestDatasource_Execute(t *testing.T) {
 		name          string
 		expectFailure bool
 		expectVmName  string
+		expectTags    []Tag
 		config        Config
 	}{
 		{
 			name:          "first-vm was found by name, no error",
 			expectFailure: false,
 			expectVmName:  "first-vm",
+			expectTags: []Tag{
+				{Category: "operating-system-class", Name: "Linux"},
+			},
 			config: Config{
 				Name: "first-vm",
 			},
@@ -106,6 +111,11 @@ func TestDatasource_Execute(t *testing.T) {
 			name:          "second-vm was found by the regex, no error",
 			expectFailure: false,
 			expectVmName:  "second-vm",
+			expectTags: []Tag{
+				{Category: "operating-system-class", Name: "Linux"},
+				{Category: "security-team", Name: "red"},
+				{Category: "security-team", Name: "blue"},
+			},
 			config: Config{
 				NameRegex: "^seco.*m$",
 			},
@@ -122,6 +132,10 @@ func TestDatasource_Execute(t *testing.T) {
 			name:          "multiple guests match the regex and latest used, no error",
 			expectFailure: false,
 			expectVmName:  "machine-three",
+			expectTags: []Tag{
+				{Category: "operating-system-class", Name: "Linux"},
+				{Category: "security-team", Name: "blue"},
+			},
 			config: Config{
 				NameRegex: "^[^_]+$",
 				Latest:    true,
@@ -131,6 +145,11 @@ func TestDatasource_Execute(t *testing.T) {
 			name:          "found machine that is a template, no error",
 			expectFailure: false,
 			expectVmName:  "second-vm",
+			expectTags: []Tag{
+				{Category: "operating-system-class", Name: "Linux"},
+				{Category: "security-team", Name: "red"},
+				{Category: "security-team", Name: "blue"},
+			},
 			config: Config{
 				Template: true,
 			},
@@ -163,6 +182,11 @@ func TestDatasource_Execute(t *testing.T) {
 			name:          "found machine with defined set of tags, no error",
 			expectFailure: false,
 			expectVmName:  "second-vm",
+			expectTags: []Tag{
+				{Category: "operating-system-class", Name: "Linux"},
+				{Category: "security-team", Name: "red"},
+				{Category: "security-team", Name: "blue"},
+			},
 			config: Config{
 				Tags: []Tag{
 					{
@@ -215,7 +239,37 @@ func TestDatasource_Execute(t *testing.T) {
 				if vmName != testConfig.expectVmName {
 					t.Errorf("expected vm name `%s`, but got `%s`", testConfig.expectVmName, vmName)
 				}
+				assertTags(t, result.GetAttr("tags"), testConfig.expectTags)
 			}
 		})
+	}
+}
+
+func assertTags(t *testing.T, tagsAttr cty.Value, want []Tag) {
+	t.Helper()
+	if tagsAttr.IsNull() {
+		if len(want) == 0 {
+			return
+		}
+		t.Fatalf("expected %d tags, got null", len(want))
+	}
+	gotSlice := tagsAttr.AsValueSlice()
+	if len(gotSlice) != len(want) {
+		t.Fatalf("expected %d tags, got %d", len(want), len(gotSlice))
+	}
+	got := make(map[string]string, len(gotSlice))
+	for _, tagVal := range gotSlice {
+		name := tagVal.GetAttr("name").AsString()
+		category := tagVal.GetAttr("category").AsString()
+		got[name] = category
+	}
+	for _, tag := range want {
+		category, ok := got[tag.Name]
+		if !ok {
+			t.Fatalf("missing expected tag %q", tag.Name)
+		}
+		if category != tag.Category {
+			t.Fatalf("tag %q: expected category %q, got %q", tag.Name, tag.Category, category)
+		}
 	}
 }

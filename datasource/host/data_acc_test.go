@@ -37,4 +37,5 @@ func TestAccDatasourceHost(t *testing.T) {
 	if free < 0 || free > capacity {
 		t.Fatalf("expected host free memory between 0 and %d, got %d", capacity, free)
 	}
+	acceptance.AssertTagsShape(t, output)
 }
