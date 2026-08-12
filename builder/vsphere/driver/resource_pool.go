@@ -110,16 +110,16 @@ func (p *ResourcePool) Path() (string, error) {
 	}
 	if poolInfo.Parent.Type == "ComputeResource" || poolInfo.Parent.Type == "ClusterComputeResource" {
 		return "", nil
-	} else {
-		parent := p.driver.NewResourcePool(poolInfo.Parent)
-		parentPath, err := parent.Path()
-		if err != nil {
-			return "", err
-		}
-		if parentPath == "" {
-			return poolInfo.Name, nil
-		}
-
-		return fmt.Sprintf("%v/%v", parentPath, poolInfo.Name), nil
 	}
+
+	parent := p.driver.NewResourcePool(poolInfo.Parent)
+	parentPath, err := parent.Path()
+	if err != nil {
+		return "", err
+	}
+	if parentPath == "" {
+		return poolInfo.Name, nil
+	}
+
+	return fmt.Sprintf("%v/%v", parentPath, poolInfo.Name), nil
 }
