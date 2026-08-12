@@ -36,7 +36,7 @@ func (a *FileArtifact) Destroy() error    { return nil }
 func RequireOVAURL(t *testing.T, acc env.AccConfig) {
 	t.Helper()
 	if acc.OVAURL == "" {
-		t.Skipf("set %s to an HTTPS .ova URL to run this ACC row", env.EnvOVAURL)
+		t.Skipf("set %s to an HTTPS .ova URL to run this ACC row", env.OVAURL)
 	}
 }
 

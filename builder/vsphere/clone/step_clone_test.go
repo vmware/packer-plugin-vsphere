@@ -536,7 +536,7 @@ func TestStepCreateVM_Run(t *testing.T) {
 		Reader: new(bytes.Buffer),
 		Writer: new(bytes.Buffer),
 	})
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	state.Put("driver", driverMock)
 	step := basicStepCloneVM()
 	step.Force = true
@@ -586,7 +586,7 @@ func TestStepCreateVM_Run_nilCloneResult(t *testing.T) {
 		Reader: new(bytes.Buffer),
 		Writer: new(bytes.Buffer),
 	})
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	state.Put("driver", driverMock)
 	step := basicStepCloneVM()
 	vmMock := new(driver.VirtualMachineMock)
@@ -674,7 +674,7 @@ func TestStepCloneVM_DatastoreClusterUsesTemplatePlacementInput(t *testing.T) {
 }
 
 type clonePlacementDriverMock struct {
-	driver.DriverMock
+	driver.Mock
 
 	selectDatastoresForDisksCalled bool
 	selectDatastoresForDisksInput  driver.StoragePlacementInput
@@ -793,7 +793,7 @@ func TestStepCloneVM_OvfSourceDetection(t *testing.T) {
 				Reader: new(bytes.Buffer),
 				Writer: new(bytes.Buffer),
 			})
-			driverMock := driver.NewDriverMock()
+			driverMock := driver.NewMock()
 			state.Put("driver", driverMock)
 
 			step := &StepCloneVM{
@@ -838,7 +838,7 @@ func TestStepCloneVM_ContentLibrarySourceDetection(t *testing.T) {
 		Reader: new(bytes.Buffer),
 		Writer: new(bytes.Buffer),
 	})
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.DeployContentLibraryItemVM = new(driver.VirtualMachineMock)
 	state.Put("driver", driverMock)
 
@@ -889,7 +889,7 @@ func TestStepCloneVM_ContentLibraryDeployConfigPassthrough(t *testing.T) {
 		Reader: new(bytes.Buffer),
 		Writer: new(bytes.Buffer),
 	})
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.ResolveContentLibraryItemResult = &library.Item{
 		Name: "example-template",
 		Type: library.ItemTypeVMTX,
@@ -974,7 +974,7 @@ func TestStepCloneVM_ContentLibraryDiskControllerUnitPassthrough(t *testing.T) {
 		Reader: new(bytes.Buffer),
 		Writer: new(bytes.Buffer),
 	})
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.ResolveContentLibraryItemResult = &library.Item{
 		Name: "example-template",
 		Type: library.ItemTypeVMTX,
@@ -1030,7 +1030,7 @@ func TestStepCloneVM_StoragePolicyPassthrough(t *testing.T) {
 		Reader: new(bytes.Buffer),
 		Writer: new(bytes.Buffer),
 	})
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.FindStoragePolicyIDResult = policyUUID
 	vmMock := new(driver.VirtualMachineMock)
 	driverMock.VM = vmMock
@@ -1071,7 +1071,7 @@ func TestStepCloneVM_MultiStoragePolicyPlacement(t *testing.T) {
 		Reader: new(bytes.Buffer),
 		Writer: new(bytes.Buffer),
 	})
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.FindStoragePolicyIDByName = map[string]string{
 		"blue":  "uuid-blue",
 		"green": "uuid-green",
@@ -1125,7 +1125,7 @@ func TestStepCloneVM_StoragePolicyNotFound(t *testing.T) {
 		Reader: new(bytes.Buffer),
 		Writer: new(bytes.Buffer),
 	})
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.FindStoragePolicyIDErr = fmt.Errorf("no pbm profile found")
 	driverMock.VM = new(driver.VirtualMachineMock)
 	state.Put("driver", driverMock)
@@ -1157,7 +1157,7 @@ func TestStepCloneVM_ContentLibraryResolveFailure(t *testing.T) {
 		Reader: new(bytes.Buffer),
 		Writer: new(bytes.Buffer),
 	})
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.ResolveContentLibraryItemShouldFail = true
 	driverMock.ResolveContentLibraryItemError = fmt.Errorf("library not found")
 	state.Put("driver", driverMock)
@@ -1192,7 +1192,7 @@ func TestStepCloneVM_ContentLibraryDeployFailure(t *testing.T) {
 		Reader: new(bytes.Buffer),
 		Writer: new(bytes.Buffer),
 	})
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.DeployContentLibraryItemShouldFail = true
 	driverMock.DeployContentLibraryItemError = fmt.Errorf("deploy failed")
 	state.Put("driver", driverMock)
@@ -1346,7 +1346,7 @@ func TestStepCloneVM_ContentLibraryOvfRuntimeValidation(t *testing.T) {
 				Reader: new(bytes.Buffer),
 				Writer: new(bytes.Buffer),
 			})
-			driverMock := driver.NewDriverMock()
+			driverMock := driver.NewMock()
 			driverMock.ResolveContentLibraryItemResult = &library.Item{
 				Name: tt.config.ContentLibrarySource.Name,
 				Type: tt.itemType,
@@ -1423,7 +1423,7 @@ func TestStepCloneVM_OvfDeploymentUsesResolvedDatastore(t *testing.T) {
 		Reader: new(bytes.Buffer),
 		Writer: new(bytes.Buffer),
 	})
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.DeployOvfVM = new(driver.VirtualMachineMock)
 	state.Put("driver", driverMock)
 	state.Put("datastore", &driver.DatastoreMock{NameReturn: "drs-selected-datastore"})
@@ -1461,7 +1461,7 @@ func TestStepCloneVM_OvfLocalPathDeploy(t *testing.T) {
 		Reader: new(bytes.Buffer),
 		Writer: new(bytes.Buffer),
 	})
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.DeployOvfVM = new(driver.VirtualMachineMock)
 	state.Put("driver", driverMock)
 
@@ -1497,7 +1497,7 @@ func TestStepCloneVM_OvfDeploymentWithMockedCalls(t *testing.T) {
 		name           string
 		config         *CloneConfig
 		location       *common.LocationConfig
-		mockSetup      func(*driver.DriverMock)
+		mockSetup      func(*driver.Mock)
 		expectError    bool
 		expectedErrMsg string
 	}{
@@ -1518,7 +1518,7 @@ func TestStepCloneVM_OvfDeploymentWithMockedCalls(t *testing.T) {
 				},
 			},
 			location: basicLocationConfig(),
-			mockSetup: func(mock *driver.DriverMock) {
+			mockSetup: func(mock *driver.Mock) {
 				mock.DeployOvfVM = new(driver.VirtualMachineMock)
 			},
 			expectError: false,
@@ -1542,7 +1542,7 @@ func TestStepCloneVM_OvfDeploymentWithMockedCalls(t *testing.T) {
 				},
 			},
 			location: basicLocationConfig(),
-			mockSetup: func(mock *driver.DriverMock) {
+			mockSetup: func(mock *driver.Mock) {
 				mock.DeployOvfVM = new(driver.VirtualMachineMock)
 			},
 			expectError: false,
@@ -1564,7 +1564,7 @@ func TestStepCloneVM_OvfDeploymentWithMockedCalls(t *testing.T) {
 				},
 			},
 			location: basicLocationConfig(),
-			mockSetup: func(mock *driver.DriverMock) {
+			mockSetup: func(mock *driver.Mock) {
 				mock.DeployOvfShouldFail = true
 				mock.DeployOvfError = fmt.Errorf("network error accessing remote OVF")
 			},
@@ -1580,7 +1580,7 @@ func TestStepCloneVM_OvfDeploymentWithMockedCalls(t *testing.T) {
 				Reader: new(bytes.Buffer),
 				Writer: new(bytes.Buffer),
 			})
-			driverMock := driver.NewDriverMock()
+			driverMock := driver.NewMock()
 			state.Put("driver", driverMock)
 
 			step := &StepCloneVM{
@@ -1706,7 +1706,7 @@ func TestStepCloneVM_VAppPropertyIntegration(t *testing.T) {
 				Reader: new(bytes.Buffer),
 				Writer: new(bytes.Buffer),
 			})
-			driverMock := driver.NewDriverMock()
+			driverMock := driver.NewMock()
 			state.Put("driver", driverMock)
 
 			config := &CloneConfig{
@@ -1777,7 +1777,7 @@ func TestStepCloneVM_OvfValidationIntegration(t *testing.T) {
 	tests := []struct {
 		name           string
 		config         *CloneConfig
-		mockSetup      func(*driver.DriverMock)
+		mockSetup      func(*driver.Mock)
 		expectError    bool
 		expectedErrMsg string
 	}{
@@ -1800,7 +1800,7 @@ func TestStepCloneVM_OvfValidationIntegration(t *testing.T) {
 					},
 				},
 			},
-			mockSetup: func(mock *driver.DriverMock) {
+			mockSetup: func(mock *driver.Mock) {
 				mock.DeployOvfVM = new(driver.VirtualMachineMock)
 				mock.GetOvfOptionsResult = []types.OvfOptionInfo{
 					{
@@ -1839,7 +1839,7 @@ func TestStepCloneVM_OvfValidationIntegration(t *testing.T) {
 					},
 				},
 			},
-			mockSetup: func(mock *driver.DriverMock) {
+			mockSetup: func(mock *driver.Mock) {
 				mock.DeployOvfVM = new(driver.VirtualMachineMock)
 				mock.GetOvfOptionsResult = []types.OvfOptionInfo{
 					{
@@ -1871,7 +1871,7 @@ func TestStepCloneVM_OvfValidationIntegration(t *testing.T) {
 					},
 				},
 			},
-			mockSetup: func(mock *driver.DriverMock) {
+			mockSetup: func(mock *driver.Mock) {
 				mock.GetOvfOptionsResult = []types.OvfOptionInfo{
 					{
 						Option: "small",
@@ -1899,7 +1899,7 @@ func TestStepCloneVM_OvfValidationIntegration(t *testing.T) {
 				Reader: new(bytes.Buffer),
 				Writer: new(bytes.Buffer),
 			})
-			driverMock := driver.NewDriverMock()
+			driverMock := driver.NewMock()
 			state.Put("driver", driverMock)
 
 			step := &StepCloneVM{
@@ -1958,7 +1958,7 @@ func TestStepCloneVM_CleanupTemplateSource(t *testing.T) {
 		Reader: new(bytes.Buffer),
 		Writer: new(bytes.Buffer),
 	}
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	state := &multistep.BasicStateBag{}
 	state.Put("ui", ui)
 	state.Put("driver", driverMock)
@@ -1981,7 +1981,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 	tests := []struct {
 		name           string
 		config         *CloneConfig
-		mockSetup      func(*driver.DriverMock)
+		mockSetup      func(*driver.Mock)
 		expectError    bool
 		expectedErrMsg string
 		errorType      string
@@ -2002,7 +2002,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 					},
 				},
 			},
-			mockSetup: func(mock *driver.DriverMock) {
+			mockSetup: func(mock *driver.Mock) {
 				mock.DeployOvfShouldFail = true
 				mock.DeployOvfError = fmt.Errorf("dial tcp: connection refused")
 			},
@@ -2028,7 +2028,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 					},
 				},
 			},
-			mockSetup: func(mock *driver.DriverMock) {
+			mockSetup: func(mock *driver.Mock) {
 				mock.DeployOvfShouldFail = true
 				mock.DeployOvfError = fmt.Errorf("HTTP 401 Unauthorized")
 			},
@@ -2052,7 +2052,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 					},
 				},
 			},
-			mockSetup: func(mock *driver.DriverMock) {
+			mockSetup: func(mock *driver.Mock) {
 				mock.DeployOvfShouldFail = true
 				mock.DeployOvfError = fmt.Errorf("HTTP 404 Not Found")
 			},
@@ -2076,7 +2076,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 					},
 				},
 			},
-			mockSetup: func(mock *driver.DriverMock) {
+			mockSetup: func(mock *driver.Mock) {
 				mock.DeployOvfShouldFail = true
 				mock.DeployOvfError = fmt.Errorf("invalid OVF descriptor: malformed XML")
 			},
@@ -2100,7 +2100,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 					},
 				},
 			},
-			mockSetup: func(mock *driver.DriverMock) {
+			mockSetup: func(mock *driver.Mock) {
 				mock.DeployOvfShouldFail = true
 				mock.DeployOvfError = fmt.Errorf("x509: certificate signed by unknown authority")
 			},
@@ -2125,7 +2125,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 					},
 				},
 			},
-			mockSetup: func(mock *driver.DriverMock) {
+			mockSetup: func(mock *driver.Mock) {
 				mock.DeployOvfShouldFail = false
 				mock.DeployOvfVM = &driver.VirtualMachineMock{}
 			},
@@ -2147,7 +2147,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 					},
 				},
 			},
-			mockSetup: func(mock *driver.DriverMock) {
+			mockSetup: func(mock *driver.Mock) {
 				mock.DeployOvfShouldFail = true
 				mock.DeployOvfError = fmt.Errorf("insufficient disk space on datastore")
 			},
@@ -2173,7 +2173,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 					},
 				},
 			},
-			mockSetup: func(mock *driver.DriverMock) {
+			mockSetup: func(mock *driver.Mock) {
 				mock.DeployOvfShouldFail = true
 				mock.DeployOvfError = fmt.Errorf("authentication failed with password=secretpassword for user testuser")
 			},
@@ -2190,7 +2190,7 @@ func TestStepCloneVM_ErrorHandlingScenarios(t *testing.T) {
 				Reader: new(bytes.Buffer),
 				Writer: new(bytes.Buffer),
 			})
-			driverMock := driver.NewDriverMock()
+			driverMock := driver.NewMock()
 			state.Put("driver", driverMock)
 
 			step := &StepCloneVM{
@@ -2306,7 +2306,7 @@ func TestStepCloneVM_ErrorMessageFormatting(t *testing.T) {
 				Reader: new(bytes.Buffer),
 				Writer: new(bytes.Buffer),
 			})
-			driverMock := driver.NewDriverMock()
+			driverMock := driver.NewMock()
 			state.Put("driver", driverMock)
 
 			config := &CloneConfig{

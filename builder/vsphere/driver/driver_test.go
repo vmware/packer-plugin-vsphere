@@ -30,9 +30,9 @@ func (ui *testUI) TrackProgress(string, int64, int64, io.ReadCloser) io.ReadClos
 
 // newTestDriver creates a new driver instance for testing against a live endpoint.
 func newTestDriver(t *testing.T) Driver {
-	vcenter := env.GetenvOrDefault(env.EnvVcenterServer, env.DefaultVcenterServer)
-	username := env.GetenvOrDefault(env.EnvVsphereUsername, env.DefaultVsphereUsername)
-	password := env.GetenvOrDefault(env.EnvVspherePassword, env.DefaultVspherePassword)
+	vcenter := env.GetenvOrDefault(env.VcenterServer, env.DefaultVcenterServer)
+	username := env.GetenvOrDefault(env.VsphereUsername, env.DefaultVsphereUsername)
+	password := env.GetenvOrDefault(env.VspherePassword, env.DefaultVspherePassword)
 
 	d, err := NewDriver(&ConnectConfig{
 		VCenterServer:      vcenter,

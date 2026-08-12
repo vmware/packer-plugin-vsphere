@@ -516,12 +516,12 @@ func TestResolveStoragePolicyDatastorePlacement_ErrorPropagates(t *testing.T) {
 	}
 }
 
-// VCenterDriverMock embeds DriverMock and adds VCenterDriver-specific methods for testing
+// VCenterDriverMock embeds Mock and adds VCenterDriver-specific methods for testing
 type VCenterDriverMock struct {
 	SelectDatastoreReturn       driver.Datastore
 	SelectDatastoreErr          error
 	SelectDatastoresForDisksErr error
-	*driver.DriverMock
+	*driver.Mock
 	SelectDatastoreMethod          string
 	SelectDatastoresForDisksMethod string
 	SelectDatastoresForDisksReturn []driver.Datastore
@@ -533,7 +533,7 @@ type VCenterDriverMock struct {
 // NewVCenterDriverMock creates a new VCenterDriverMock
 func NewVCenterDriverMock() *VCenterDriverMock {
 	return &VCenterDriverMock{
-		DriverMock: driver.NewDriverMock(),
+		Mock: driver.NewMock(),
 	}
 }
 

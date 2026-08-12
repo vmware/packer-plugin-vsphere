@@ -18,7 +18,7 @@ func TestStepRemoteUpload_Run(t *testing.T) {
 	dsMock := driver.DatastoreMock{
 		DirExistsReturn: false,
 	}
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.DatastoreMock = &dsMock
 	state.Put("driver", driverMock)
 	state.Put("iso_path", "[datastore] iso/path")
@@ -57,7 +57,7 @@ func TestStepRemoteUpload_Run(t *testing.T) {
 
 func TestStepRemoteUpload_SkipRun(t *testing.T) {
 	state := basicStateBag(nil)
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	state.Put("driver", driverMock)
 
 	step := &StepRemoteUpload{}

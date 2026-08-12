@@ -35,7 +35,7 @@ func downloadStepState(exists bool) *multistep.BasicStateBag {
 	dsMock := &driver.DatastoreMock{
 		FileExistsReturn: exists,
 	}
-	driverMock := &driver.DriverMock{
+	driverMock := &driver.Mock{
 		DatastoreMock: dsMock,
 	}
 	state.Put("driver", driverMock)

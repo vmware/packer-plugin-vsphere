@@ -220,7 +220,7 @@ func TestCreateConfig_Prepare(t *testing.T) {
 // sequences, and configuration integrity for virtual machine creation.
 func TestStepCreateVM_Run(t *testing.T) {
 	state := basicStateBag()
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	state.Put("driver", driverMock)
 	step := basicStepCreateVM()
 	step.Force = true
@@ -262,7 +262,7 @@ func TestStepCreateVM_RunHalt(t *testing.T) {
 	step := basicStepCreateVM()
 
 	// PreCleanVM fails
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.PreCleanShouldFail = true
 	state.Put("driver", driverMock)
 	if action := step.Run(context.Background(), state); action != multistep.ActionHalt {
@@ -273,7 +273,7 @@ func TestStepCreateVM_RunHalt(t *testing.T) {
 	}
 
 	// CreateVM fails
-	driverMock = driver.NewDriverMock()
+	driverMock = driver.NewMock()
 	driverMock.CreateVMShouldFail = true
 	state.Put("driver", driverMock)
 	if action := step.Run(context.Background(), state); action != multistep.ActionHalt {
@@ -458,7 +458,7 @@ func TestStepCreateVM_Run_WithStoragePolicy(t *testing.T) {
 	const policyUUID = "aaaabbbb-cccc-dddd-eeee-ffffffffffff"
 
 	state := basicStateBag()
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.FindStoragePolicyIDResult = policyUUID
 	compatibleDS := &driver.DatastoreMock{NameReturn: "gold-ds"}
 	driverMock.FindCompatibleDatastoreResult = compatibleDS
@@ -498,7 +498,7 @@ func TestStepCreateVM_Run_WithStoragePolicy(t *testing.T) {
 // a distinct storage_policy gets a PBM-selected DatastoreRef.
 func TestStepCreateVM_Run_MultiStoragePolicyPlacement(t *testing.T) {
 	state := basicStateBag()
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.FindStoragePolicyIDByName = map[string]string{
 		"blue":  "uuid-blue",
 		"green": "uuid-green",
@@ -553,7 +553,7 @@ func TestStepCreateVM_Run_MultiStoragePolicyPlacement(t *testing.T) {
 // policy causes the step to halt with a descriptive error.
 func TestStepCreateVM_Run_StoragePolicyNotFound(t *testing.T) {
 	state := basicStateBag()
-	driverMock := driver.NewDriverMock()
+	driverMock := driver.NewMock()
 	driverMock.FindStoragePolicyIDErr = fmt.Errorf("no pbm profile found with name: %q", "nonexistent")
 	state.Put("driver", driverMock)
 
