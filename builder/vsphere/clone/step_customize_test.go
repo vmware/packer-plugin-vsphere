@@ -53,11 +53,11 @@ func TestWindowsSysprepFilePrintsWarning(t *testing.T) {
 
 	// Expected warning message
 	expectedWarning := windowsSysprepFileDeprecatedMessage
-	warnings, errors := config.Prepare()
+	warnings, errs := config.Prepare()
 
 	// Fail if there were errors
-	if len(errors) > 0 {
-		t.Fatalf("unexpected error: %s", errors)
+	if len(errs) > 0 {
+		t.Fatalf("unexpected error: %s", errs)
 	}
 
 	// Search warnings array for the warning message

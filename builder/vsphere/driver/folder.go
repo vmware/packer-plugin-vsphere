@@ -93,14 +93,14 @@ func (f *Folder) Path() (string, error) {
 		return "", nil
 	} else {
 		parent := f.driver.NewFolder(info.Parent)
-		path, err := parent.Path()
+		parentPath, err := parent.Path()
 		if err != nil {
 			return "", err
 		}
-		if path == "" {
+		if parentPath == "" {
 			return info.Name, nil
 		}
 
-		return fmt.Sprintf("%v/%v", path, info.Name), nil
+		return fmt.Sprintf("%v/%v", parentPath, info.Name), nil
 	}
 }

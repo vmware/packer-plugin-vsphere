@@ -85,7 +85,7 @@ func (s *StepConnect) Cleanup(state multistep.StateBag) {
 		return
 	}
 
-	driver, ok := d.(driver.Driver)
+	drv, ok := d.(driver.Driver)
 	if !ok {
 		log.Printf("[ERROR] The object stored in the state under 'driver' key is of type '%s', not 'driver.Driver'. This could indicate a problem with the state initialization or management.", reflect.TypeOf(d))
 		return
@@ -93,7 +93,7 @@ func (s *StepConnect) Cleanup(state multistep.StateBag) {
 
 	ui.Say("Closing sessions...")
 
-	errorRestClient, errorSoapClient := driver.Cleanup()
+	errorRestClient, errorSoapClient := drv.Cleanup()
 	if errorRestClient != nil {
 		log.Printf("[WARN] Failed to close REST client session. The session may already be closed: %s", errorRestClient.Error())
 	}

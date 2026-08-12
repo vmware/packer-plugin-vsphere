@@ -84,16 +84,16 @@ func (s *StepBootCommand) Run(ctx context.Context, state multistep.StateBag) mul
 	if port > 0 {
 
 		keys := []string{"http_bind_address", "http_interface", "http_ip"}
-		for _, key := range keys {
-			value, ok := state.Get(key).(string)
+		for _, stateKey := range keys {
+			value, ok := state.Get(stateKey).(string)
 			if !ok || value == "" {
 				continue
 			}
 
-			switch key {
+			switch stateKey {
 			case "http_bind_address":
 				ip = value
-				log.Printf("Using IP address %s from %s.", ip, key)
+				log.Printf("Using IP address %s from %s.", ip, stateKey)
 			case "http_interface":
 				ip, err = hostIP(value)
 				if err != nil {
@@ -102,7 +102,7 @@ func (s *StepBootCommand) Run(ctx context.Context, state multistep.StateBag) mul
 					ui.Errorf("%s", err)
 					return multistep.ActionHalt
 				}
-				log.Printf("Using IP address %s from %s %s.", ip, key, value)
+				log.Printf("Using IP address %s from %s %s.", ip, stateKey, value)
 			case "http_ip":
 				if err := ValidateHTTPAddress(value); err != nil {
 					err := fmt.Errorf("error using IP address %s: %s", value, err)
@@ -111,7 +111,7 @@ func (s *StepBootCommand) Run(ctx context.Context, state multistep.StateBag) mul
 					return multistep.ActionHalt
 				}
 				ip = value
-				log.Printf("Using IP address %s from %s.", ip, key)
+				log.Printf("Using IP address %s from %s.", ip, stateKey)
 			}
 		}
 

@@ -192,13 +192,13 @@ func (s *StepWatchSource) waitForVMReady(ctx context.Context, logger *PackerLogg
 				}
 				logger.Info("Use the following network configuration to install the guest OS\n%s", string(c))
 
-				url, err := s.getVMWebConsoleRequestURL(ctx, logger)
+				consoleURL, err := s.getVMWebConsoleRequestURL(ctx, logger)
 				if err != nil {
 					logger.Error("Failed to generate a web console URL for ISO VM")
 					return "", err
 				}
 
-				logger.Info("Web console URL: %s", url)
+				logger.Info("Web console URL: %s", consoleURL)
 				logger.Info("Use the above URL to complete the guest OS installation.")
 				isoInfoDisplayed = true
 			}
