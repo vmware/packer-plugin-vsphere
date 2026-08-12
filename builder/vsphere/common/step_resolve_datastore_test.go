@@ -518,18 +518,16 @@ func TestResolveStoragePolicyDatastorePlacement_ErrorPropagates(t *testing.T) {
 
 // VCenterDriverMock embeds DriverMock and adds VCenterDriver-specific methods for testing
 type VCenterDriverMock struct {
+	SelectDatastoreReturn       driver.Datastore
+	SelectDatastoreErr          error
+	SelectDatastoresForDisksErr error
 	*driver.DriverMock
-
-	SelectDatastoreCalled bool
-	SelectDatastoreReturn driver.Datastore
-	SelectDatastoreMethod string
-	SelectDatastoreErr    error
-
-	SelectDatastoresForDisksCalled bool
-	SelectDatastoresForDisksInput  driver.StoragePlacementInput
-	SelectDatastoresForDisksReturn []driver.Datastore
+	SelectDatastoreMethod          string
 	SelectDatastoresForDisksMethod string
-	SelectDatastoresForDisksErr    error
+	SelectDatastoresForDisksReturn []driver.Datastore
+	SelectDatastoresForDisksInput  driver.StoragePlacementInput
+	SelectDatastoreCalled          bool
+	SelectDatastoresForDisksCalled bool
 }
 
 // NewVCenterDriverMock creates a new VCenterDriverMock
