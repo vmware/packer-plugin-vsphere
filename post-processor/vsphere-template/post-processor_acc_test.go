@@ -29,7 +29,7 @@ func TestAccPostProcessorVSphereTemplate(t *testing.T) {
 
 	vmName := acceptance.NewVmName()
 	upload := &vspherepost.PostProcessor{}
-	if err := upload.Configure(map[string]interface{}{
+	if err := upload.Configure(map[string]any{
 		"host":          acc.VCenterServer,
 		"username":      acc.Username,
 		"password":      acc.Password,
@@ -69,7 +69,7 @@ func TestAccPostProcessorVSphereTemplate(t *testing.T) {
 	})
 
 	mark := &PostProcessor{}
-	if err := mark.Configure(map[string]interface{}{
+	if err := mark.Configure(map[string]any{
 		"host":       acc.VCenterServer,
 		"username":   acc.Username,
 		"password":   acc.Password,

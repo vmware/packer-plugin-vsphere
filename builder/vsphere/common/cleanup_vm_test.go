@@ -26,28 +26,28 @@ func cleanupTestState(mockVM driver.VirtualMachine) multistep.StateBag {
 func Test_CleanupVM(t *testing.T) {
 	type testCase struct {
 		Reason        string
-		ExtraState    map[string]interface{}
+		ExtraState    map[string]any
 		ExpectDestroy bool
 	}
 	testCases := []testCase{
 		{
 			"if cancelled, we should destroy the VM",
-			map[string]interface{}{multistep.StateCancelled: true},
+			map[string]any{multistep.StateCancelled: true},
 			true,
 		},
 		{
 			"if halted, we should destroy the VM",
-			map[string]interface{}{multistep.StateHalted: true},
+			map[string]any{multistep.StateHalted: true},
 			true,
 		},
 		{
 			"if destroy flag is set, we should destroy the VM",
-			map[string]interface{}{"destroy_vm": true},
+			map[string]any{"destroy_vm": true},
 			true,
 		},
 		{
 			"if none of the above flags are set, we should not destroy the VM",
-			map[string]interface{}{},
+			map[string]any{},
 			false,
 		},
 	}

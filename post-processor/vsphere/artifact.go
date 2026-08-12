@@ -42,7 +42,7 @@ func (a *Artifact) String() string {
 	return fmt.Sprintf("VM: %s Folder: %s Datastore: %s", a.vmname, a.vmfolder, a.datastore)
 }
 
-func (*Artifact) State(name string) interface{} {
+func (*Artifact) State(name string) any {
 	return nil
 }
 

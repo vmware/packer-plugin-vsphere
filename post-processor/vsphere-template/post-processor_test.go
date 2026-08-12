@@ -92,7 +92,7 @@ func TestConfigure_Tags(t *testing.T) {
 	tests := []struct {
 		name        string
 		tags        []string
-		tagBlocks   []map[string]interface{}
+		tagBlocks   []map[string]any
 		expectError bool
 	}{
 		{
@@ -112,7 +112,7 @@ func TestConfigure_Tags(t *testing.T) {
 		{
 			name: "valid tag blocks",
 			tags: nil,
-			tagBlocks: []map[string]interface{}{
+			tagBlocks: []map[string]any{
 				{"category": "environment", "name": "production"},
 			},
 			expectError: false,
@@ -136,7 +136,7 @@ func TestConfigure_Tags(t *testing.T) {
 		{
 			name: "tag block missing category",
 			tags: nil,
-			tagBlocks: []map[string]interface{}{
+			tagBlocks: []map[string]any{
 				{"name": "production"},
 			},
 			expectError: true,
@@ -144,7 +144,7 @@ func TestConfigure_Tags(t *testing.T) {
 		{
 			name: "tag block missing name",
 			tags: nil,
-			tagBlocks: []map[string]interface{}{
+			tagBlocks: []map[string]any{
 				{"category": "environment"},
 			},
 			expectError: true,
@@ -157,7 +157,7 @@ func TestConfigure_Tags(t *testing.T) {
 			config := getTestConfig()
 
 			// Build raw config
-			rawConfig := map[string]interface{}{
+			rawConfig := map[string]any{
 				"username": config.Username,
 				"password": config.Password,
 				"host":     config.Host,

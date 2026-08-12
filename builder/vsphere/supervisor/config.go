@@ -35,7 +35,7 @@ type Config struct {
 	ctx interpolate.Context
 }
 
-func (c *Config) Prepare(raws ...interface{}) ([]string, error) {
+func (c *Config) Prepare(raws ...any) ([]string, error) {
 	err := config.Decode(c, &config.DecodeOpts{
 		PluginType:         common.BuilderId,
 		Interpolate:        true,

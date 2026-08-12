@@ -26,7 +26,7 @@ func TestAccDatasourceContentLibraryItem(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			output := acceptance.ExecuteDatasource(t, &Datasource{}, acceptance.DatasourceConfig(acc, map[string]interface{}{
+			output := acceptance.ExecuteDatasource(t, &Datasource{}, acceptance.DatasourceConfig(acc, map[string]any{
 				"content_library": acc.ContentLibrary,
 				"name":            test.itemName,
 				"type":            test.itemType,

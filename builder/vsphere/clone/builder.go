@@ -25,7 +25,7 @@ type Builder struct {
 
 func (b *Builder) ConfigSpec() hcldec.ObjectSpec { return b.config.FlatMapstructure().HCL2Spec() }
 
-func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
+func (b *Builder) Prepare(raws ...any) ([]string, []string, error) {
 	warnings, errs := b.config.Prepare(raws...)
 	if errs != nil {
 		return nil, warnings, errs
@@ -222,7 +222,7 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		return nil, nil
 	}
 	vm := state.Get("vm").(*driver.VirtualMachineDriver)
-	stateData := map[string]interface{}{
+	stateData := map[string]any{
 		"generated_data": state.Get("generated_data"),
 		"metadata":       state.Get("metadata"),
 	}
@@ -242,8 +242,8 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 }
 
 // sourceArtifactStateData returns artifact StateData describing the clone source.
-func sourceArtifactStateData(config *Config) map[string]interface{} {
-	data := make(map[string]interface{})
+func sourceArtifactStateData(config *Config) map[string]any {
+	data := make(map[string]any)
 	if config.OvfSource != nil {
 		if config.OvfSource.Path != "" {
 			data["source_ovf_path"] = config.OvfSource.Path

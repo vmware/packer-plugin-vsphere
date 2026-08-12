@@ -28,7 +28,7 @@ func TestAccPostProcessorVSphere(t *testing.T) {
 
 	vmName := acceptance.NewVmName()
 	pp := &PostProcessor{}
-	if err := pp.Configure(map[string]interface{}{
+	if err := pp.Configure(map[string]any{
 		"host":          acc.VCenterServer,
 		"username":      acc.Username,
 		"password":      acc.Password,

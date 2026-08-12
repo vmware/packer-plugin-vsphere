@@ -107,18 +107,18 @@ func TestConfig_Values(t *testing.T) {
 	}
 }
 
-func getMinimalConfig() map[string]interface{} {
-	return map[string]interface{}{
+func getMinimalConfig() map[string]any {
+	return map[string]any{
 		"class_name":    "test-class",
 		"storage_class": "test-storage",
 	}
 }
 
-func getCompleteConfig(t *testing.T) map[string]interface{} {
+func getCompleteConfig(t *testing.T) map[string]any {
 	// Use a valid kubeconfig file as we check the content in config.Prepare() function.
 	validPath := getTestKubeconfigFile(t, "").Name()
 
-	return map[string]interface{}{
+	return map[string]any{
 		"image_name":                "test-image",
 		"class_name":                "test-class",
 		"storage_class":             "test-storage",

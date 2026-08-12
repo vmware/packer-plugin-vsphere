@@ -26,11 +26,11 @@ import (
 // Shared Helpers
 // ---------------------------------------------------------------------------
 
-func alpineExampleConfig() map[string]interface{} {
+func alpineExampleConfig() map[string]any {
 	acc := env.AccFromEnv()
 	exampleDir := alpineExampleDir()
 
-	return map[string]interface{}{
+	return map[string]any{
 		"vcenter_server":      acc.VCenterServer,
 		"username":            acc.Username,
 		"password":            acc.Password,
@@ -49,11 +49,11 @@ func alpineExampleConfig() map[string]interface{} {
 		"RAM":           512,
 
 		"disk_controller_type": []string{"pvscsi"},
-		"storage": map[string]interface{}{
+		"storage": map[string]any{
 			"disk_size":             1024,
 			"disk_thin_provisioned": true,
 		},
-		"network_adapters": map[string]interface{}{
+		"network_adapters": map[string]any{
 			"network_card": "vmxnet3",
 			"network":      acc.Network,
 		},
@@ -97,12 +97,12 @@ func alpineExampleDir() string {
 	return filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "examples", "builder", "vsphere-iso", "alpine")
 }
 
-func alpineMatrixGuest(config map[string]interface{}) {
+func alpineMatrixGuest(config map[string]any) {
 	config["CPUs"] = 2
 	config["RAM"] = 2048
 	config["firmware"] = "efi"
 	config["boot_wait"] = "30s"
-	config["storage"] = map[string]interface{}{
+	config["storage"] = map[string]any{
 		"disk_size":             2048,
 		"disk_thin_provisioned": true,
 	}
@@ -266,7 +266,7 @@ func TestAccISOBuilder_MatrixA(t *testing.T) {
 	config := alpineExampleConfig()
 	alpineMatrixGuest(config)
 	config["notes"] = acc.Notes
-	config["tag"] = []map[string]interface{}{
+	config["tag"] = []map[string]any{
 		{"category": acc.TagCategory, "name": acc.TagA},
 		{"category": acc.TagCategory, "name": acc.TagB},
 	}
@@ -462,7 +462,7 @@ func TestAccISOBuilder_MatrixC(t *testing.T) {
 	clItemName := vmName + "-vm-template"
 
 	config["reattach_cdroms"] = 1
-	config["content_library_destination"] = map[string]interface{}{
+	config["content_library_destination"] = map[string]any{
 		"library": acc.ContentLibrary,
 		"name":    clItemName,
 		"ovf":     false,
@@ -522,12 +522,12 @@ func TestAccISOBuilder_MatrixD(t *testing.T) {
 	exportDir := filepath.Join(os.TempDir(), vmName+"ovf-export")
 
 	config["reattach_cdroms"] = 1
-	config["content_library_destination"] = map[string]interface{}{
+	config["content_library_destination"] = map[string]any{
 		"library": acc.ContentLibrary,
 		"name":    clItemName,
 		"ovf":     true,
 	}
-	config["export"] = map[string]interface{}{
+	config["export"] = map[string]any{
 		"force":            true,
 		"output_directory": exportDir,
 		"output_format":    "ovf",
@@ -617,9 +617,9 @@ func TestAccISOBuilder_MatrixE(t *testing.T) {
 	alpineMatrixGuest(config)
 	delete(config, "datastore")
 
-	disks := make([]map[string]interface{}, 0, len(policies))
+	disks := make([]map[string]any, 0, len(policies))
 	for _, policy := range policies {
-		disks = append(disks, map[string]interface{}{
+		disks = append(disks, map[string]any{
 			"disk_size":             2048,
 			"disk_thin_provisioned": true,
 			"storage_policy":        policy,

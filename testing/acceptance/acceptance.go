@@ -19,8 +19,8 @@ func NewVmName() string {
 	return fmt.Sprintf("acc-test-%s", time.Now().Format("20060102-150405"))
 }
 
-func RenderConfig(builderType string, config map[string]interface{}) string {
-	t := map[string][]map[string]interface{}{
+func RenderConfig(builderType string, config map[string]any) string {
+	t := map[string][]map[string]any{
 		"builders": {
 			{"type": builderType},
 		},

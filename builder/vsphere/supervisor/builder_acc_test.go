@@ -17,14 +17,14 @@ import (
 )
 
 // defaultConfig initializes and returns a default configuration map for a vSphere supervisor builder.
-func defaultConfig() map[string]interface{} {
+func defaultConfig() map[string]any {
 	// Supervisor builder uses kubeconfig for authentication
 	kubeconfigPath := os.Getenv(clientcmd.RecommendedConfigPathEnvVar)
 	if kubeconfigPath == "" {
 		kubeconfigPath = clientcmd.RecommendedHomeFile
 	}
 
-	config := map[string]interface{}{
+	config := map[string]any{
 		"kubeconfig_path": kubeconfigPath,
 		"class_name":      "test-class",
 		"storage_class":   "test-storage",
@@ -135,7 +135,7 @@ func TestAccSupervisorBuilderAcc_tags_blocks(t *testing.T) {
 	}
 
 	// Configure tag blocks
-	config["tag"] = []map[string]interface{}{
+	config["tag"] = []map[string]any{
 		{
 			"category": "test-category-supervisor-blocks",
 			"name":     "supervisor-block-tag-1",
