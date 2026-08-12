@@ -4,6 +4,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -284,8 +285,13 @@ func wrapTagOperationError(operation string, err error, context map[string]strin
 	}
 
 	// Check if it's already a structured error
-	switch err.(type) {
-	case *TagError, *PermissionError, *NotFoundError, *ValidationError, *CategoryNotAssociableError:
+	var tagError *TagError
+	var permissionError *PermissionError
+	var notFoundError *NotFoundError
+	var validationError *ValidationError
+	var categoryNotAssociableError *CategoryNotAssociableError
+	switch {
+	case errors.As(err, &tagError), errors.As(err, &permissionError), errors.As(err, &notFoundError), errors.As(err, &validationError), errors.As(err, &categoryNotAssociableError):
 		return err
 	}
 
