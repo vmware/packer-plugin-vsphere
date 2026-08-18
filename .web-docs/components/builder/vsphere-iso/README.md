@@ -277,6 +277,13 @@ wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/foo/bar/preseed.cfg
 
 - `vTPM` (bool) - Enable virtual trusted platform module (TPM) device for the virtual
   machine. Defaults to `false`.
+  
+  -> **Note:** A virtual machine with a vTPM cannot be exported as OVF/OVA
+  (`export`) or imported to a content library as an OVF template
+  (`content_library_destination` with `ovf` set to `true`). Set
+  [`remove_vtpm`](#remove_vtpm) to `true` to remove the device after
+  shutdown. A content library VM template (`ovf` unset or `false`) can keep
+  the vTPM.
 
 - `precision_clock` (string) - The virtual precision clock device for the virtual machine.
   Defaults to `none`.
@@ -284,6 +291,20 @@ wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/foo/bar/preseed.cfg
   The available options for this setting are: `none`, `ntp`, and `ptp`.
 
 <!-- End of code generated from the comments of the HardwareConfig struct in builder/vsphere/common/step_hardware.go; -->
+
+
+<!-- Code generated from the comments of the RemoveVTPMConfig struct in builder/vsphere/common/step_remove_vtpm.go; DO NOT EDIT MANUALLY -->
+
+- `remove_vtpm` (bool) - Remove the virtual trusted platform module (vTPM) device from the virtual
+  machine after shutdown. Defaults to `false`.
+  
+  -> **Note:** A virtual machine with a vTPM cannot be exported as OVF/OVA
+  (`export`) or imported to a content library as an OVF template
+  (`content_library_destination` with `ovf` set to `true`). Set this option
+  to `true` to remove the device after shutdown. A content library VM
+  template (`ovf` unset or `false`) can keep the vTPM.
+
+<!-- End of code generated from the comments of the RemoveVTPMConfig struct in builder/vsphere/common/step_remove_vtpm.go; -->
 
 
 ### Create Configuration
@@ -1973,6 +1994,7 @@ Clone the default **Read-Only** vSphere role and add the following privileges:
 | ...                      | Update library Item                                 | `ContentLibrary.UpdateLibraryItem`                 |
 | Cryptographic Operations | Direct access                                       | `Cryptographer.Access`                             |
 | ...                      | Encrypt                                             | `Cryptographer.Encrypt`                            |
+| ...                      | Decrypt                                             | `Cryptographer.Decrypt`                            |
 | Datastore                | Allocate space                                      | `Datastore.AllocateSpace`                          |
 | ...                      | Browse datastore                                    | `Datastore.Browse`                                 |
 | ...                      | Low level file operations                           | `Datastore.FileManagement`                         |

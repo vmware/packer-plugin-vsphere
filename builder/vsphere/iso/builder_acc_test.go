@@ -655,3 +655,98 @@ func checkMatrixE(name string, policies []string) error {
 	}
 	return acceptance.CheckStoragePolicyDiskPlacements(d, vm, policies)
 }
+
+// ---------------------------------------------------------------------------
+// Matrix F — vTPM add and remove with OVF export and content library
+// ---------------------------------------------------------------------------
+
+func TestAccISOBuilder_MatrixF(t *testing.T) {
+	acceptance.RequireAcceptance(t)
+	acceptance.RequireKeyProvider(t)
+	acc := env.AccFromEnv()
+
+	config := alpineExampleConfig()
+	alpineMatrixGuest(config)
+	config["guest_os_type"] = "ubuntu64Guest"
+	config["vTPM"] = true
+	config["remove_vtpm"] = true
+
+	vmName := config["vm_name"].(string)
+	clItemName := vmName + "-ovf-template"
+	exportDir := filepath.Join(os.TempDir(), vmName+"-vtpm-export")
+	config["content_library_destination"] = map[string]any{
+		"library": acc.ContentLibrary,
+		"name":    clItemName,
+		"ovf":     true,
+	}
+	config["export"] = map[string]any{
+		"force":            true,
+		"output_directory": exportDir,
+		"output_format":    "ovf",
+	}
+
+	testCase := &acctest.PluginTestCase{
+		Name:     "vsphere-iso-matrix-f",
+		Template: acceptance.RenderConfig("vsphere-iso", config),
+		Teardown: func() error {
+			_ = os.RemoveAll(exportDir)
+			_ = teardownVM(vmName)
+			return teardownContentLibraryItem(acc.ContentLibrary, clItemName)
+		},
+		Check: func(buildCommand *exec.Cmd, logfile string) error {
+			if err := checkBuildSucceeded(buildCommand, logfile); err != nil {
+				return err
+			}
+			return checkMatrixF(vmName, acc, acc.ContentLibrary, clItemName, exportDir)
+		},
+	}
+	acctest.TestPlugin(t, testCase)
+}
+
+func checkMatrixF(name string, acc env.AccConfig, libraryName, itemName, exportDir string) error {
+	d, err := acceptance.TestConn()
+	if err != nil {
+		return fmt.Errorf("cannot connect %v", err)
+	}
+	vm, err := d.FindVM(name)
+	if err != nil {
+		return fmt.Errorf("cannot find VM: %v", err)
+	}
+
+	vmInfo, err := vm.Info("name", "parent", "resourcePool", "config")
+	if err != nil {
+		return fmt.Errorf("cannot read VM properties: %v", err)
+	}
+	if err := checkFolderAndResourcePool(d, vmInfo.Parent, vmInfo.ResourcePool, acc, true); err != nil {
+		return err
+	}
+	if vmInfo.Config == nil || vmInfo.Config.Firmware != "efi" {
+		got := ""
+		if vmInfo.Config != nil {
+			got = vmInfo.Config.Firmware
+		}
+		return fmt.Errorf("unexpected firmware: expected 'efi', got %q", got)
+	}
+	if err := acceptance.CheckNoVTPM(vm); err != nil {
+		return err
+	}
+
+	item, err := d.ResolveContentLibraryItem(libraryName, itemName)
+	if err != nil {
+		return fmt.Errorf("expected content library OVF item: %v", err)
+	}
+	if !strings.EqualFold(item.Type, "ovf") {
+		return fmt.Errorf("unexpected content library item type %q, want ovf", item.Type)
+	}
+
+	ovfPath := filepath.Join(exportDir, name+".ovf")
+	if _, err := os.Stat(ovfPath); err != nil {
+		entries, _ := os.ReadDir(exportDir)
+		names := make([]string, 0, len(entries))
+		for _, e := range entries {
+			names = append(names, e.Name())
+		}
+		return fmt.Errorf("expected export OVF at %s (dir contents: %v): %v", ovfPath, names, err)
+	}
+	return nil
+}

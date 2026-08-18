@@ -75,6 +75,8 @@ their respective End of General Support dates. For detailed information, refer t
 
 @include 'builder/vsphere/common/HardwareConfig-not-required.mdx'
 
+@include 'builder/vsphere/common/RemoveVTPMConfig-not-required.mdx'
+
 ### Create Configuration
 
 **Optional**:
@@ -525,6 +527,7 @@ Clone the default **Read-Only** vSphere role and add the following privileges:
 | ...                      | Update library Item                                 | `ContentLibrary.UpdateLibraryItem`                 |
 | Cryptographic Operations | Direct access                                       | `Cryptographer.Access`                             |
 | ...                      | Encrypt                                             | `Cryptographer.Encrypt`                            |
+| ...                      | Decrypt                                             | `Cryptographer.Decrypt`                            |
 | Datastore                | Allocate space                                      | `Datastore.AllocateSpace`                          |
 | ...                      | Browse datastore                                    | `Datastore.Browse`                                 |
 | ...                      | Low level file operations                           | `Datastore.FileManagement`                         |

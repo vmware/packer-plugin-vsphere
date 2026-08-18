@@ -636,6 +636,8 @@ JSON Example:
 
 @include 'builder/vsphere/common/HardwareConfig-not-required.mdx'
 
+@include 'builder/vsphere/common/RemoveVTPMConfig-not-required.mdx'
+
 ### Location Configuration
 
 **Optional:**
@@ -880,6 +882,7 @@ Clone the default **Read-Only** vSphere role and add the following privileges:
 | ...                      | Download files                                       | `ContentLibrary.DownloadSession`                   |
 | Cryptographic Operations | Direct access                                       | `Cryptographer.Access`                             |
 | ...                      | Encrypt                                             | `Cryptographer.Encrypt`                            |
+| ...                      | Decrypt                                             | `Cryptographer.Decrypt`                            |
 | Datastore                | Allocate space                                      | `Datastore.AllocateSpace`                          |
 | ...                      | Browse datastore                                    | `Datastore.Browse`                                 |
 | ...                      | Low level file operations                            | `Datastore.FileManagement`                         |

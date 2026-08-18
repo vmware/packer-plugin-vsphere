@@ -77,6 +77,7 @@ type VirtualMachine interface {
 	FindSATAController() (*types.VirtualAHCIController, error)
 
 	RemoveNetworkAdapters() error
+	RemoveVTPM() error
 	Reference() types.ManagedObjectReference
 }
 
@@ -733,14 +734,13 @@ func (vm *VirtualMachineDriver) Configure(config *HardwareConfig) error {
 	if err != nil {
 		return err
 	}
-	TPMs := devices.SelectByType((*types.VirtualTPM)(nil))
-	hasTPM := len(TPMs) > 0
+	hasTPM := len(devices.SelectByType((*types.VirtualTPM)(nil))) > 0
 	if config.VTPMEnabled != hasTPM {
 		if !hasTPM {
 			device := &types.VirtualTPM{}
 			err = vm.addDevice(device)
 		} else {
-			err = vm.RemoveDevice(false, TPMs...)
+			err = vm.RemoveVTPM()
 		}
 	}
 	if err != nil {
@@ -1637,6 +1637,26 @@ func (vm *VirtualMachineDriver) RemoveNetworkAdapters() error {
 		if err != nil {
 			return fmt.Errorf("error removing network adapter: %s", err)
 		}
+	}
+
+	return nil
+}
+
+// RemoveVTPM removes the virtual trusted platform module (vTPM) device from
+// the virtual machine, if present.
+func (vm *VirtualMachineDriver) RemoveVTPM() error {
+	devices, err := vm.Devices()
+	if err != nil {
+		return fmt.Errorf("error retrieving devices: %s", err)
+	}
+
+	tpms := devices.SelectByType((*types.VirtualTPM)(nil))
+	if len(tpms) == 0 {
+		return nil
+	}
+
+	if err = vm.RemoveDevice(false, tpms...); err != nil {
+		return fmt.Errorf("error removing vTPM: %s", err)
 	}
 
 	return nil

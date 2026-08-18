@@ -33,6 +33,7 @@ type Config struct {
 	common.RemoveCDRomConfig          `mapstructure:",squash"`
 	common.ReattachCDRomConfig        `mapstructure:",squash"`
 	common.RemoveNetworkAdapterConfig `mapstructure:",squash"`
+	common.RemoveVTPMConfig           `mapstructure:",squash"`
 	common.FloppyConfig               `mapstructure:",squash"`
 	common.RunConfig                  `mapstructure:",squash"`
 	common.BootConfig                 `mapstructure:",squash"`
@@ -141,6 +142,10 @@ func (c *Config) Prepare(raws ...any) ([]string, error) {
 	if c.ContentLibraryDestinationConfig != nil {
 		errs = packersdk.MultiErrorAppend(errs, c.ContentLibraryDestinationConfig.Prepare(&c.LocationConfig)...)
 	}
+
+	exportOVF := c.Export != nil
+	contentLibraryOVF := c.ContentLibraryDestinationConfig != nil && c.ContentLibraryDestinationConfig.Ovf
+	warnings = append(warnings, c.RemoveVTPMConfig.Prepare(c.VTPMEnabled, exportOVF, contentLibraryOVF)...)
 
 	if len(errs.Errors) > 0 {
 		return warnings, errs

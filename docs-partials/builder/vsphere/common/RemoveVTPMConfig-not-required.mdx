@@ -1,0 +1,12 @@
+<!-- Code generated from the comments of the RemoveVTPMConfig struct in builder/vsphere/common/step_remove_vtpm.go; DO NOT EDIT MANUALLY -->
+
+- `remove_vtpm` (bool) - Remove the virtual trusted platform module (vTPM) device from the virtual
+  machine after shutdown. Defaults to `false`.
+  
+  -> **Note:** A virtual machine with a vTPM cannot be exported as OVF/OVA
+  (`export`) or imported to a content library as an OVF template
+  (`content_library_destination` with `ovf` set to `true`). Set this option
+  to `true` to remove the device after shutdown. A content library VM
+  template (`ovf` unset or `false`) can keep the vTPM.
+
+<!-- End of code generated from the comments of the RemoveVTPMConfig struct in builder/vsphere/common/step_remove_vtpm.go; -->

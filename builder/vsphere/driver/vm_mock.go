@@ -85,6 +85,9 @@ type VirtualMachineMock struct {
 	NetworkAdaptersList         object.VirtualDeviceList
 	RemoveNetworkAdaptersErr    error
 
+	RemoveVTPMCalled bool
+	RemoveVTPMErr    error
+
 	CloneCalled    bool
 	CloneConfig    *CloneConfig
 	CloneError     error
@@ -341,6 +344,11 @@ func (vm *VirtualMachineMock) RemoveNetworkAdapters() error {
 	vm.RemoveNetworkAdaptersCalled = true
 	vm.NetworkAdaptersList = nil
 	return vm.RemoveNetworkAdaptersErr
+}
+
+func (vm *VirtualMachineMock) RemoveVTPM() error {
+	vm.RemoveVTPMCalled = true
+	return vm.RemoveVTPMErr
 }
 
 func (vm *VirtualMachineMock) Datacenter() *object.Datacenter {

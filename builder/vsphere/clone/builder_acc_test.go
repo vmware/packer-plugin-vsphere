@@ -343,6 +343,21 @@ func teardownVM(vmName string) error {
 	return acceptance.CleanupVm(d, vmName)
 }
 
+func teardownContentLibraryItem(libraryName, itemName string) error {
+	d, err := acceptance.TestConn()
+	if err != nil {
+		return fmt.Errorf("cannot connect %v", err)
+	}
+	item, err := d.ResolveContentLibraryItem(libraryName, itemName)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil
+		}
+		return err
+	}
+	return d.DeleteContentLibraryItem(item.ID)
+}
+
 // ---------------------------------------------------------------------------
 // Matrix A — Template Source
 // ---------------------------------------------------------------------------
@@ -691,4 +706,63 @@ func checkMatrixI(name string, acc env.AccConfig, policies []string) error {
 		return err
 	}
 	return acceptance.CheckStoragePolicyDiskPlacements(d, vm, policies)
+}
+
+// ---------------------------------------------------------------------------
+// Matrix J — vTPM add and remove with content library OVF
+// ---------------------------------------------------------------------------
+
+func TestAccCloneBuilder_MatrixJ(t *testing.T) {
+	acceptance.RequireAcceptance(t)
+	acceptance.RequireKeyProvider(t)
+	acc := env.AccFromEnv()
+	config := cloneExampleConfig()
+	config["firmware"] = "efi"
+	config["vTPM"] = true
+	config["remove_vtpm"] = true
+	vmName := config["vm_name"].(string)
+	clItemName := vmName + "-ovf-template"
+	config["content_library_destination"] = map[string]any{
+		"library": acc.ContentLibrary,
+		"name":    clItemName,
+		"ovf":     true,
+	}
+
+	testCase := &acctest.PluginTestCase{
+		Name:     "vsphere-clone-matrix-j",
+		Template: acceptance.RenderConfig("vsphere-clone", config),
+		Teardown: func() error {
+			_ = teardownVM(vmName)
+			return teardownContentLibraryItem(acc.ContentLibrary, clItemName)
+		},
+		Check: func(buildCommand *exec.Cmd, logfile string) error {
+			if err := checkBuildSucceeded(buildCommand, logfile); err != nil {
+				return err
+			}
+			return checkMatrixJ(vmName, acc, acc.ContentLibrary, clItemName)
+		},
+	}
+	acctest.TestPlugin(t, testCase)
+}
+
+func checkMatrixJ(name string, acc env.AccConfig, libraryName, itemName string) error {
+	d, vm, parent, rp, err := findVM(name)
+	if err != nil {
+		return err
+	}
+	if err := checkFolderAndResourcePool(d, parent, rp, acc); err != nil {
+		return err
+	}
+	if err := acceptance.CheckNoVTPM(vm); err != nil {
+		return err
+	}
+
+	item, err := d.ResolveContentLibraryItem(libraryName, itemName)
+	if err != nil {
+		return fmt.Errorf("expected content library OVF item: %v", err)
+	}
+	if !strings.EqualFold(item.Type, "ovf") {
+		return fmt.Errorf("unexpected content library item type %q, want ovf", item.Type)
+	}
+	return nil
 }
