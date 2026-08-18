@@ -211,6 +211,9 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		&common.StepRemoveNetworkAdapter{
 			Config: &b.config.RemoveNetworkAdapterConfig,
 		},
+		&common.StepRemoveVTPM{
+			Config: &b.config.RemoveVTPMConfig,
+		},
 		&common.StepCreateSnapshot{
 			CreateSnapshot: b.config.CreateSnapshot,
 			SnapshotName:   b.config.SnapshotName,

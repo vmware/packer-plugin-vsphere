@@ -187,6 +187,9 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			Config:      &b.config.ReattachCDRomConfig,
 			CDRomConfig: &b.config.CDRomConfig,
 		},
+		&common.StepRemoveVTPM{
+			Config: &b.config.RemoveVTPMConfig,
+		},
 		&common.StepCreateSnapshot{
 			CreateSnapshot: b.config.CreateSnapshot,
 			SnapshotName:   b.config.SnapshotName,

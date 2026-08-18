@@ -113,6 +113,13 @@ type HardwareConfig struct {
 	BootDelay int64 `mapstructure:"boot_delay"`
 	// Enable virtual trusted platform module (TPM) device for the virtual
 	// machine. Defaults to `false`.
+	//
+	// -> **Note:** A virtual machine with a vTPM cannot be exported as OVF/OVA
+	// (`export`) or imported to a content library as an OVF template
+	// (`content_library_destination` with `ovf` set to `true`). Set
+	// [`remove_vtpm`](#remove_vtpm) to `true` to remove the device after
+	// shutdown. A content library VM template (`ovf` unset or `false`) can keep
+	// the vTPM.
 	VTPMEnabled bool `mapstructure:"vTPM"`
 	// The virtual precision clock device for the virtual machine.
 	// Defaults to `none`.
