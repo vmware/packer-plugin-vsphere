@@ -20,8 +20,8 @@ type DiskConfig struct {
 	// Enable eager scrubbing for the disk.
 	// Defaults to `false`.
 	DiskEagerlyScrub bool `mapstructure:"disk_eagerly_scrub"`
-	// The assigned disk controller for the disk.
-	// Defaults to the first controller, `(0)`.
+	// The assigned disk controller for the disk at the zero-based index
+	// (0, 1, 2, ...). Defaults to the first controller, `(0)`.
 	// Mutually exclusive with `disk_controller_unit`.
 	DiskControllerIndex int `mapstructure:"disk_controller_index"`
 	// Explicit controller address for the disk when cloning from a `template`

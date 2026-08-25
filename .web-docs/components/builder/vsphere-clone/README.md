@@ -353,8 +353,8 @@ disks are stored.
 - `disk_eagerly_scrub` (bool) - Enable eager scrubbing for the disk.
   Defaults to `false`.
 
-- `disk_controller_index` (int) - The assigned disk controller for the disk.
-  Defaults to the first controller, `(0)`.
+- `disk_controller_index` (int) - The assigned disk controller for the disk at the zero-based index
+  (0, 1, 2, ...). Defaults to the first controller, `(0)`.
   Mutually exclusive with `disk_controller_unit`.
 
 - `disk_controller_unit` (string) - Explicit controller address for the disk when cloning from a `template`
@@ -1597,35 +1597,42 @@ wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/foo/bar/preseed.cfg
 
 <!-- Code generated from the comments of the WaitIpConfig struct in builder/vsphere/common/step_wait_for_ip.go; DO NOT EDIT MANUALLY -->
 
-- `ip_wait_timeout` (duration string | ex: "1h5m2s") - Amount of time to wait for VM's IP, similar to 'ssh_timeout'.
-  Defaults to `30m` (30 minutes). Refer to the Golang
+- `ip_wait_timeout` (duration string | ex: "1h5m2s") - The amount of time to wait for virtual machine's IP, similar to
+  `ssh_timeout`. Defaults to `30m` (30 minutes). Refer to the Golang
   [ParseDuration](https://golang.org/pkg/time/#ParseDuration)
-  documentation for full details.
+  documentation for more information.
 
-- `ip_settle_timeout` (duration string | ex: "1h5m2s") - Amount of time to wait for VM's IP to settle down, sometimes VM may
-  report incorrect IP initially, then it is recommended to set that
-  parameter to apx. 2 minutes. Examples `45s` and `10m`.
-  Defaults to `5s` (5 seconds). Refer to the Golang
-  [ParseDuration](https://golang.org/pkg/time/#ParseDuration)
-  documentation for full details.
+- `ip_settle_timeout` (duration string | ex: "1h5m2s") - The amount of time to wait for virtual machine's IP to settle down. For
+  example, `45s` and `10m`. Defaults to `5s` (5 seconds). Refer to the
+  Golang [ParseDuration](https://golang.org/pkg/time/#ParseDuration)
+  documentation for more information.
 
-- `ip_wait_address` (\*string) - Set this to a CIDR address to cause the service to wait for an address that is contained in
-  this network range. Defaults to `0.0.0.0/0` for any IPv4 address.
+- `ip_wait_address` (\*string) - The IP address range in CIDR notation to wait for. Defaults to
+  `0.0.0.0/0` for any IPv4 address.
   
-  -> **Note:** This only filters which guest-reported IP is accepted; it does not disable IP wait. Use `disable_ip_wait` to skip
-  waiting for a guest-reported IP entirely. When `disable_ip_wait` is true, this setting still applies to HTTP IP discovery.
+  -> **Note:** This only filters which guest-reported IP is accepted; it
+  does not disable IP wait. Use `disable_ip_wait` to skip waiting for a
+  guest-reported IP entirely. When `disable_ip_wait` is `true`, this
+  setting still applies to HTTP IP discovery.
   
   Examples include:
   * empty string ("") - remove all filters
-  * `0:0:0:0:0:0:0:0/0` - allow only ipv6 addresses
-  * `192.168.1.0/24` - only allow ipv4 addresses from 192.168.1.1 to 192.168.1.254
+  * `0:0:0:0:0:0:0:0/0` - allow only IPv6 addresses
+  * `192.168.1.0/24` - only allow IPv4 addresses from 192.168.1.1 to 192.168.1.254
 
-- `disable_ip_wait` (bool) - When true, skip waiting for a guest-reported IP from vCenter. The default wait relies on
-  VMware Tools or open-vm-tools guest information. Use when they cannot be installed during
-  guest operating system install. Defaults to `false`.
+- `ip_wait_adapter_index` (\*int) - When set, wait for an IP on a specific network adapter at this zero-based
+  index (0, 1, 2, ...). For `vsphere-iso`, the index follows
+  `network_adapters` order (the first block is `0`). For `vsphere-clone`,
+  the index follows the order the adapters were added on the source virtual
+  machine.
+
+- `disable_ip_wait` (bool) - When `true`, skip waiting for a guest-reported IP from vCenter. The
+  default wait relies on VMware Tools or open-vm-tools guest information.
+  Use when they cannot be installed during guest operating system install.
+  Defaults to `false`.
   
-  -> **Note:** You must set `ssh_host` or `winrm_host`; reachability timing uses `ssh_timeout`
-  or `winrm_timeout`, not `ip_wait_timeout`.
+  -> **Note:** You must set `ssh_host` or `winrm_host`; reachability timing
+  uses `ssh_timeout` or `winrm_timeout`, not `ip_wait_timeout`.
 
 <!-- End of code generated from the comments of the WaitIpConfig struct in builder/vsphere/common/step_wait_for_ip.go; -->
 

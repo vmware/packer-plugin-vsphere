@@ -10,10 +10,11 @@ import (
 // FlatWaitIpConfig is an auto-generated flat version of WaitIpConfig.
 // Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
 type FlatWaitIpConfig struct {
-	WaitTimeout   *string `mapstructure:"ip_wait_timeout" cty:"ip_wait_timeout" hcl:"ip_wait_timeout"`
-	SettleTimeout *string `mapstructure:"ip_settle_timeout" cty:"ip_settle_timeout" hcl:"ip_settle_timeout"`
-	WaitAddress   *string `mapstructure:"ip_wait_address" cty:"ip_wait_address" hcl:"ip_wait_address"`
-	DisableIpWait *bool   `mapstructure:"disable_ip_wait" cty:"disable_ip_wait" hcl:"disable_ip_wait"`
+	WaitTimeout      *string `mapstructure:"ip_wait_timeout" cty:"ip_wait_timeout" hcl:"ip_wait_timeout"`
+	SettleTimeout    *string `mapstructure:"ip_settle_timeout" cty:"ip_settle_timeout" hcl:"ip_settle_timeout"`
+	WaitAddress      *string `mapstructure:"ip_wait_address" cty:"ip_wait_address" hcl:"ip_wait_address"`
+	WaitAdapterIndex *int    `mapstructure:"ip_wait_adapter_index" cty:"ip_wait_adapter_index" hcl:"ip_wait_adapter_index"`
+	DisableIpWait    *bool   `mapstructure:"disable_ip_wait" cty:"disable_ip_wait" hcl:"disable_ip_wait"`
 }
 
 // FlatMapstructure returns a new FlatWaitIpConfig.
@@ -28,10 +29,11 @@ func (*WaitIpConfig) FlatMapstructure() interface{ HCL2Spec() map[string]hcldec.
 // The decoded values from this spec will then be applied to a FlatWaitIpConfig.
 func (*FlatWaitIpConfig) HCL2Spec() map[string]hcldec.Spec {
 	s := map[string]hcldec.Spec{
-		"ip_wait_timeout":   &hcldec.AttrSpec{Name: "ip_wait_timeout", Type: cty.String, Required: false},
-		"ip_settle_timeout": &hcldec.AttrSpec{Name: "ip_settle_timeout", Type: cty.String, Required: false},
-		"ip_wait_address":   &hcldec.AttrSpec{Name: "ip_wait_address", Type: cty.String, Required: false},
-		"disable_ip_wait":   &hcldec.AttrSpec{Name: "disable_ip_wait", Type: cty.Bool, Required: false},
+		"ip_wait_timeout":       &hcldec.AttrSpec{Name: "ip_wait_timeout", Type: cty.String, Required: false},
+		"ip_settle_timeout":     &hcldec.AttrSpec{Name: "ip_settle_timeout", Type: cty.String, Required: false},
+		"ip_wait_address":       &hcldec.AttrSpec{Name: "ip_wait_address", Type: cty.String, Required: false},
+		"ip_wait_adapter_index": &hcldec.AttrSpec{Name: "ip_wait_adapter_index", Type: cty.Number, Required: false},
+		"disable_ip_wait":       &hcldec.AttrSpec{Name: "disable_ip_wait", Type: cty.Bool, Required: false},
 	}
 	return s
 }

@@ -20,36 +20,43 @@ import (
 )
 
 type WaitIpConfig struct {
-	// Amount of time to wait for VM's IP, similar to 'ssh_timeout'.
-	// Defaults to `30m` (30 minutes). Refer to the Golang
+	// The amount of time to wait for virtual machine's IP, similar to
+	// `ssh_timeout`. Defaults to `30m` (30 minutes). Refer to the Golang
 	// [ParseDuration](https://golang.org/pkg/time/#ParseDuration)
-	// documentation for full details.
+	// documentation for more information.
 	WaitTimeout time.Duration `mapstructure:"ip_wait_timeout"`
-	// Amount of time to wait for VM's IP to settle down, sometimes VM may
-	// report incorrect IP initially, then it is recommended to set that
-	// parameter to apx. 2 minutes. Examples `45s` and `10m`.
-	// Defaults to `5s` (5 seconds). Refer to the Golang
-	// [ParseDuration](https://golang.org/pkg/time/#ParseDuration)
-	// documentation for full details.
+	// The amount of time to wait for virtual machine's IP to settle down. For
+	// example, `45s` and `10m`. Defaults to `5s` (5 seconds). Refer to the
+	// Golang [ParseDuration](https://golang.org/pkg/time/#ParseDuration)
+	// documentation for more information.
 	SettleTimeout time.Duration `mapstructure:"ip_settle_timeout"`
-	// Set this to a CIDR address to cause the service to wait for an address that is contained in
-	// this network range. Defaults to `0.0.0.0/0` for any IPv4 address.
+	// The IP address range in CIDR notation to wait for. Defaults to
+	// `0.0.0.0/0` for any IPv4 address.
 	//
-	// -> **Note:** This only filters which guest-reported IP is accepted; it does not disable IP wait. Use `disable_ip_wait` to skip
-	// waiting for a guest-reported IP entirely. When `disable_ip_wait` is true, this setting still applies to HTTP IP discovery.
+	// -> **Note:** This only filters which guest-reported IP is accepted; it
+	// does not disable IP wait. Use `disable_ip_wait` to skip waiting for a
+	// guest-reported IP entirely. When `disable_ip_wait` is `true`, this
+	// setting still applies to HTTP IP discovery.
 	//
 	// Examples include:
 	// * empty string ("") - remove all filters
-	// * `0:0:0:0:0:0:0:0/0` - allow only ipv6 addresses
-	// * `192.168.1.0/24` - only allow ipv4 addresses from 192.168.1.1 to 192.168.1.254
+	// * `0:0:0:0:0:0:0:0/0` - allow only IPv6 addresses
+	// * `192.168.1.0/24` - only allow IPv4 addresses from 192.168.1.1 to 192.168.1.254
 	WaitAddress *string `mapstructure:"ip_wait_address"`
 	ipnet       *net.IPNet
-	// When true, skip waiting for a guest-reported IP from vCenter. The default wait relies on
-	// VMware Tools or open-vm-tools guest information. Use when they cannot be installed during
-	// guest operating system install. Defaults to `false`.
+	// When set, wait for an IP on a specific network adapter at this zero-based
+	// index (0, 1, 2, ...). For `vsphere-iso`, the index follows
+	// `network_adapters` order (the first block is `0`). For `vsphere-clone`,
+	// the index follows the order the adapters were added on the source virtual
+	// machine.
+	WaitAdapterIndex *int `mapstructure:"ip_wait_adapter_index"`
+	// When `true`, skip waiting for a guest-reported IP from vCenter. The
+	// default wait relies on VMware Tools or open-vm-tools guest information.
+	// Use when they cannot be installed during guest operating system install.
+	// Defaults to `false`.
 	//
-	// -> **Note:** You must set `ssh_host` or `winrm_host`; reachability timing uses `ssh_timeout`
-	// or `winrm_timeout`, not `ip_wait_timeout`.
+	// -> **Note:** You must set `ssh_host` or `winrm_host`; reachability timing
+	// uses `ssh_timeout` or `winrm_timeout`, not `ip_wait_timeout`.
 	DisableIpWait bool `mapstructure:"disable_ip_wait"`
 }
 
@@ -77,6 +84,10 @@ func (c *WaitIpConfig) Prepare() []error {
 		if err != nil {
 			errs = append(errs, fmt.Errorf("unable to parse \"ip_wait_address\": %w", err))
 		}
+	}
+
+	if c.WaitAdapterIndex != nil && *c.WaitAdapterIndex < 0 {
+		errs = append(errs, fmt.Errorf("ip_wait_adapter_index must be >= 0"))
 	}
 
 	return errs
@@ -115,7 +126,24 @@ func (s *StepWaitForIp) Run(ctx context.Context, state multistep.StateBag) multi
 	}()
 
 	go func() {
-		ui.Say("Waiting for IP...")
+		if s.Config.WaitAdapterIndex != nil {
+			adapters, lookupErr := vm.NetworkAdapters(sub)
+			if lookupErr != nil {
+				err = lookupErr
+				waitDone <- true
+				return
+			}
+			i := *s.Config.WaitAdapterIndex
+			if i >= len(adapters) {
+				err = driver.AdapterIndexOutOfRangeError(i, len(adapters), "network adapters")
+				waitDone <- true
+				return
+			}
+			ui.Say("Waiting for IP on specified network adapter...")
+			log.Printf("[INFO] Waiting for IP on specified network adapter at index %d (MAC: %s)", i, adapters[i].MAC)
+		} else {
+			ui.Say("Waiting for IP...")
+		}
 		ip, err = doGetIp(vm, sub, s.Config)
 		waitDone <- true
 	}()
@@ -170,7 +198,7 @@ func doGetIp(vm *driver.VirtualMachineDriver, ctx context.Context, c *WaitIpConf
 		interval = 1 * time.Second
 	}
 loop:
-	ip, err := vm.WaitForIP(ctx, c.ipnet)
+	ip, err := vm.WaitForIP(ctx, c.ipnet, c.WaitAdapterIndex)
 	if err != nil {
 		return "", err
 	}
@@ -180,6 +208,15 @@ loop:
 	case <-ctx.Done():
 		return ip, fmt.Errorf("cancelled waiting for IP address")
 	default:
+	}
+
+	if ip == "" {
+		select {
+		case <-ctx.Done():
+			return "", fmt.Errorf("IP wait cancelled")
+		case <-time.After(interval):
+			goto loop
+		}
 	}
 
 	if prevIp == "" || prevIp != ip {

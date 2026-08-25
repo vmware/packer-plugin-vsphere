@@ -6,8 +6,8 @@
 - `disk_eagerly_scrub` (bool) - Enable eager scrubbing for the disk.
   Defaults to `false`.
 
-- `disk_controller_index` (int) - The assigned disk controller for the disk.
-  Defaults to the first controller, `(0)`.
+- `disk_controller_index` (int) - The assigned disk controller for the disk at the zero-based index
+  (0, 1, 2, ...). Defaults to the first controller, `(0)`.
   Mutually exclusive with `disk_controller_unit`.
 
 - `disk_controller_unit` (string) - Explicit controller address for the disk when cloning from a `template`

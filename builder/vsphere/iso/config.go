@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
 	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
 	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/common"
+	"github.com/vmware/packer-plugin-vsphere/builder/vsphere/driver"
 )
 
 type Config struct {
@@ -125,6 +126,9 @@ func (c *Config) Prepare(raws ...any) ([]string, error) {
 	errs = packersdk.MultiErrorAppend(errs, c.CDConfig.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.BootConfig.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.WaitIpConfig.Prepare()...)
+	if c.WaitAdapterIndex != nil && len(c.NICs) > 0 && *c.WaitAdapterIndex >= len(c.NICs) {
+		errs = packersdk.MultiErrorAppend(errs, driver.AdapterIndexOutOfRangeError(*c.WaitAdapterIndex, len(c.NICs), "network adapters"))
+	}
 	errs = packersdk.MultiErrorAppend(errs, c.Comm.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.VAppConfig.PrepareSSH(c.Comm)...)
 
