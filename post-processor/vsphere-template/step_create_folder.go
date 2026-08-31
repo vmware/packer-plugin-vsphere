@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"slices"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
@@ -62,16 +63,16 @@ func (s *stepCreateFolder) Run(ctx context.Context, state multistep.StateBag) mu
 	}
 
 	if root, ok := ref.(*object.Folder); ok {
-		for i := len(folders) - 1; i >= 0; i-- {
-			ui.Sayf("Creating virtual machine folder %s...", folders[i])
-			root, err = root.CreateFolder(context.Background(), folders[i])
+		for _, folder := range slices.Backward(folders) {
+			ui.Sayf("Creating virtual machine folder %s...", folder)
+			root, err = root.CreateFolder(context.Background(), folder)
 			if err != nil {
 				state.Put("error", err)
 				ui.Errorf("%s", err)
 				return multistep.ActionHalt
 			}
 
-			fullPath = path.Join(fullPath, folders[i])
+			fullPath = path.Join(fullPath, folder)
 		}
 		root.SetInventoryPath(fullPath)
 		state.Put("folder", root)
