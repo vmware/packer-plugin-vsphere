@@ -14,14 +14,26 @@ source "${LIB_DIR}/paths.sh"
 resolve_mike() {
   MIKE="${DOCS_SITE_DIR}/.venv/bin/mike"
   if [[ ! -x "$MIKE" ]]; then
-    MIKE="$(command -v mike)"
+    MIKE="$(command -v mike || true)"
   fi
+  if [[ -z "${MIKE:-}" || ! -x "$MIKE" ]]; then
+    echo "error: mike not found; run: make docs-deps" >&2
+    exit 1
+  fi
+  # mike invokes zensical by name; keep the venv bin first on PATH.
+  local bindir
+  bindir="$(cd "$(dirname "$MIKE")" && pwd)"
+  export PATH="${bindir}:${PATH}"
 }
 
 resolve_zensical() {
   ZENSICAL="${DOCS_SITE_DIR}/.venv/bin/zensical"
   if [[ ! -x "$ZENSICAL" ]]; then
-    ZENSICAL="$(command -v zensical)"
+    ZENSICAL="$(command -v zensical || true)"
+  fi
+  if [[ -z "${ZENSICAL:-}" || ! -x "$ZENSICAL" ]]; then
+    echo "error: zensical not found; run: make docs-deps" >&2
+    exit 1
   fi
 }
 
@@ -62,6 +74,8 @@ mike_cmd() {
   esac
   (
     cd "$DOCS_SITE_DIR"
+    PATH="${DOCS_SITE_DIR}/.venv/bin:${PATH}"
+    export PATH
     if ((${#MIKE_CMD_COMMIT_ARGS[@]})); then
       "$MIKE" "$subcommand" -b "$branch" -F "$config" "${MIKE_CMD_COMMIT_ARGS[@]}" "$@"
     else

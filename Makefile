@@ -72,10 +72,22 @@ generate: install-packer-sdc
 DOCS_VENV?=$(CURDIR)/docs-site/.venv
 DOCS_PYTHON=$(DOCS_VENV)/bin/python
 DOCS_PIP=$(DOCS_VENV)/bin/pip
+DOCS_BOOTSTRAP_PYTHON ?= $(shell command -v python3.14 || command -v python3.13 || command -v python3.12 || command -v python3.11 || command -v python3.10 || true)
 
 docs-deps:
-	@test -d "$(DOCS_VENV)" || python3 -m venv "$(DOCS_VENV)"
-	@"$(DOCS_PIP)" install -r docs-site/requirements.txt
+	@bootstrap="$(DOCS_BOOTSTRAP_PYTHON)"; \
+	if [ -z "$$bootstrap" ]; then \
+		echo "error: Python 3.10+ is required for zensical (python3 is $$(python3 -V 2>/dev/null || echo missing))" >&2; \
+		echo "hint: brew install python && make docs-deps" >&2; \
+		exit 1; \
+	fi; \
+	if [ -x "$(DOCS_PYTHON)" ] && ! "$(DOCS_PYTHON)" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'; then \
+		echo "Recreating docs-site/.venv with $$("$$bootstrap" -V) (zensical requires Python 3.10+)"; \
+		rm -rf "$(DOCS_VENV)"; \
+	fi; \
+	test -d "$(DOCS_VENV)" || "$$bootstrap" -m venv "$(DOCS_VENV)"; \
+	"$(DOCS_PYTHON)" -m pip install --upgrade pip; \
+	"$(DOCS_PIP)" install -r docs-site/requirements.txt
 
 docs-prepare:
 	@./docs-site/scripts/prepare-docs.sh

@@ -103,6 +103,7 @@ trap - EXIT
 restore_web_docs
 
 resolve_mike
+export PATH="${DOCS_SITE_DIR}/.venv/bin:${PATH}"
 export MIKE_BRANCH="${MIKE_BRANCH:-gh-pages}"
 MIKE_COMMIT_VERSION="$VERSION"
 
