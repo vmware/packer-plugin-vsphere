@@ -1,0 +1,18 @@
+---
+name: Reserved
+description: Use the GitHub Discussions for questions, assistance, and discussions about this project.
+labels: [pending-close]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > [!IMPORTANT]
+        > :fire_extinguisher: Do **not** open an issue.
+        >
+        > :octocat: Use the [GitHub Discussions](https://github.com/vmware/packer-plugin-vsphere/discussions) for questions, assistance, and discussions about this project.
+  - type: checkboxes
+    attributes:
+      label: Acknowledgement
+      options:
+        - label: ":no_good: By submitting this issue, I affirm that I neglected to read the message above and can expect this item to be closed without review."
+          required: true

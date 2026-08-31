@@ -1,30 +1,20 @@
 # Contributing Guidelines
 
-We greatly value feedback and contributions from our community.
+Thank you for your interest in this project.
 
-Please review this document before submitting any issues or pull requests to ensure we
-have all the necessary information to effectively collaborate on your contribution.
+We greatly value feedback from the community.
 
-> [!TIP]
-If you need help or have questions about using the plugin, please refer to the
-[documentation](https://github.com/vmware/packer-plugin-vsphere/tree/main/docs) or open
-a [discussion][gh-discussions].
+## Reporting
 
-## Issues
+Please use [GitHub Discussions][gh-discussions] for all triage, ideas, and
+general project discussion.
 
-Use [GitHub issues][gh-issues] to report bugs or suggest enhancements using the
-following guidelines.
+GitHub Issues are **reserved** for maintainer-tracked work items. Discussions
+that turn into confirmed issues or accepted ideas will have a linked issue
+created by a maintainer.
 
-> [!WARNING]
-> Issues that do not follow the guidelines may be closed by the maintainers without
-> further investigation.
-
-Before opening an issue, please [search existing issues](https://github.com/vmware/packer-plugin-vsphere/issues?q=is%3Aissue+is%3Aopen+label%3Abug)
-to avoid duplicates.
-
-When opening an issue, use the provided issue form to ensure that you provide all the
-necessary details. These details are important for maintainers to understand and
-reproduce the issue.
+Before opening a discussion, check open and recently closed discussions to make
+sure the same thing hasn't already been reported or proposed.
 
 > [!IMPORTANT]
 > - Ensure that you are using a recent version of the plugin.
@@ -37,57 +27,67 @@ reproduce the issue.
 
 ## Pull Requests
 
-Use GitHub pull requests to propose changes to the codebase using the following guidelines.
+Pull requests are limited to repository collaborators.
 
-> [!WARNING]
-> Pull requests that do not follow the guidelines may be closed by the maintainers
-> without further review.
+If you are not a collaborator, please use [GitHub Discussions][gh-discussions]
+to report issues and propose ideas with the maintainer(s). If a change is
+accepted, a maintainer may invite collaboration or open the implementation
+directly.
 
-**Before** submitting a pull request, ensure that:
+**Before** sending us a pull request, please ensure that:
 
-1. You have [opened a discussion][gh-discussions] to discuss any **significant** work with
-   the maintainer(s). This ensures that your contribution is aligned with the
-   project's direction and avoids unnecessary work.
-2. You have identified or [open an issue][gh-issues]. This ensures that your contribution
-   focuses on a specific topic and avoids duplicating effort.
-3. You have forked the repository. Refer to the [GitHub documentation][gh-forks] for help.
-3. You are working against the latest source on the `main` branch. You may need to
-   rebase your branch against the latest `main` branch.
-4. You have created a topic branch based on `main`. Do not work directly on the `main` branch.
-5. You have modified the source based on logical units of work. Focus on the specific change
-   you are contributing. Pull requests that contain multiple unrelated changes will be
-   rejected.
-4. You have followed the existing style and conventions of the project.
-5. You have added tests for your changes.
-5. You have generated the updated documentation and associated assets by running `make generate`.
-5. You have tested building the plugin by running `make build`.
-7. You have tested your changes with a local build of the plugin by running `make dev`.
-9. You have verified all new and existing tests are passing by running `make test`.
-10. You have used [Conventional Commits][conventional-commits] format for commit messages.
-11. You have signed-off and committed your changes [using clear commit messages][git-commit].
+1. You check existing open, and recently merged, pull requests to make sure
+   someone else hasn't already addressed the problem.
+2. You [open a discussion][gh-discussions] to discuss any significant work with
+   the maintainer(s).
+3. For changes that need tracked follow-up, you reference the relevant
+   discussion and any maintainer-created issue for context.
+4. You have collaborator access to the repository.
+5. You are working against the latest source on the `main` branch.
 
-When opening a pull request, ensure that:
+To open a pull request, please:
 
-1. You title your pull request using the [Conventional Commits][conventional-commits] format.
-2. You provide a detailed description of the changes in the pull request template.
-2. You open any work-in-progress pull requests as a draft.
-3. You mark the pull request as ready for review when you are ready for it to be reviewed.
-4. You follow the status checks for the pull request to ensure that all checks are passing.
-5. You stay involved in the conversation with the maintainers to ensure that your contribution
-   can be reviewed.
+1. Create a topic branch from the latest `main` branch.
+2. Modify the source; please focus on the **specific** change you are
+   contributing.
+3. Follow the existing style and conventions of the project.
+4. Add tests for your changes.
+5. Generate the updated documentation and associated assets by running
+   `make generate`.
+6. Test building the plugin by running `make build`.
+7. Test your changes with a local build of the plugin by running `make dev`.
+8. Verify all new and existing tests are passing by running `make test`.
+9. Update the documentation, if required.
+10. Sign-off and commit your changes
+    [using a clear commit messages][git-commit]. Use of
+    [Conventional Commits][conventional-commits] are required.
+11. Open a pull request, answering any default questions.
+12. Pay attention to any automated failures reported in the pull request, and
+    stay involved in the conversation.
 
-> [!TIP]
-> If you have any questions about the contribution process, open a [discussion][gh-discussions].
+GitHub provides additional documentation on
+[creating a pull request][gh-pull-requests].
 
 ### Contributor Flow
 
 This is an outline of the contributor workflow:
 
+- Create a topic branch from where you want to base your work.
+- Make commits of logical units.
+- Make sure your commit messages are
+  [in the proper format][conventional-commits] **and** are signed-off.
+- Push your changes to your collaborator branch.
+- Submit a pull request. If the pull request is a work in progress, open as
+  draft until ready for review.
+
+> [!IMPORTANT]
+> This project **requires** that commits are signed-off for the Developer Certificate of Origin.
+
 Example:
 
 ```shell
-git remote add upstream https://github.com/<org-name>/<repo-name>.git
-git checkout -b feat/add-x main
+git remote add upstream https://github.com/vmware/packer-plugin-vsphere.git
+git checkout --branch feat/add-x main
 git commit --signoff --message "feat: add support for x
   Added support for x.
 
@@ -99,7 +99,7 @@ git push origin feat/add-x
 
 ### Formatting Commit Messages
 
-Follow the conventions on [How to Write a Git Commit Message][git-commit] and use
+Follow the conventions on [How to Write a Git Commit Message][git-commit] and
 [Conventional Commits][conventional-commits].
 
 Be sure to include any related GitHub issue references in the commit message.
@@ -116,7 +116,7 @@ Signed-off-by: Jane Doe <jdoe@example.com>
 Ref: #123
 ```
 
-### Stay In Sync With Upstream
+### Staying In Sync With Upstream
 
 When your branch gets out of sync with the `upstream/main` branch, use the
 following to update:
@@ -147,19 +147,27 @@ If you need to squash changes into an earlier commit, you can use:
 ```shell
 git add .
 git commit --fixup <commit>
-git rebase --interactive --autosquash upstream/main
+git rebase --interactive --autosquash main
 git push --force-with-lease origin feat/add-x
 ```
 
-When resolving review comments, mark the conversation as resolved and note the commit
-SHA that addresses the review comment. This helps maintainers verify the issue has been
-resolved.
+Be sure to add a comment to the pull request indicating your new changes are
+ready to review, as GitHub does not generate a notification when you `git push`.
 
-Request a review from the maintainers when you are ready for a follow-up review.
+When resolving review comments, mark the conversation as resolved and note the
+commit SHA that addresses the review comment. This helps maintainers verify the
+issue has been resolved.
+
+## Finding Contributions to Work On
+
+Looking at the existing discussions and maintainer-created issues is a great
+way to find something to contribute on. If you have an idea you'd like to
+discuss, [open a discussion][gh-discussions].
 
 [conventional-commits]: https://conventionalcommits.org
 [gh-discussions]: https://github.com/vmware/packer-plugin-vsphere/discussions
-[gh-forks]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo
+[gh-discussions-triage]: https://github.com/vmware/packer-plugin-vsphere/discussions/new?category=triage
+[gh-discussions-ideas]: https://github.com/vmware/packer-plugin-vsphere/discussions/new?category=ideas
 [gh-issues]: https://github.com/vmware/packer-plugin-vsphere/issues
 [gh-pull-requests]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request
 [git-commit]: https://cbea.ms/git-commit

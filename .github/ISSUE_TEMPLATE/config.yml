@@ -1,11 +1,11 @@
 ---
 blank_issues_enabled: false
 contact_links:
-  - name: Community Discussions
-    url: https://github.com/vmware/packer-plugin-vsphere/discussions
-    about: Need some help? Join the community discussions.
+  - name: Discussions
+    url: https://github.com/vmware/packer-plugin-vsphere/discussions/new/choose
+    about: The starting point for questions, assistance, and discussions about this project.
   - name: Packer Plugin Documentation
-    url: https://developer.hashicorp.com/packer/integrations/vmware/vsphere
+    url: https://vmware.github.io/packer-plugin-vsphere
     about: Having trouble with this Packer plugin? Check out the plugin documentation.
   - name: Packer Documentation
     url: https://developer.hashicorp.com/packer/
