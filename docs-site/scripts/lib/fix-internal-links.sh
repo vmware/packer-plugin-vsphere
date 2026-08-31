@@ -23,6 +23,7 @@ fix_internal_links() {
         "host_name" => "linux-customization-settings",
         "domain" => "linux-customization-settings",
         "pci-passthrough-configuration" => "hardware-configuration",
+        "remove_vtpm" => "hardware-configuration",
         "ssh_password" => "ssh",
         "ssh_private_key_file" => "ssh",
         "ssh_agent_auth" => "ssh",
