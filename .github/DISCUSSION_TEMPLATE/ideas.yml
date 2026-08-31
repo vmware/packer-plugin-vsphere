@@ -1,0 +1,59 @@
+---
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing an enhancement or feature, please [search the existing discussions](https://github.com/vmware/packer-plugin-vsphere/discussions) for related requests, and use the [reaction](https://github.blog/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/) feature to add up-votes to existing requests.
+
+        When filing an enhancement, please include the following information.
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: >-
+        This project has a [Code of Conduct](https://github.com/vmware/packer-plugin-vsphere/blob/main/.github/CODE_OF_CONDUCT.md)
+        that all participants are expected to understand and follow.
+      options:
+        - label: I have read and agree to the project's Code of Conduct.
+          required: true
+        - label: Vote on this discussion by adding a 👍 [reaction](https://github.blog/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/) to the original description to help the maintainers prioritize.
+          required: false
+        - label: Do not leave "+1" or other comments that do not add relevant information or questions.
+          required: false
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A written overview of the enhancement or feature.
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case(s)
+      description: Please provide a use case or scenario.
+    validations:
+      required: true
+  - type: textarea
+    id: potential-configuration
+    attributes:
+      label: Potential Configuration
+      description: |
+        Provide a potential Packer configuration.
+        Learn more about [Quoting Code](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#quoting-code).
+      placeholder: |
+        Please format any code in code blocks using the markdown editor.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: |
+        Please provide any related GitHub discussions, issues, or pull requests (open or closed) or documentation.
+        Learn about [Referencing GitHub Issues and Pull Requests](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#referencing-issues-and-pull-requests).
+      placeholder: |
+        #0000
+    validations:
+      required: false

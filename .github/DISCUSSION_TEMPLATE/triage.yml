@@ -1,32 +1,23 @@
 ---
-name: Bug Report
-description: Is something not working as expected? Submit a bug.
-labels:
-  - bug
-  - needs-triage
-type: bug
-projects:
-  - vmware/48
+labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Before filing an issue, please [search the existing issues](https://github.com/vmware/packer-plugin-vsphere/issues?q=is%3Aissue+is%3Aopen+label%3Abug) (open or closed), and use the [reaction](https://blog.github.com/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/) feature to add up-votes to existing issues.
+        Before filing, please [search the existing discussions](https://github.com/vmware/packer-plugin-vsphere/discussions) (open or closed), and use the [reaction](https://github.blog/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/) feature to add up-votes to existing threads.
 
-        When filing an issue, please include the following information.
+        When filing, please include the following information.
   - type: checkboxes
     id: terms
     attributes:
       label: Code of Conduct
       description: The Code of Conduct applies to you when interacting with the community here on GitHub and contributing code.
       options:
-        - label: I have read and agree to the [Code of Conduct](https://github.com/vmware/packer-plugin-vsphere/blob/main/CODE_OF_CONDUCT.md).
+        - label: I have read and agree to the [Code of Conduct](https://github.com/vmware/packer-plugin-vsphere/blob/main/.github/CODE_OF_CONDUCT.md).
           required: true
-        - label: Vote on this issue by adding a 👍 [reaction](https://blog.github.com/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/) to the original issue description to help the maintainers prioritize.
+        - label: Vote on this discussion by adding a 👍 [reaction](https://github.blog/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/) to the original description to help the maintainers prioritize.
           required: false
         - label: Do not leave "+1" or other comments that do not add relevant information or questions.
-          required: false
-        - label: If you are interested in working on this issue or have submitted a pull request, please leave a comment.
           required: false
   - type: input
     id: packer-version
@@ -70,7 +61,7 @@ body:
     id: vsphere-version
     attributes:
       label: vSphere Version
-      description: Provide the version of the VMware vSphere are using.
+      description: Provide the version of VMware vSphere you are using.
       placeholder: e.g. x.y.z
     validations:
       required: true
@@ -90,7 +81,7 @@ body:
         - Please ensure all secrets and identifiable information is removed.
         - Please format any code in code blocks using the markdown editor.
 
-        Learn more about [Code Formatting](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#quoting-code).
+        Learn more about [Quoting Code](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#quoting-code).
       placeholder: |
         Please format any code in code blocks using the markdown editor.
     validations:
@@ -102,7 +93,7 @@ body:
       description: |
         Please provide a link to a [GitHub Gist](https://gist.github.com/) containing the complete debug output.
       placeholder: |
-        Link to a GitHub Gist. Please do not paste the debug output in the issue.
+        Link to a GitHub Gist. Please do not paste the debug output in the discussion.
     validations:
       required: true
   - type: textarea
@@ -110,9 +101,9 @@ body:
     attributes:
       label: Panic Output
       description: |
-        If the plugin produced a panic, please provide a link to a [GitHub Gist](https://gist.github.com/) containing the output of the `crash.log`
+        If the plugin produced a panic, please provide a link to a [GitHub Gist](https://gist.github.com/) containing the output of the `crash.log`.
       placeholder: |
-        Link to a GitHub Gist. Please do not paste the panic output in the issue.
+        Link to a GitHub Gist. Please do not paste the panic output in the discussion.
     validations:
       required: false
   - type: textarea
@@ -157,8 +148,8 @@ body:
     attributes:
       label: References
       description: |
-        Please provide any related GitHub issues or pull requests (open or closed) or documentation.
-        Learn about [Referencing GitHub Issues](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#referencing-issues-and-pull-requests).
+        Please provide any related GitHub discussions, issues, or pull requests (open or closed) or documentation.
+        Learn about [Referencing GitHub Issues and Pull Requests](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#referencing-issues-and-pull-requests).
       placeholder: |
         #0000
     validations:
