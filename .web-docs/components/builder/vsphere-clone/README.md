@@ -19,7 +19,7 @@ their respective End of General Support dates. For detailed information, refer t
 
 There are many configuration options available for this builder. In addition to the items listed
 here, you will want to review the general configuration references for [Hardware](#hardware-configuration),
-[Output](#output-configuration), [Boot](#boot-configuration), [Run](#run-configuration), [Shutdown](#shutdown-configuration),
+[Flag](#flag-configuration), [Output](#output-configuration), [Boot](#boot-configuration), [Run](#run-configuration), [Shutdown](#shutdown-configuration),
 [Communicator](#communicator-configuration), and [Export](#export-configuration) configuration
 references, which are necessary for a build to succeed and can be found further down the page.
 
@@ -1526,6 +1526,24 @@ wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/foo/bar/preseed.cfg
 
 <!-- End of code generated from the comments of the RemoveVTPMConfig struct in builder/vsphere/common/step_remove_vtpm.go; -->
 
+
+### Flag Configuration
+
+**Optional:**
+
+<!-- Code generated from the comments of the FlagConfig struct in builder/vsphere/common/step_add_flag.go; DO NOT EDIT MANUALLY -->
+
+- `vbs_enabled` (bool) - Enable Virtualization Based Security option for virtual machine. Defaults to `false`.
+  Requires `vvtd_enabled` and `NestedHV` to be set to `true`.
+  Requires `firmware` to be set to `efi-secure`.
+
+- `vvtd_enabled` (bool) - Enable IO/MMU option for virtual machine. Defaults to `false`.
+
+<!-- End of code generated from the comments of the FlagConfig struct in builder/vsphere/common/step_add_flag.go; -->
+
+
+-> **Note:** When `vbs_enabled` is `true`, `firmware` and `NestedHV` must be set in the clone
+builder configuration. These values are not inferred from the source template.
 
 ### Location Configuration
 

@@ -89,6 +89,48 @@ func TestCloneConfig_RAMReservation(t *testing.T) {
 	testConfigErr(t, "RAM_reservation", warns, err)
 }
 
+func TestCloneConfig_VbsEnabled(t *testing.T) {
+	raw := minimalConfig()
+	raw["vbs_enabled"] = true
+	raw["vvtd_enabled"] = true
+	raw["NestedHV"] = true
+	raw["firmware"] = "efi-secure"
+	c := new(Config)
+	warns, err := c.Prepare(raw)
+	testConfigOk(t, warns, err)
+}
+
+func TestCloneConfig_VbsEnabledRequiresVvtdEnabled(t *testing.T) {
+	raw := minimalConfig()
+	raw["vbs_enabled"] = true
+	raw["NestedHV"] = true
+	raw["firmware"] = "efi-secure"
+	c := new(Config)
+	warns, err := c.Prepare(raw)
+	testConfigErr(t, "vvtd_enabled", warns, err)
+}
+
+func TestCloneConfig_VbsEnabledRequiresNestedHV(t *testing.T) {
+	raw := minimalConfig()
+	raw["vbs_enabled"] = true
+	raw["vvtd_enabled"] = true
+	raw["firmware"] = "efi-secure"
+	c := new(Config)
+	warns, err := c.Prepare(raw)
+	testConfigErr(t, "nestedhv", warns, err)
+}
+
+func TestCloneConfig_VbsEnabledRequiresEfiSecure(t *testing.T) {
+	raw := minimalConfig()
+	raw["vbs_enabled"] = true
+	raw["vvtd_enabled"] = true
+	raw["NestedHV"] = true
+	raw["firmware"] = "efi"
+	c := new(Config)
+	warns, err := c.Prepare(raw)
+	testConfigErr(t, "firmware", warns, err)
+}
+
 func minimalConfig() map[string]any {
 	return map[string]any{
 		"vcenter_server": "vc01.example.com",

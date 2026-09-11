@@ -32,7 +32,7 @@ their respective End of General Support dates. For detailed information, refer t
 
 There are many configuration options available for this builder. In addition to the items listed
 here, you will want to review the general configuration references for [Hardware](#hardware-configuration),
-[Output](#output-configuration), [Boot](#boot-configuration), [Run](#run-configuration), [Shutdown](#shutdown-configuration),
+[Flag](#flag-configuration), [Output](#output-configuration), [Boot](#boot-configuration), [Run](#run-configuration), [Shutdown](#shutdown-configuration),
 [Communicator](#communicator-configuration), and [Export](#export-configuration) configuration
 references, which are necessary for a build to succeed and can be found further down the page.
 
@@ -637,6 +637,15 @@ JSON Example:
 @include 'builder/vsphere/common/HardwareConfig-not-required.mdx'
 
 @include 'builder/vsphere/common/RemoveVTPMConfig-not-required.mdx'
+
+### Flag Configuration
+
+**Optional:**
+
+@include 'builder/vsphere/common/FlagConfig-not-required.mdx'
+
+-> **Note:** When `vbs_enabled` is `true`, `firmware` and `NestedHV` must be set in the clone
+builder configuration. These values are not inferred from the source template.
 
 ### Location Configuration
 
