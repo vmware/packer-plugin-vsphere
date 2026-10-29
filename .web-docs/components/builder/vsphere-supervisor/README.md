@@ -460,6 +460,13 @@ JSON Example:
 - `winrm_timeout` (duration string | ex: "1h5m2s") - The amount of time to wait for WinRM to become available. This defaults
   to `30m` since setting up a Windows machine generally takes a long time.
 
+- `winrm_retry_interval` (duration string | ex: "1h5m2s") - The amount of time to wait between retries when attempting to connect to
+  WinRM. This defaults to `5s`.
+
+- `winrm_connect_timeout` (duration string | ex: "1h5m2s") - The timeout for each individual WinRM connection attempt. This defaults
+  to `0` (no per-attempt timeout; each attempt waits until the server
+  responds or resets the connection).
+
 - `winrm_use_ssl` (bool) - If `true`, use HTTPS for WinRM.
 
 - `winrm_insecure` (bool) - If `true`, do not check server certificate chain and host name.
