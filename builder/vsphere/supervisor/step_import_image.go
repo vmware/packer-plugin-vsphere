@@ -269,8 +269,8 @@ func (s *StepImportImage) checkImportTarget(ctx context.Context, logger *PackerL
 	cl := &imgregv1.ContentLibrary{}
 	objKey := client.ObjectKey{Name: s.ImportImageConfig.ImportTargetLocationName, Namespace: s.Namespace}
 	if err := s.KubeWatchClient.Get(ctx, objKey, cl); err != nil {
-		logger.Error(fmt.Sprintf("failed to return the content library by name %s in namespace %s",
-			s.ImportImageConfig.ImportTargetLocationName, s.Namespace))
+		logger.Error("failed to return the content library by name %s in namespace %s",
+			s.ImportImageConfig.ImportTargetLocationName, s.Namespace)
 		return err
 	}
 
