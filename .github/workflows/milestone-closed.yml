@@ -15,7 +15,7 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: bflad/action-milestone-comment@4618cbf8bf938d31af1c576beeaaa77f486f5af3 # v2.0.0
+      - uses: bflad/action-milestone-comment@v2.0.0
         with:
           body: |
             This functionality has been released in [${{ github.event.milestone.title }}](${{ github.event.milestone.html_url }}) of the plugin.

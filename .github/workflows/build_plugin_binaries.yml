@@ -20,12 +20,12 @@ jobs:
     container:
       image: docker.mirror.hashicorp.services/cimg/go:1.21
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: actions/checkout@v7.0.1
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: darwin
         GOARCH: amd64
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: darwin
         GOARCH: arm64
@@ -37,16 +37,16 @@ jobs:
     container:
       image: docker.mirror.hashicorp.services/cimg/go:1.21
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: actions/checkout@v7.0.1
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: freebsd
         GOARCH: 386
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: freebsd
         GOARCH: amd64
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: freebsd
         GOARCH: arm
@@ -58,20 +58,20 @@ jobs:
     container:
       image: docker.mirror.hashicorp.services/cimg/go:1.21
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: actions/checkout@v7.0.1
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: linux
         GOARCH: 386
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: linux
         GOARCH: amd64
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: linux
         GOARCH: arm
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: linux
         GOARCH: arm64
@@ -83,16 +83,16 @@ jobs:
     container:
       image: docker.mirror.hashicorp.services/cimg/go:1.21
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: actions/checkout@v7.0.1
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: netbsd
         GOARCH: 386
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: netbsd
         GOARCH: amd64
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: netbsd
         GOARCH: arm
@@ -104,16 +104,16 @@ jobs:
     container:
       image: docker.mirror.hashicorp.services/cimg/go:1.21
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: actions/checkout@v7.0.1
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: openbsd
         GOARCH: 386
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: openbsd
         GOARCH: amd64
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: openbsd
         GOARCH: arm
@@ -125,8 +125,8 @@ jobs:
     container:
       image: docker.mirror.hashicorp.services/cimg/go:1.21
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: actions/checkout@v7.0.1
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: solaris
         GOARCH: amd64
@@ -138,12 +138,12 @@ jobs:
     container:
       image: docker.mirror.hashicorp.services/cimg/go:1.21
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: actions/checkout@v7.0.1
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: windows
         GOARCH: 386
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
+    - uses: "$/.github/actions/build-and-persist-plugin-binary"
       with:
         GOOS: windows
         GOARCH: amd64
