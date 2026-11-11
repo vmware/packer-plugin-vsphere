@@ -7,6 +7,7 @@ package driver
 import (
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vim25/types"
@@ -179,6 +180,9 @@ func (c *StorageConfig) addStorageDevices(existingDevices object.VirtualDeviceLi
 		}
 
 		disk := c.buildDisk(existingDevices, c.Storage[i], i)
+		if addr.Unit < 0 || addr.Unit > math.MaxInt32 {
+			return nil, fmt.Errorf("storage[%d]: disk_controller_unit %q unit %d is outside the range 0-%d", i, raw, addr.Unit, math.MaxInt32)
+		}
 		assignDiskAtUnit(existingDevices, disk, controller, int32(addr.Unit), opts.linkControllerDevices)
 		existingDevices = append(existingDevices, disk)
 		newDevices = append(newDevices, disk)
