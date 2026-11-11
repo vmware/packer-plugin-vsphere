@@ -5,6 +5,7 @@
 package driver
 
 import (
+	"math"
 	"strings"
 	"testing"
 
@@ -42,6 +43,16 @@ func TestParseControllerUnit(t *testing.T) {
 		{
 			name:    "invalid bus",
 			input:   "scsi9:0",
+			wantErr: true,
+		},
+		{
+			name:  "largest int32 unit",
+			input: "scsi0:2147483647",
+			want:  ControllerAddress{Kind: ControllerKindSCSI, Bus: 0, Unit: math.MaxInt32},
+		},
+		{
+			name:    "unit above int32",
+			input:   "scsi0:2147483648",
 			wantErr: true,
 		},
 	}

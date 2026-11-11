@@ -6,6 +6,7 @@ package driver
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"slices"
 	"sort"
@@ -107,10 +108,13 @@ func ParseControllerUnit(raw string) (ControllerAddress, error) {
 		return ControllerAddress{}, fmt.Errorf("invalid disk_controller_unit %q: bus number must be 0-3", raw)
 	}
 
-	unit, err := strconv.Atoi(matches[3])
+	// UnitNumber on a virtual device is int32. Parse with that bit size so a
+	// value that fits in int cannot overflow when it is later narrowed.
+	unitValue, err := strconv.ParseInt(matches[3], 10, 32)
 	if err != nil {
-		return ControllerAddress{}, fmt.Errorf("invalid disk_controller_unit %q: unit must be a non-negative integer", raw)
+		return ControllerAddress{}, fmt.Errorf("invalid disk_controller_unit %q: unit must be between 0 and %d", raw, math.MaxInt32)
 	}
+	unit := int(unitValue)
 
 	var kind ControllerKind
 	switch matches[1] {
