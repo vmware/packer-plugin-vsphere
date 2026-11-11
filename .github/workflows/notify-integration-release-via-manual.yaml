@@ -15,6 +15,9 @@ on:
         default: 'main'
         required: false
 
+permissions:
+  contents: read
+
 jobs:
   strip-version:
     runs-on: ubuntu-latest
