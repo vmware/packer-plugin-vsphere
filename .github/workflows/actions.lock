@@ -30,9 +30,6 @@ workflows:
     '.github/workflows/notify-integration-release-via-tag.yaml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-go@v7.0.0'
-    '.github/workflows/pull-requests.yml':
-        - 'actions/labeler@v7.0.0'
-        - 'codelytv/pr-size-labeler@v1.12.0'
     '.github/workflows/release.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-go@v7.0.0'
@@ -51,11 +48,6 @@ dependencies:
         commit: 'sha1-3d3c42e5aac5ba805825da76410c181273ba90b1'
         owner_id: 44036562
         repo_id: 197814629
-    'actions/labeler@v7.0.0':
-        ref: 'v7.0.0'
-        commit: 'sha1-bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13'
-        owner_id: 44036562
-        repo_id: 177139928
     'actions/setup-go@v7.0.0':
         ref: 'v7.0.0'
         commit: 'sha1-b7ad1dad31e06c5925ef5d2fc7ad053ef454303e'
@@ -81,11 +73,6 @@ dependencies:
         commit: 'sha1-4618cbf8bf938d31af1c576beeaaa77f486f5af3'
         owner_id: 189114
         repo_id: 373608892
-    'codelytv/pr-size-labeler@v1.12.0':
-        ref: 'v1.12.0'
-        commit: 'sha1-19c335e7695ba922de938806dd129f0a9b992644'
-        owner_id: 14278228
-        repo_id: 243538828
     'crazy-max/ghaction-import-gpg@v7.0.0':
         ref: 'v7.0.0'
         commit: 'sha1-2dc316deee8e90f13e1a351ab510b4d5bc0c82cd'
