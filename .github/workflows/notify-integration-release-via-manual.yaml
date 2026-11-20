@@ -40,7 +40,7 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }}
       # Ensure the documentation is up-to-date.
-      - uses: actions/setup-go@v7.0.0
+      - uses: actions/setup-go@v7.1.0
         with:
           go-version-file: 'go.mod'
       - shell: bash

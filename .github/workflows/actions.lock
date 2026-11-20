@@ -9,14 +9,14 @@ workflows:
         - 'actions/upload-artifact@v6.0.0'
     '.github/workflows/docs-test.yml':
         - 'actions/checkout@v7.0.1'
-        - 'actions/setup-go@v7.0.0'
+        - 'actions/setup-go@v7.1.0'
         - 'actions/setup-python@v7.1.0'
     '.github/workflows/go-test.yml':
         - 'actions/checkout@v7.0.1'
-        - 'actions/setup-go@v7.0.0'
+        - 'actions/setup-go@v7.1.0'
     '.github/workflows/go-validate.yml':
         - 'actions/checkout@v7.0.1'
-        - 'actions/setup-go@v7.0.0'
+        - 'actions/setup-go@v7.1.0'
         - 'golangci/golangci-lint-action@v9.3.0'
     '.github/workflows/issue-opened.yml':
         - 'github/issue-labeler@v3.5'
@@ -26,13 +26,13 @@ workflows:
         - 'bflad/action-milestone-comment@v2.0.0'
     '.github/workflows/notify-integration-release-via-manual.yaml':
         - 'actions/checkout@v7.0.1'
-        - 'actions/setup-go@v7.0.0'
+        - 'actions/setup-go@v7.1.0'
     '.github/workflows/notify-integration-release-via-tag.yaml':
         - 'actions/checkout@v7.0.1'
-        - 'actions/setup-go@v7.0.0'
+        - 'actions/setup-go@v7.1.0'
     '.github/workflows/release.yml':
         - 'actions/checkout@v7.0.1'
-        - 'actions/setup-go@v7.0.0'
+        - 'actions/setup-go@v7.1.0'
         - 'crazy-max/ghaction-import-gpg@v7.0.0'
         - 'goreleaser/goreleaser-action@v7.3.0'
     '.github/workflows/stale.yml':
@@ -48,9 +48,9 @@ dependencies:
         commit: 'sha1-3d3c42e5aac5ba805825da76410c181273ba90b1'
         owner_id: 44036562
         repo_id: 197814629
-    'actions/setup-go@v7.0.0':
-        ref: 'v7.0.0'
-        commit: 'sha1-b7ad1dad31e06c5925ef5d2fc7ad053ef454303e'
+    'actions/setup-go@v7.1.0':
+        ref: 'v7.1.0'
+        commit: 'sha1-d8cbb8045d7f43706b9177cceb36c1f91a6644d5'
         owner_id: 44036562
         repo_id: 192624594
     'actions/setup-python@v7.1.0':
