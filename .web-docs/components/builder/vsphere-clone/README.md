@@ -1942,25 +1942,21 @@ boot time.
 
 <!-- Code generated from the comments of the SSHTemporaryKeyPair struct in communicator/config.go; DO NOT EDIT MANUALLY -->
 
-- `temporary_key_pair_type` (string) - `dsa` | `ecdsa` | `ed25519` | `rsa` ( the default )
+- `temporary_key_pair_type` (string) - `ecdsa` | `ed25519` | `rsa` ( the default )
   
-  Specifies the type of key to create. The possible values are 'dsa',
-  'ecdsa', 'ed25519', or 'rsa'.
+  Specifies the type of key to create. The possible values are 'ecdsa',
+  'ed25519', or 'rsa'.
   
-  NOTE: DSA is deprecated and no longer recognized as secure, please
-  consider other alternatives like RSA or ED25519.
+  NOTE: DSA is no longer supported, please use ECDSA, ED25519 or RSA
+  instead.
 
 - `temporary_key_pair_bits` (int) - Specifies the number of bits in the key to create. For RSA keys, the
   minimum size is 1024 bits and the default is 4096 bits. Generally, 3072
-  bits is considered sufficient. DSA keys must be exactly 1024 bits as
-  specified by FIPS 186-2. For ECDSA keys, bits determines the key length
-  by selecting from one of three elliptic curve sizes: 256, 384 or 521
-  bits. Attempting to use bit lengths other than these three values for
-  ECDSA keys will fail. Ed25519 keys have a fixed length and bits will be
-  ignored.
-  
-  NOTE: DSA is deprecated and no longer recognized as secure as specified
-  by FIPS 186-5, please consider other alternatives like RSA or ED25519.
+  bits is considered sufficient. For ECDSA keys, bits determines the key
+  length by selecting from one of three elliptic curve sizes: 256, 384 or
+  521 bits. Attempting to use bit lengths other than these three values
+  for ECDSA keys will fail. Ed25519 keys have a fixed length and bits will
+  be ignored.
 
 <!-- End of code generated from the comments of the SSHTemporaryKeyPair struct in communicator/config.go; -->
 
